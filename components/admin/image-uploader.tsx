@@ -28,17 +28,19 @@ export function ImageUploader({ label = "Upload image", onChange, initialUrl }: 
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <Button type="button" variant="outline" className="border-2 border-[#E8DCC8]" onClick={pick}>{label}</Button>
-        {preview && (
-          <Button type="button" variant="outline" className="border-2 border-[#E8DCC8]" onClick={clear}>Remove</Button>
-        )}
-      </div>
+    <div className="space-y-3">
+      <Button type="button" variant="outline" className="border-2 border-[#E8DCC8]" onClick={pick}>{label}</Button>
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handle} />
       {preview && (
-        <div className="rounded-md border-2 border-[#E8DCC8] overflow-hidden bg-white">
+        <div className="rounded-md border-2 border-[#E8DCC8] overflow-hidden bg-white relative">
           <img src={preview} alt="preview" className="w-full h-40 object-cover" />
+          <button
+            type="button"
+            onClick={clear}
+            className="absolute top-2 right-2 px-2 py-1 text-xs rounded-md bg-white/95 border-2 border-[#E8DCC8]"
+          >
+            Remove
+          </button>
         </div>
       )}
     </div>

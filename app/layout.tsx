@@ -3,6 +3,10 @@ import type { Metadata } from "next"
 import { Poppins } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
+import "primereact/resources/themes/lara-light-blue/theme.css"
+import "primereact/resources/primereact.min.css"
+import "primeicons/primeicons.css"
+import "quill/dist/quill.snow.css"
 import { ScrollToTop } from "@/components/scroll-to-top"
 
 // Register Poppins for both sans and serif CSS variables so all text (including elements using `font-serif`) uses Poppins

@@ -20,6 +20,7 @@ import { ImageGalleryUploader } from "@/components/admin/image-gallery-uploader"
 export function AdminProductForm() {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
+  const [slugTouched, setSlugTouched] = useState(false)
 
   const [form, setForm] = useState({
     name: "",
@@ -54,6 +55,21 @@ export function AdminProductForm() {
 
   const update = (key: keyof typeof form, value: string | boolean) => setForm((f) => ({ ...f, [key]: value }))
 
+  const slugify = (s: string) =>
+    s
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+
+  const errors = {
+    name: !form.name ? "Name is required" : "",
+    price: !form.price ? "Price is required" : "",
+    category: !form.category ? "Category is required" : "",
+  }
+  const isValid = !errors.name && !errors.price && !errors.category
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name || !form.price || !form.category) {
@@ -79,7 +95,7 @@ export function AdminProductForm() {
         </div>
         <div className="flex items-center gap-2">
           <Button type="button" variant="outline" className="border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]" onClick={() => router.push("/admin/products")}>Cancel</Button>
-          <Button type="submit" className="bg-[#2D5F3F] hover:bg-[#234A32] text-white" disabled={submitting}>{submitting ? "Saving..." : "Save Product"}</Button>
+          <Button type="submit" className="bg-[#2D5F3F] hover:bg-[#234A32] text-white" disabled={submitting || !isValid}>{submitting ? "Saving..." : "Save Product"}</Button>
         </div>
       </div>
 
@@ -93,11 +109,30 @@ export function AdminProductForm() {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Product Name</Label>
-                  <Input id="name" value={form.name} onChange={(e) => update("name", e.target.value)} className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
+                  <Input
+                    id="name"
+                    value={form.name}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      update("name", v)
+                      if (!slugTouched) update("slug", slugify(v))
+                    }}
+                    className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]"
+                  />
+                  {errors.name && <p className="text-xs text-red-600">{errors.name}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="slug">Slug</Label>
-                  <Input id="slug" value={form.slug} onChange={(e) => update("slug", e.target.value)} placeholder="auto-generated if empty" className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
+                  <Input
+                    id="slug"
+                    value={form.slug}
+                    onChange={(e) => {
+                      setSlugTouched(true)
+                      update("slug", slugify(e.target.value))
+                    }}
+                    placeholder="auto-generated if empty"
+                    className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]"
+                  />
                 </div>
               </div>
               <div className="space-y-2">
@@ -129,6 +164,7 @@ export function AdminProductForm() {
                 <div className="space-y-2">
                   <Label htmlFor="price">Selling Price (₹)</Label>
                   <Input id="price" type="number" value={form.price} onChange={(e) => update("price", e.target.value)} className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
+                  {errors.price && <p className="text-xs text-red-600">{errors.price}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="comparePrice">MRP (₹)</Label>
@@ -298,6 +334,7 @@ export function AdminProductForm() {
                     <SelectItem value="grains">Grains & Pulses</SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.category && <p className="text-xs text-red-600">{errors.category}</p>}
               </div>
               <div className="flex items-center justify-between">
                 <div>
@@ -328,7 +365,7 @@ export function AdminProductForm() {
       </div>
 
       <div className="flex justify-end">
-        <Button type="submit" className="bg-[#2D5F3F] hover:bg-[#234A32] text-white" disabled={submitting}>{submitting ? "Saving..." : "Publish"}</Button>
+        <Button type="submit" className="bg-[#2D5F3F] hover:bg-[#234A32] text-white" disabled={submitting || !isValid}>{submitting ? "Saving..." : "Publish"}</Button>
       </div>
     </form>
   )

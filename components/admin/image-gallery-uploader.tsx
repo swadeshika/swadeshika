@@ -45,9 +45,15 @@ export function ImageGalleryUploader({ label = "Upload gallery images", onChange
       {items.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {items.map((it, idx) => (
-            <div key={idx} className="rounded-md border-2 border-[#E8DCC8] overflow-hidden bg-white relative group">
+            <div key={idx} className="rounded-md border-2 border-[#E8DCC8] overflow-hidden bg-white relative">
               <img src={it.url} alt={`gallery-${idx}`} className="w-full h-32 object-cover" />
-              <button type="button" onClick={() => removeAt(idx)} className="absolute top-2 right-2 px-2 py-1 text-xs rounded-md bg-white/90 border-2 border-[#E8DCC8] hidden group-hover:block">Remove</button>
+              <button
+                type="button"
+                onClick={() => removeAt(idx)}
+                className="absolute top-2 right-2 px-2 py-1 text-xs rounded-md bg-white/95 border-2 border-[#E8DCC8]"
+              >
+                Remove
+              </button>
             </div>
           ))}
         </div>

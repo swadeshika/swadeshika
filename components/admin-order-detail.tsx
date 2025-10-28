@@ -99,12 +99,21 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Breadcrumb */}
+      <div className="text-sm text-[#8B6F47]">
+        <Link href="/admin" className="hover:underline">Admin</Link>
+        <span className="mx-2">/</span>
+        <Link href="/admin/orders" className="hover:underline">Orders</Link>
+        <span className="mx-2">/</span>
+        <span className="text-[#6B4423] font-medium">{order.id}</span>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-balance">Order #{order.id}</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-3xl font-serif font-bold text-[#6B4423] text-balance">Order #{order.id}</h1>
+          <p className="text-[#8B6F47] mt-1">
             Placed on{" "}
             {new Date(order.createdAt).toLocaleDateString("en-IN", {
               day: "numeric",
@@ -125,23 +134,23 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-8">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-8">
           {/* Order Items */}
-          <Card>
-            <CardHeader>
+          <Card className="rounded-2xl border-2 border-[#E8DCC8] bg-white">
+            <CardHeader className="p-4">
               <CardTitle>Order Items</CardTitle>
               <CardDescription>{order.items.length} items</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4">
               <div className="space-y-4">
                 {order.items.map((item) => (
-                  <div key={item.id} className="flex gap-4 pb-4 border-b last:border-0 last:pb-0">
+                  <div key={item.id} className="flex gap-4 py-3 border-b last:border-0 last:pb-0">
                     <img
                       src={item.image || "/placeholder.svg"}
                       alt={item.name}
-                      className="w-20 h-20 object-cover rounded-lg"
+                      className="w-20 h-20 object-cover rounded-lg border-2 border-[#E8DCC8]"
                     />
                     <div className="flex-1">
                       <h4 className="font-medium">{item.name}</h4>
@@ -182,11 +191,11 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
           </Card>
 
           {/* Customer Information */}
-          <Card>
-            <CardHeader>
+          <Card className="rounded-2xl border-2 border-[#E8DCC8] bg-white">
+            <CardHeader className="p-4">
               <CardTitle>Customer Information</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4">
               <div className="flex items-start gap-4">
                 <div className="rounded-full bg-primary/10 p-3">
                   <User className="h-5 w-5 text-primary" />
@@ -214,11 +223,11 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
 
           {/* Addresses */}
           <div className="grid md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
+            <Card className="rounded-2xl border-2 border-[#E8DCC8] bg-white">
+              <CardHeader className="p-4">
                 <CardTitle>Shipping Address</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm">
+              <CardContent className="space-y-2 text-sm p-4">
                 <p className="font-medium">{order.shippingAddress.name}</p>
                 <p className="text-muted-foreground">{order.shippingAddress.address}</p>
                 <p className="text-muted-foreground">
@@ -228,11 +237,11 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
+            <Card className="rounded-2xl border-2 border-[#E8DCC8] bg-white">
+              <CardHeader className="p-4">
                 <CardTitle>Billing Address</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm">
+              <CardContent className="space-y-2 text-sm p-4">
                 <p className="font-medium">{order.billingAddress.name}</p>
                 <p className="text-muted-foreground">{order.billingAddress.address}</p>
                 <p className="text-muted-foreground">
@@ -245,11 +254,11 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
 
           {/* Customer Notes */}
           {order.notes && (
-            <Card>
-              <CardHeader>
+            <Card className="rounded-2xl border-2 border-[#E8DCC8] bg-white">
+              <CardHeader className="p-4">
                 <CardTitle>Customer Notes</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4">
                 <p className="text-sm text-muted-foreground">{order.notes}</p>
               </CardContent>
             </Card>
@@ -257,14 +266,14 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-8 lg:sticky lg:top-6">
           {/* Update Status */}
-          <Card>
-            <CardHeader>
+          <Card className="rounded-2xl border-2 border-[#E8DCC8] bg-white">
+            <CardHeader className="p-4">
               <CardTitle>Update Status</CardTitle>
               <CardDescription>Change order status</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4">
               <div className="space-y-2">
                 <Label>Order Status</Label>
                 <Select value={orderStatus} onValueChange={setOrderStatus}>
@@ -288,12 +297,12 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
           </Card>
 
           {/* Add Tracking */}
-          <Card>
-            <CardHeader>
+          <Card className="rounded-2xl border-2 border-[#E8DCC8] bg-white">
+            <CardHeader className="p-4">
               <CardTitle>Shipping Details</CardTitle>
               <CardDescription>Add tracking information</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4">
               <div className="space-y-2">
                 <Label>Carrier</Label>
                 <Select value={carrier} onValueChange={setCarrier}>
@@ -325,11 +334,11 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
           </Card>
 
           {/* Payment Info */}
-          <Card>
-            <CardHeader>
+          <Card className="rounded-2xl border-2 border-[#E8DCC8] bg-white">
+            <CardHeader className="p-4">
               <CardTitle>Payment Information</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 p-4">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Method</span>
                 <span className="font-medium">{order.paymentMethod}</span>
@@ -348,12 +357,12 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
           </Card>
 
           {/* Admin Notes */}
-          <Card>
-            <CardHeader>
+          <Card className="rounded-2xl border-2 border-[#E8DCC8] bg-white">
+            <CardHeader className="p-4">
               <CardTitle>Admin Notes</CardTitle>
               <CardDescription>Internal notes (not visible to customer)</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4">
               <Textarea
                 placeholder="Add notes about this order..."
                 value={adminNotes}

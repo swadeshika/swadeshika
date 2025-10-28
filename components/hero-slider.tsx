@@ -56,12 +56,12 @@ const slides = [
   },
   {
     id: 3,
-    title: "Nature's Finest Treasures",
-    subtitle: "Premium Dry Fruits",
-    description: "Handpicked nuts and dried fruits for wholesome nutrition",
-    image: "/hero-slide-3-dry-fruits.jpg",
-    cta: "Shop Collection",
-    ctaLink: "/shop/dry-fruits",
+    title: "Pure by Origin. Trusted by Families.",
+    // subtitle: "Premium Dry Fruits",
+    description: "Our farmers grow it, we pack it — no middlemen, no chemicals, only genuine Indian purity.",
+    image: "/third-slider.png",
+    // cta: "Shop Collection",
+    // ctaLink: "/shop/dry-fruits",
   },
 ]
 

@@ -1,5 +1,24 @@
 "use client"
 
+/**
+ * Admin Orders List
+ *
+ * Purpose
+ * - Displays the orders table in the Admin panel with search, filter, and export capabilities.
+ * - Ensures a consistent UI with the rest of the admin area (rounded cards, subtle borders, brand colors).
+ *
+ * Key Features
+ * - Client-side search across order number, customer name, email, and status (case-insensitive)
+ * - Status filter (all/pending/processing/shipped/delivered/cancelled)
+ * - CSV export of the currently filtered results
+ * - Empty state messaging when no orders match
+ * - Quick view action linking to the order details page
+ *
+ * Notes
+ * - Data is mocked locally; swap to API integration later while keeping the same UI contract.
+ * - Export produces a UTF-8 CSV and downloads it client-side.
+ */
+
 import { useState } from "react"
 import Link from "next/link"
 import { Search, Eye, Download } from "lucide-react"
@@ -64,6 +83,45 @@ const statusColors: Record<string, string> = {
 export function AdminOrdersList() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  
+  // Derive filtered orders based on search and status filter (case-insensitive)
+  const q = searchQuery.trim().toLowerCase()
+  const filtered = orders.filter((o) => {
+    const matchesSearch =
+      !q ||
+      o.orderNumber.toLowerCase().includes(q) ||
+      o.customer.toLowerCase().includes(q) ||
+      o.email.toLowerCase().includes(q) ||
+      o.status.toLowerCase().includes(q)
+    const matchesStatus = statusFilter === "all" || o.status.toLowerCase() === statusFilter
+    return matchesSearch && matchesStatus
+  })
+
+  // Export the currently filtered orders as CSV
+  const handleExportCsv = () => {
+    const header = ["Order Number", "Customer", "Email", "Date", "Items", "Amount", "Status"]
+    const rows = filtered.map((o) => [
+      o.orderNumber,
+      o.customer,
+      o.email,
+      o.date,
+      String(o.items),
+      String(o.amount),
+      o.status,
+    ])
+    const csv = [header, ...rows]
+      .map((r) => r.map((field) => `"${String(field).replace(/"/g, '""')}"`).join(","))
+      .join("\n")
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = "orders.csv"
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="space-y-6">
@@ -72,7 +130,7 @@ export function AdminOrdersList() {
           <h1 className="font-serif text-3xl font-bold mb-2 text-[#6B4423]">Orders</h1>
           <p className="text-[#8B6F47]">Manage and track customer orders</p>
         </div>
-        <Button variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]">
+        <Button onClick={handleExportCsv} variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]">
           <Download className="h-4 w-4" />
           Export
         </Button>
@@ -119,30 +177,38 @@ export function AdminOrdersList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {orders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-medium text-[#6B4423]">{order.orderNumber}</TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-[#6B4423]">{order.customer}</p>
-                        <p className="text-sm text-[#8B6F47]">{order.email}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>{order.date}</TableCell>
-                    <TableCell>{order.items}</TableCell>
-                    <TableCell className="font-semibold text-[#2D5F3F]">₹{order.amount}</TableCell>
-                    <TableCell>
-                      <Badge className={`${statusColors[order.status]} border-0`}>{order.status}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" asChild>
-                        <Link href={`/admin/orders/${order.id}`}>
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                      </Button>
+                {filtered.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="py-12 text-center text-[#8B6F47]">
+                      No orders found. Adjust filters or search to see results.
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  filtered.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-medium text-[#6B4423]">{order.orderNumber}</TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium text-[#6B4423]">{order.customer}</p>
+                          <p className="text-sm text-[#8B6F47]">{order.email}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>{order.date}</TableCell>
+                      <TableCell>{order.items}</TableCell>
+                      <TableCell className="font-semibold text-[#2D5F3F]">₹{order.amount}</TableCell>
+                      <TableCell>
+                        <Badge className={`${statusColors[order.status]} border-0`}>{order.status}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" asChild>
+                          <Link href={`/admin/orders/${order.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>

@@ -1,7 +1,24 @@
 "use client"
 
+/**
+ * Admin Customers List
+ *
+ * Purpose
+ * - Displays the customers table in the Admin panel with client-side search.
+ * - Provides quick navigation to a customer's detail page.
+ *
+ * Key Features
+ * - Client-side search across name, email, phone, and status (case-insensitive)
+ * - Empty-state messaging when no customers match
+ * - Quick view action linking to the customer detail page
+ *
+ * Notes
+ * - Data is mocked locally; replace with API integration later while keeping the same UI contract.
+ */
+
 import { useState } from "react"
-import { Search, Eye, Mail } from "lucide-react"
+import { Search, Eye, Download } from "lucide-react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -54,12 +71,55 @@ const customers = [
 
 export function AdminCustomersList() {
   const [searchQuery, setSearchQuery] = useState("")
+  // Derive filtered customers from search query
+  const q = searchQuery.trim().toLowerCase()
+  const filtered = customers.filter((c) => {
+    if (!q) return true
+    return (
+      c.name.toLowerCase().includes(q) ||
+      c.email.toLowerCase().includes(q) ||
+      c.phone.toLowerCase().includes(q) ||
+      c.status.toLowerCase().includes(q)
+    )
+  })
+
+  // Export the currently filtered customers as CSV
+  const handleExportCsv = () => {
+    const header = ["Name", "Email", "Phone", "Orders", "Total Spent", "Join Date", "Status"]
+    const rows = filtered.map((c) => [
+      c.name,
+      c.email,
+      c.phone,
+      String(c.orders),
+      String(c.totalSpent),
+      c.joinDate,
+      c.status,
+    ])
+    const csv = [header, ...rows]
+      .map((r) => r.map((field) => `"${String(field).replace(/"/g, '""')}"`).join(","))
+      .join("\n")
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = "customers.csv"
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl font-bold mb-2 text-[#6B4423]">Customers</h1>
-        <p className="text-[#8B6F47]">Manage your customer base</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-serif text-3xl font-bold mb-2 text-[#6B4423]">Customers</h1>
+          <p className="text-[#8B6F47]">Manage your customer base</p>
+        </div>
+        <Button onClick={handleExportCsv} variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]">
+          <Download className="h-4 w-4" />
+          Export
+        </Button>
       </div>
 
       <Card className="rounded-2xl border-2 border-[#E8DCC8]">
@@ -90,7 +150,14 @@ export function AdminCustomersList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {customers.map((customer) => (
+                {filtered.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="py-12 text-center text-[#8B6F47]">
+                      No customers found. Adjust your search.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                filtered.map((customer) => (
                   <TableRow key={customer.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -114,16 +181,17 @@ export function AdminCustomersList() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon">
-                          <Eye className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" asChild>
+                          <Link href={`/admin/customers/${customer.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
                         </Button>
-                        <Button variant="ghost" size="icon">
-                          <Mail className="h-4 w-4" />
-                        </Button>
+                        {/* Mail action intentionally removed per request */}
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                ))
+                )}
               </TableBody>
             </Table>
           </div>

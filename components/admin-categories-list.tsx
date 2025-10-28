@@ -36,17 +36,93 @@ const categories = [
 
 export function AdminCategoriesList() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [items, setItems] = useState(categories)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [newCategory, setNewCategory] = useState({ name: "", parent: "" })
+  const [newCategory, setNewCategory] = useState<{ name: string; parent: string } | null>({ name: "", parent: "none" })
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editCategory, setEditCategory] = useState<{ id: string; name: string; parent: string } | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
   const { toast } = useToast()
 
+  const slugify = (str: string) =>
+    str
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+
+  const topLevelOptions = items.filter((c) => c.parent === null)
+
+  const filtered = items.filter((c) => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return true
+    return (
+      c.name.toLowerCase().includes(q) ||
+      c.slug.toLowerCase().includes(q) ||
+      (c.parent ? String(c.parent).toLowerCase().includes(q) : false)
+    )
+  })
+
   const handleAddCategory = () => {
-    toast({
-      title: "Category Added",
-      description: `${newCategory.name} has been added successfully.`,
-    })
+    if (!newCategory) return
+    const name = newCategory.name.trim()
+    if (!name) {
+      toast({ title: "Name required", description: "Please enter a category name.", variant: "destructive" })
+      return
+    }
+    const slug = slugify(name)
+    const parentSlug = newCategory.parent && newCategory.parent !== "none" ? newCategory.parent : ""
+    const parentName = parentSlug ? items.find((i) => i.slug === parentSlug)?.name ?? null : null
+    const newItem = {
+      id: Date.now().toString(),
+      name,
+      slug,
+      parent: parentName,
+      productCount: 0,
+      order: (items.filter((i) => i.parent === parentName).length || 0) + 1,
+    }
+    setItems((prev) => [
+      ...prev,
+      newItem,
+    ])
+    toast({ title: "Category Added", description: `${name} has been added successfully.` })
     setIsAddDialogOpen(false)
-    setNewCategory({ name: "", parent: "" })
+    setNewCategory({ name: "", parent: "none" })
+  }
+
+  const openEdit = (id: string) => {
+    const found = items.find((i) => i.id === id)
+    if (!found) return
+    const parentSlug = found.parent ? items.find((i) => i.name === found.parent)?.slug ?? "none" : "none"
+    setEditCategory({ id: found.id, name: found.name, parent: parentSlug })
+    setIsEditDialogOpen(true)
+  }
+
+  const handleSaveEdit = () => {
+    if (!editCategory) return
+    const name = editCategory.name.trim()
+    if (!name) {
+      toast({ title: "Name required", description: "Please enter a category name.", variant: "destructive" })
+      return
+    }
+    const slug = slugify(name)
+    const parentSlug = editCategory.parent && editCategory.parent !== "none" ? editCategory.parent : ""
+    const parentName = parentSlug ? items.find((i) => i.slug === parentSlug)?.name ?? null : null
+    setItems((prev) =>
+      prev.map((i) => (i.id === editCategory.id ? { ...i, name, slug, parent: parentName } : i))
+    )
+    toast({ title: "Category Updated", description: `${name} has been updated.` })
+    setIsEditDialogOpen(false)
+    setEditCategory(null)
+  }
+
+  const confirmDelete = (id: string, name: string) => setDeleteTarget({ id, name })
+  const handleDelete = () => {
+    if (!deleteTarget) return
+    setItems((prev) => prev.filter((i) => i.id !== deleteTarget.id))
+    toast({ title: "Category Deleted", description: `${deleteTarget.name} has been removed.` })
+    setDeleteTarget(null)
   }
 
   return (
@@ -74,25 +150,24 @@ export function AdminCategoriesList() {
                 <Input
                   id="category-name"
                   placeholder="e.g., Organic Spices"
-                  value={newCategory.name}
-                  onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                  value={newCategory?.name ?? ""}
+                  onChange={(e) => setNewCategory((prev) => ({ ...(prev as any), name: e.target.value }))}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="parent-category">Parent Category (Optional)</Label>
                 <Select
-                  value={newCategory.parent}
-                  onValueChange={(value) => setNewCategory({ ...newCategory, parent: value })}
+                  value={newCategory?.parent ?? "none"}
+                  onValueChange={(value) => setNewCategory((prev) => ({ ...(prev as any), parent: value }))}
                 >
                   <SelectTrigger id="parent-category">
                     <SelectValue placeholder="Select parent category" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None (Top Level)</SelectItem>
-                    <SelectItem value="ghee">Ghee</SelectItem>
-                    <SelectItem value="spices">Spices</SelectItem>
-                    <SelectItem value="dry-fruits">Dry Fruits</SelectItem>
-                    <SelectItem value="oils">Oils</SelectItem>
+                    {topLevelOptions.map((opt) => (
+                      <SelectItem key={opt.id} value={opt.slug}>{opt.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -136,7 +211,14 @@ export function AdminCategoriesList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {categories.map((category) => (
+                {filtered.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-12 text-center text-[#8B6F47]">
+                      No categories found. Add a category to get started.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                filtered.map((category) => (
                   <TableRow key={category.id}>
                     <TableCell>
                       <Button variant="ghost" size="icon" className="cursor-move">
@@ -155,21 +237,80 @@ export function AdminCategoriesList() {
                     <TableCell>{category.productCount}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(category.id)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive">
+                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => confirmDelete(category.id, category.name)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                ))
+                )}
               </TableBody>
             </Table>
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Category Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Category</DialogTitle>
+            <DialogDescription>Update the category details</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-category-name">Category Name</Label>
+              <Input
+                id="edit-category-name"
+                placeholder="e.g., Organic Spices"
+                value={editCategory?.name ?? ""}
+                onChange={(e) => setEditCategory((prev) => (prev ? { ...prev, name: e.target.value } : prev))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-parent-category">Parent Category (Optional)</Label>
+              <Select
+                value={editCategory?.parent ?? "none"}
+                onValueChange={(value) => setEditCategory((prev) => (prev ? { ...prev, parent: value } : prev))}
+              >
+                <SelectTrigger id="edit-parent-category">
+                  <SelectValue placeholder="Select parent category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None (Top Level)</SelectItem>
+                  {topLevelOptions.map((opt) => (
+                    <SelectItem key={opt.id} value={opt.slug}>{opt.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveEdit} className="bg-[#2D5F3F] hover:bg-[#2D5F3F]/90">Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Category</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{deleteTarget?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button className="bg-red-600 hover:bg-red-700" onClick={handleDelete}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

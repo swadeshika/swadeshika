@@ -7,6 +7,33 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+/**
+ * Admin Product Form
+ *
+ * A comprehensive, WordPress-like product creation/editing form used across
+ * the admin to create and manage products.
+ *
+ * Features:
+ * - Basic info: name, auto-generated slug, short/long description (rich editor)
+ * - Media: primary image and multi-image gallery with client-side previews
+ * - Pricing: MRP & Selling with live discount, status, and conditional rules
+ * - Variants: weights/sizes with per-variant pricing, SKU, stock
+ * - Inventory: SKU, stock
+ * - Shipping: weight and dimensions with visible units
+ * - Taxonomy: category, tags
+ * - SEO: meta title/description
+ * - Publish: visibility toggle and consistent actions
+ *
+ * UX/Validation logic:
+ * - Slug auto-generates from Name until manually edited
+ * - Inline validation for required fields
+ * - Conditional pricing: if variants exist, default (product-level) pricing is optional;
+ *   otherwise, MRP and Selling are required. Selling must be ≤ MRP everywhere.
+ * - Submit buttons remain disabled until the form is valid
+ *
+ * This component is UI-only; it does not perform real uploads or API persistence.
+ * Consumers can pass initial data and mode (create/edit) to reuse the same UI.
+ */
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "@/hooks/use-toast"
@@ -17,41 +44,73 @@ import { SpecsEditor, SpecRow } from "@/components/admin/specs-editor"
 import { ImageUploader } from "@/components/admin/image-uploader"
 import { ImageGalleryUploader } from "@/components/admin/image-gallery-uploader"
 
-export function AdminProductForm() {
+type Mode = "create" | "edit"
+
+interface AdminProductFormProps {
+  initial?: Partial<{
+    name: string
+    slug: string
+    description: string
+    shortDescription: string
+    price: string
+    comparePrice: string
+    category: string
+    status: string
+    sku: string
+    stock: string
+    weight: string
+    length: string
+    width: string
+    height: string
+    tags: string
+    metaTitle: string
+    metaDescription: string
+    publish: boolean
+    related: string
+  }>
+  mode?: Mode
+  initialVariants?: Variant[]
+  initialFeatures?: string[]
+  initialSpecs?: SpecRow[]
+  initialPrimaryImageUrl?: string | null
+  initialGalleryUrls?: string[]
+}
+
+export function AdminProductForm({ initial, mode = "create", initialVariants = [], initialFeatures = [], initialSpecs = [], initialPrimaryImageUrl = null, initialGalleryUrls = [] }: AdminProductFormProps) {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const [slugTouched, setSlugTouched] = useState(false)
 
   const [form, setForm] = useState({
-    name: "",
-    slug: "",
-    description: "",
-    shortDescription: "",
-    price: "",
-    comparePrice: "",
-    category: "",
-    status: "active",
-    sku: "",
-    stock: "",
-    weight: "",
-    length: "",
-    width: "",
-    height: "",
+    name: initial?.name || "",
+    slug: initial?.slug || "",
+    description: initial?.description || "",
+    shortDescription: initial?.shortDescription || "",
+    price: initial?.price || "",
+    comparePrice: initial?.comparePrice || "",
+    category: initial?.category || "",
+    status: initial?.status || "active",
+    sku: initial?.sku || "",
+    stock: initial?.stock || "",
+    weight: initial?.weight || "",
+    length: initial?.length || "",
+    width: initial?.width || "",
+    height: initial?.height || "",
     image1: "",
     image2: "",
     image3: "",
-    tags: "",
-    metaTitle: "",
-    metaDescription: "",
-    publish: true,
-    related: "",
+    tags: initial?.tags || "",
+    metaTitle: initial?.metaTitle || "",
+    metaDescription: initial?.metaDescription || "",
+    publish: initial?.publish ?? true,
+    related: initial?.related || "",
   })
 
-  const [variants, setVariants] = useState<Variant[]>([])
-  const [features, setFeatures] = useState<string[]>([])
-  const [specs, setSpecs] = useState<SpecRow[]>([])
-  const [primaryImage, setPrimaryImage] = useState<{ file: File | null; url: string | null }>({ file: null, url: null })
-  const [galleryImages, setGalleryImages] = useState<{ files: File[]; urls: string[] }>({ files: [], urls: [] })
+  const [variants, setVariants] = useState<Variant[]>(initialVariants)
+  const [features, setFeatures] = useState<string[]>(initialFeatures)
+  const [specs, setSpecs] = useState<SpecRow[]>(initialSpecs)
+  const [primaryImage, setPrimaryImage] = useState<{ file: File | null; url: string | null }>({ file: null, url: initialPrimaryImageUrl })
+  const [galleryImages, setGalleryImages] = useState<{ files: File[]; urls: string[] }>({ files: [], urls: initialGalleryUrls })
 
   const update = (key: keyof typeof form, value: string | boolean) => setForm((f) => ({ ...f, [key]: value }))
 
@@ -63,17 +122,48 @@ export function AdminProductForm() {
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-")
 
+  // whether user added any variants; affects pricing requirements
+  const hasVariants = variants.length > 0
+  // Validation rules for default (product-level) pricing
+  const priceNum = parseFloat(form.price || "")
+  const mrpNum = parseFloat(form.comparePrice || "")
+  const priceRequired = !hasVariants
+  const mrpRequired = !hasVariants
+  const priceMissing = priceRequired && !form.price
+  const mrpMissing = mrpRequired && !form.comparePrice
+  const priceGtMrp = !!form.price && !!form.comparePrice && priceNum > mrpNum
+
+  // Validate variants pricing when present: each variant must have Selling and MRP, and Selling ≤ MRP
+  const variantIssues: string[] = []
+  if (hasVariants) {
+    variants.forEach((v, idx) => {
+      const vp = parseFloat(v.price || "")
+      const vm = parseFloat(v.salePrice || "")
+      if (!v.price || !v.salePrice) {
+        variantIssues.push(`Variant #${idx + 1}: Selling and MRP are required`)
+        return
+      }
+      if (vp > vm) {
+        variantIssues.push(`Variant #${idx + 1}: Selling should be ≤ MRP`)
+      }
+    })
+  }
+
   const errors = {
     name: !form.name ? "Name is required" : "",
-    price: !form.price ? "Price is required" : "",
+    price: priceMissing ? "Selling price is required (or add variants)" : priceGtMrp ? "Selling should be ≤ MRP" : "",
+    mrp: mrpMissing ? "MRP is required (or add variants)" : "",
     category: !form.category ? "Category is required" : "",
+    variants: hasVariants && variantIssues.length ? variantIssues[0] : "",
   }
-  const isValid = !errors.name && !errors.price && !errors.category
+  const isValid = !errors.name && !errors.category && !errors.price && !errors.mrp && !errors.variants
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.name || !form.price || !form.category) {
-      toast({ title: "Missing fields", description: "Name, Price and Category are required." })
+    // block submit if invalid, reflecting conditional pricing rules
+    if (!isValid) {
+      const firstError = errors.name || errors.category || errors.price || errors.mrp || errors.variants
+      toast({ title: "Please fix the form", description: firstError || "Check highlighted fields." })
       return
     }
     try {
@@ -95,7 +185,7 @@ export function AdminProductForm() {
         </div>
         <div className="flex items-center gap-2">
           <Button type="button" variant="outline" className="border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]" onClick={() => router.push("/admin/products")}>Cancel</Button>
-          <Button type="submit" className="bg-[#2D5F3F] hover:bg-[#234A32] text-white" disabled={submitting || !isValid}>{submitting ? "Saving..." : "Save Product"}</Button>
+          <Button type="submit" className="bg-[#2D5F3F] hover:bg-[#234A32] text-white" disabled={submitting || !isValid}>{submitting ? (mode === "edit" ? "Updating..." : "Saving...") : (mode === "edit" ? "Update Product" : "Save Product")}</Button>
         </div>
       </div>
 
@@ -151,6 +241,9 @@ export function AdminProductForm() {
               <CardTitle className="text-[#6B4423]">Variants (weights, sizes, etc.)</CardTitle>
             </CardHeader>
             <CardContent>
+              {errors.variants && (
+                <p className="text-xs text-red-600 mb-2">{errors.variants}</p>
+              )}
               <VariantsEditor value={variants} onChange={setVariants} />
             </CardContent>
           </Card>
@@ -169,6 +262,7 @@ export function AdminProductForm() {
                 <div className="space-y-2">
                   <Label htmlFor="comparePrice">MRP (₹)</Label>
                   <Input id="comparePrice" type="number" value={form.comparePrice} onChange={(e) => update("comparePrice", e.target.value)} className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
+                  {errors.mrp && <p className="text-xs text-red-600">{errors.mrp}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label>Discount</Label>
@@ -196,7 +290,10 @@ export function AdminProductForm() {
                   </Select>
                 </div>
               </div>
-              <p className="text-xs text-[#8B6F47]">Tip: Enter MRP and Selling Price to auto-show discount on product page.</p>
+              <p className="text-xs text-[#8B6F47]">
+                Tip: Enter MRP and Selling Price to auto-show discount on product page.
+                {hasVariants ? " Since you added variants, default pricing is optional." : " If you don't add variants, both MRP and Selling are required."}
+              </p>
             </CardContent>
           </Card>
 
@@ -268,6 +365,7 @@ export function AdminProductForm() {
                 <Label>Primary Image</Label>
                 <ImageUploader
                   label="Upload primary image"
+                  initialUrl={primaryImage.url || undefined}
                   onChange={(file, url) => {
                     setPrimaryImage({ file, url })
                   }}
@@ -277,6 +375,7 @@ export function AdminProductForm() {
                 <Label>Gallery Images</Label>
                 <ImageGalleryUploader
                   label="Upload gallery images"
+                  initialUrls={galleryImages.urls}
                   onChange={(files, urls) => {
                     setGalleryImages({ files, urls })
                   }}
@@ -365,7 +464,7 @@ export function AdminProductForm() {
       </div>
 
       <div className="flex justify-end">
-        <Button type="submit" className="bg-[#2D5F3F] hover:bg-[#234A32] text-white" disabled={submitting || !isValid}>{submitting ? "Saving..." : "Publish"}</Button>
+        <Button type="submit" className="bg-[#2D5F3F] hover:bg-[#234A32] text-white" disabled={submitting || !isValid}>{submitting ? (mode === "edit" ? "Updating..." : "Saving...") : (mode === "edit" ? "Update" : "Publish")}</Button>
       </div>
     </form>
   )

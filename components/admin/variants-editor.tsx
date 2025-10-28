@@ -1,5 +1,20 @@
 "use client"
 
+/**
+ * Variants Editor
+ *
+ * A lightweight grid editor to manage product variants such as weights or sizes.
+ *
+ * Features:
+ * - Add/remove variant rows
+ * - Edit fields per variant: Label, Weight, Size, Selling Price, MRP, SKU, Stock
+ * - Emits the variant list back to parent via onChange
+ *
+ * Notes:
+ * - Validation (e.g., Selling ≤ MRP) is enforced in the parent form to keep this
+ *   component focused on editing only.
+ */
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -45,11 +60,11 @@ export function VariantsEditor({ value, onChange }: VariantsEditorProps) {
             <Input value={v.size || ""} onChange={(e) => update(i, "size", e.target.value)} placeholder="Small/Medium" className="border-2 border-[#E8DCC8]" />
           </div>
           <div className="space-y-1">
-            <Label>Price (₹)</Label>
+            <Label>Selling Price (₹)</Label>
             <Input type="number" value={v.price || ""} onChange={(e) => update(i, "price", e.target.value)} className="border-2 border-[#E8DCC8]" />
           </div>
           <div className="space-y-1">
-            <Label>Sale price (₹)</Label>
+            <Label>MRP (₹)</Label>
             <Input type="number" value={v.salePrice || ""} onChange={(e) => update(i, "salePrice", e.target.value)} className="border-2 border-[#E8DCC8]" />
           </div>
           <div className="space-y-1">

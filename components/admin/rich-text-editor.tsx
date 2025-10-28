@@ -3,6 +3,17 @@
 import { Editor } from "primereact/editor"
 import { useRef } from "react"
 
+// RichTextEditor wraps PrimeReact's Quill-based Editor to provide a controlled
+// WYSIWYG input for the product long description.
+// Features configured:
+// - Headings (H2/H3/H4), Paragraph
+// - Bold, Italic
+// - Ordered & Bullet lists
+// - Alignment (left/center/right)
+// - Links
+// - Image & Video buttons (default Quill handlers by URL)
+// Additionally, we expose client-side "Insert Image/Video" buttons that allow
+// selecting local files and inserting as data URLs (no backend required).
 interface RichTextEditorProps {
   value: string
   onChange: (html: string) => void
@@ -10,9 +21,11 @@ interface RichTextEditorProps {
 }
 
 export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
+  // Hidden file inputs for client-side image/video insertion as data URLs
   const imgInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
 
+  // Toolbar with the exact controls requested
   const headerTemplate = (
     <span className="ql-formats">
       <select className="ql-header" defaultValue="">
@@ -39,6 +52,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
 
   return (
     <div className="space-y-2">
+      {/* Client-only insertion controls (data URL based) */}
       <div className="flex gap-2">
         <button
           type="button"
@@ -59,6 +73,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
           type="file"
           accept="image/*"
           className="hidden"
+          // Read as data URL and append an <img> tag to current HTML
           onChange={(e) => {
             const file = e.target.files?.[0]
             if (!file) return
@@ -77,6 +92,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
           type="file"
           accept="video/*"
           className="hidden"
+          // Read as data URL and append a <video> tag to current HTML
           onChange={(e) => {
             const file = e.target.files?.[0]
             if (!file) return
@@ -91,6 +107,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
           }}
         />
       </div>
+      {/* Quill editor with custom toolbar; emits HTML via onTextChange */}
       <div className="rounded-xl border-2 border-[#E8DCC8] overflow-hidden bg-white">
         <Editor
           value={value}

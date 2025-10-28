@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -41,8 +41,22 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const { toast } = useToast()
   const { user, isAuthenticated, logout } = useAuthStore()
+  // Track hydration state from Zustand persist to avoid redirect loops on refresh
+  const [hasHydrated, setHasHydrated] = useState<boolean>(false)
 
   useEffect(() => {
+    // Immediately set current hydration status (in case it's already done)
+    const initial = (useAuthStore as any).persist?.hasHydrated?.() ?? false
+    setHasHydrated(initial)
+    // Subscribe to finish hydration event to flip the flag when ready
+    const unsub = (useAuthStore as any).persist?.onFinishHydration?.(() => setHasHydrated(true))
+    return () => {
+      if (typeof unsub === "function") unsub()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!hasHydrated) return
     if (!isAuthenticated || user?.role !== "admin") {
       toast({
         title: "Access Denied",
@@ -51,8 +65,12 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       })
       router.push("/login")
     }
-  }, [isAuthenticated, user, router, toast])
+  }, [hasHydrated, isAuthenticated, user, router, toast])
 
+  // Avoid flicker/redirect before hydration completes
+  if (!hasHydrated) {
+    return null
+  }
   if (!isAuthenticated || user?.role !== "admin") {
     return null
   }
@@ -93,12 +111,28 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         variant="outline"
         className="w-full justify-start gap-3 bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]"
         onClick={() => {
-          logout()
-          toast({
-            title: "Logged Out",
-            description: "You have been successfully logged out.",
-          })
-          router.push("/login")
+          try {
+            // 1) Clear auth state
+            logout()
+            ;(useAuthStore as any).persist?.clearStorage?.()
+            // 2) Clear cart and its persistence
+            try {
+              const { useCartStore } = require("@/lib/cart-store")
+              useCartStore.getState().clearCart()
+              ;(useCartStore as any).persist?.clearStorage?.()
+            } catch {}
+            // 3) As a fallback, remove known localStorage keys
+            if (typeof window !== "undefined") {
+              window.localStorage.removeItem("auth-storage")
+              window.localStorage.removeItem("cart-storage")
+            }
+          } finally {
+            toast({
+              title: "Logged Out",
+              description: "You have been successfully logged out.",
+            })
+            router.replace("/login")
+          }
         }}
       >
         <LogOut className="h-5 w-5" />

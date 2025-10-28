@@ -1,5 +1,20 @@
 "use client"
 
+/**
+ * Features Editor
+ *
+ * Minimal editor for managing a list of product features (bullet points) shown
+ * on the product detail page.
+ *
+ * Features:
+ * - Add/remove feature rows
+ * - Inline editing of each feature string
+ * - Emits full string[] back to the parent via onChange
+ *
+ * Note: Validation (e.g., non-empty strings, max length) can be handled by the
+ * parent form to keep this component focused on editing only.
+ */
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"

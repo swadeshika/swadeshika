@@ -1,5 +1,20 @@
 "use client"
 
+/**
+ * Specifications Editor
+ *
+ * A simple key/value grid editor for product specifications such as
+ * Weight, Shelf Life, Storage, Origin, etc., displayed on the PDP.
+ *
+ * Features:
+ * - Add/remove spec rows
+ * - Edit label (key) and value per row
+ * - Emits the full SpecRow[] to the parent via onChange
+ *
+ * Note: Validation (e.g., non-empty keys) is handled by the parent form if needed
+ * to keep this component focused on editing only.
+ */
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"

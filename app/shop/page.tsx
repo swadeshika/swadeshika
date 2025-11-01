@@ -1,12 +1,50 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
+import dynamic from 'next/dynamic'
+
+// Import components directly since they're all client components
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { ProductGrid } from "@/components/product-grid"
 import { ShopFilters } from "@/components/shop-filters"
 import { ShopHeader } from "@/components/shop-header"
+
+// Create a client-only wrapper component
+function ClientOnly({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false)
+  
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <div className="container mx-auto px-4 py-8">
+          <div className="h-12 w-full max-w-md bg-gray-200 animate-pulse rounded"></div>
+          <div className="mt-8 grid lg:grid-cols-4 gap-8">
+            <div className="lg:col-span-1 space-y-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-8 w-full bg-gray-100 animate-pulse rounded"></div>
+              ))}
+            </div>
+            <div className="lg:col-span-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="h-64 bg-gray-100 animate-pulse rounded-lg"></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return <>{children}</>
+}
 
 /**
  * Shop Page - Main Product Listing
@@ -23,7 +61,7 @@ import { ShopHeader } from "@/components/shop-header"
  * Route: /shop
  */
 
-export default function ShopPage() {
+function ShopContent() {
   const searchParams = useSearchParams()
   const [searchQuery, setSearchQuery] = useState("")
   const [priceRange, setPriceRange] = useState([0, 2000])
@@ -33,7 +71,7 @@ export default function ShopPage() {
 
   // Update search query when URL changes
   useEffect(() => {
-    const query = searchParams.get('q') || ""
+    const query = searchParams?.get('q') || ""
     setSearchQuery(query)
   }, [searchParams])
 
@@ -76,5 +114,13 @@ export default function ShopPage() {
 
       <SiteFooter />
     </div>
+  )
+}
+
+export default function ShopPage() {
+  return (
+    <ClientOnly>
+      <ShopContent />
+    </ClientOnly>
   )
 }

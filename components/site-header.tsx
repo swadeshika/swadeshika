@@ -2,315 +2,328 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { Search, User, Menu, Heart, X, ShoppingBag, Package, Phone, MapPin, ChevronRight } from "lucide-react"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Search, User, Menu, Heart, X, ShoppingBag, Package, Phone, MapPin, ChevronDown, LogIn, UserPlus, Package2, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { AnnouncementBar } from "@/components/announcement-bar"
 import { CartButton } from "@/components/cart-button"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { AnnouncementBar } from "@/components/announcement-bar"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
-/**
- * Navigation structure for the site
- * Organized by categories with icons for better mobile UX
- */
-const navigation = [
-  { name: "Shop All", href: "/shop", icon: ShoppingBag },
-  { name: "Ghee", href: "/shop/ghee", icon: Package },
-  { name: "Spices", href: "/shop/spices", icon: Package },
-  { name: "Dry Fruits", href: "/shop/dry-fruits", icon: Package },
-  { name: "Oils", href: "/shop/oils", icon: Package },
+// Navigation data
+const mainNav = [
+  { name: "Home", href: "/" },
+  { name: "Shop", href: "/shop" },
+  {
+    name: "Categories",
+    href: "/categories",
+    submenu: [
+      { name: "Ghee & Butter", href: "/shop/ghee" },
+      { name: "Spices & Masalas", href: "/shop/spices" },
+      { name: "Dry Fruits & Nuts", href: "/shop/dry-fruits" },
+      { name: "Cold-Pressed Oils", href: "/shop/oils" },
+      { name: "Flours & Grains", href: "/shop/flours" },
+    ],
+  },
+  { name: "About Us", href: "/about" },
+  { name: "Contact", href: "/contact" },
 ]
 
-/**
- * Quick links for mobile menu
- */
-const quickLinks = [
+const utilityNav = [
   { name: "Track Order", href: "/track-order", icon: MapPin },
-  { name: "Contact Us", href: "/contact", icon: Phone },
+  { name: "FAQs", href: "/faqs", icon: null },
 ]
 
-/**
- * SiteHeader Component
- *
- * Main navigation header with responsive design optimized for mobile, tablet, and desktop
- *
- * Features:
- * - Announcement bar for promotions
- * - Sticky header with backdrop blur
- * - Mobile-optimized slide-in menu with categories and quick links
- * - Tablet-responsive layout with optimized breakpoints
- * - Desktop navigation with full menu
- * - Search functionality (desktop and mobile)
- * - Cart, wishlist, and user account access
- *
- * Mobile/Tablet Improvements:
- * - Full-screen mobile menu with smooth animations
- * - Category icons for better visual navigation
- * - Integrated search in mobile menu
- * - Quick access to account and orders
- * - Better touch targets for mobile users
- */
 export function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [searchValue, setSearchValue] = useState("")
   const [mobileSearchValue, setMobileSearchValue] = useState("")
-  const [desktopSearchValue, setDesktopSearchValue] = useState("")
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
   const router = useRouter()
 
-  const submitSearch = (value: string) => {
-    const q = value.trim()
-    router.push(q ? `/shop?q=${encodeURIComponent(q)}` : "/shop")
-    setMobileMenuOpen(false)
-  }
+  const handleSearch = (e: React.FormEvent, isMobile = false) => {
+    e.preventDefault();
+    const query = isMobile ? mobileSearchValue.trim() : searchValue.trim();
+    if (query) {
+      router.push(`/shop?q=${encodeURIComponent(query)}`);
+      if (isMobile) {
+        setMobileSearchValue('');
+        setIsSearchOpen(false);
+      } else {
+        setSearchValue('');
+      }
+    }
+  };
 
   return (
     <>
-      {/* Announcement bar for promotions */}
       <AnnouncementBar />
+      
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Top Bar */}
+          <div className="h-14 flex items-center justify-between">
+            {/* Logo */}
+            <div className="flex items-center flex-1">
+              <Link href="/" className="flex-shrink-0">
+                <div className="h-10 w-40 relative">
+                  <Image
+                    src="/logo.png"
+                    alt="Swadeshika"
+                    fill
+                    className="object-contain"
+                    priority
+                  />
+                </div>
+              </Link>
 
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4">
-          {/* Top bar - Hidden on mobile for cleaner design */}
-          <div className="hidden md:flex h-12 items-center justify-between border-b text-sm">
-            <p className="text-muted-foreground">Free shipping on orders above ₹999</p>
-            <div className="flex items-center gap-6">
-              <Link href="/track-order" className="text-muted-foreground hover:text-primary transition-colors">
-                Track Order
-              </Link>
-              <Link href="/contact" className="text-muted-foreground hover:text-primary transition-colors">
-                Contact
-              </Link>
+              {/* Desktop Navigation */}
+              <nav className="hidden lg:flex ml-10 space-x-6">
+                {mainNav.map((item) => (
+                  <div key={item.name} className="relative group">
+                    <Link
+                      href={item.href}
+                      className="flex items-center px-1 py-2 text-sm font-medium text-gray-700 hover:text-primary transition-colors"
+                    >
+                      {item.name}
+                      {item.submenu && (
+                        <ChevronDown className="ml-1 h-4 w-4 text-gray-400 group-hover:text-primary" />
+                      )}
+                    </Link>
+                    
+                    {/* Submenu */}
+                    {item.submenu && (
+                      <div className="absolute left-0 mt-1 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                        <div className="py-1">
+                          {item.submenu.map((subItem) => (
+                            <Link
+                              key={subItem.name}
+                              href={subItem.href}
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary"
+                            >
+                              {subItem.name}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </nav>
             </div>
-          </div>
 
-          {/* Main header */}
-          <div className="flex h-16 md:h-20 items-center justify-between gap-2 md:gap-4">
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild className="lg:hidden">
-                <Button variant="ghost" size="icon" className="h-10 w-10">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Toggle menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-full sm:w-96 p-0">
-                {/* Mobile menu header */}
-                <div className="flex items-center justify-between p-4 border-b">
-                  <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2">
-                    <div className="relative h-8 w-8">
-                      <Image
-                        src="/logo.png"
-                        alt="Swadeshika Logo"
-                        width={32}
-                        height={32}
-                        className="object-contain"
-                      />
-                    </div>
-                    <span className="font-bold text-xl">Swadeshika</span>
-                  </Link>
-                  <SheetClose asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <X className="h-5 w-5" />
-                    </Button>
-                  </SheetClose>
-                </div>
-
-                {/* Mobile menu content */}
-                <div className="flex flex-col h-[calc(100vh-73px)] overflow-y-auto">
-                  {/* Search in mobile menu */}
-                  <div className="p-4 border-b">
-                    <form
-                    className="relative"
-                    onSubmit={(e) => {
-                      e.preventDefault()
-                      submitSearch(mobileSearchValue)
-                    }}
-                  >
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="search"
-                      placeholder="Search products..."
-                      className="pl-9 h-11"
-                      value={mobileSearchValue}
-                      onChange={(e) => setMobileSearchValue(e.target.value)}
-                    />
-                  </form>
-                  </div>
-
-                  {/* Navigation categories */}
-                  <nav className="flex-1 p-4">
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                        Categories
-                      </p>
-                      {navigation.map((item) => {
-                        const Icon = item.icon
-                        return (
-                          <Link
-                            key={item.name}
-                            href={item.href}
-                            onClick={() => setMobileMenuOpen(false)}
-                            className="flex items-center justify-between p-3 rounded-lg hover:bg-accent transition-colors group"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                                <Icon className="h-5 w-5" />
-                              </div>
-                              <span className="font-medium">{item.name}</span>
-                            </div>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          </Link>
-                        )
-                      })}
-                    </div>
-
-                    {/* Quick links */}
-                    <div className="mt-6 space-y-1">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                        Quick Links
-                      </p>
-                      {quickLinks.map((item) => {
-                        const Icon = item.icon
-                        return (
-                          <Link
-                            key={item.name}
-                            href={item.href}
-                            onClick={() => setMobileMenuOpen(false)}
-                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
-                          >
-                            <Icon className="h-5 w-5 text-muted-foreground" />
-                            <span className="font-medium">{item.name}</span>
-                          </Link>
-                        )
-                      })}
-                    </div>
-                  </nav>
-
-                  {/* User account section in mobile menu */}
-                  <div className="p-4 border-t bg-muted/30">
-                    <div className="space-y-2">
-                      <Link
-                        href="/login"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center justify-center gap-2 h-11 px-4 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
-                      >
-                        <User className="h-4 w-4" />
-                        Sign In
-                      </Link>
-                      <Link
-                        href="/account"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center justify-center gap-2 h-11 px-4 rounded-lg border border-input bg-background hover:bg-accent transition-colors"
-                      >
-                        My Account
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-
-            {/* Logo - Optimized for mobile */}
-            <Link href="/" className="flex items-center gap-2">
-              <div className="relative h-full w-40">
-                <Image
-                  src="/logo.png"
-                  alt="Swadeshika Logo"
-                  width={160}
-                  height={48}
-                  className="object-contain"
-                />
-              </div>
-            </Link>
-
-            {/* Desktop navigation - Hidden on mobile/tablet */}
-            <nav className="hidden lg:flex items-center gap-6 flex-1 justify-center">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </nav>
-
-            {/* Actions - Optimized spacing for mobile */}
-            <div className="flex items-center gap-1 md:gap-2">
-              {/* Desktop search */}
-              <form
-                className="hidden lg:flex items-center relative"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  submitSearch(desktopSearchValue)
-                }}
-              >
-                <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search products..."
-                  className="w-72 pl-9"
-                  value={desktopSearchValue}
-                  onChange={(e) => setDesktopSearchValue(e.target.value)}
-                />
-              </form>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden h-9 w-9 md:h-10 md:w-10"
-                onClick={() => setMobileMenuOpen(true)}
+            {/* Right Side Actions */}
+            <div className="flex items-center space-x-4">
+              {/* Search Button - Mobile */}
+              <button
+                onClick={() => setIsSearchOpen(!isSearchOpen)}
+                className="lg:hidden p-2 text-gray-600 hover:text-primary"
+                aria-label="Search"
               >
                 <Search className="h-5 w-5" />
-                <span className="sr-only">Search</span>
-              </Button>
+              </button>
 
-              {/* Wishlist - Hidden on small mobile */}
-              <Button variant="ghost" size="icon" asChild className="hidden sm:flex h-9 w-9 md:h-10 md:w-10">
-                <Link href="/wishlist">
-                  <Heart className="h-5 w-5" />
-                  <span className="sr-only">Wishlist</span>
-                </Link>
-              </Button>
+              {/* Search Bar - Desktop */}
+              <div className="hidden lg:block relative w-64">
+                <form onSubmit={handleSearch}>
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Search products..."
+                    className="pl-10 pr-4 py-2 w-full rounded-full border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
+                  />
+                </form>
+              </div>
+
+              {/* User Account Dropdown */}
+              <div className="hidden lg:block">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="text-gray-600 hover:text-white hover:bg-primary">
+                      <User className="h-5 w-5" />
+                      <span className="sr-only">User Account</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem asChild>
+                      <Link href="/login" className="w-full cursor-pointer">
+                        <LogIn className="mr-2 h-4 w-4 hover:text-white" />
+                        <span>Sign In</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/signup" className="w-full cursor-pointer">
+                        <UserPlus className="mr-2 h-4 w-4 hover:text-white" />
+                        <span>Create Account</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/account" className="w-full cursor-pointer">
+                        <User className="mr-2 h-4 w-4 hover:text-white" />
+                        <span>My Account</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/account/orders" className="w-full cursor-pointer">
+                        <Package2 className="mr-2 h-4 w-4 hover:text-white" />
+                        <span>My Orders</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/account/wishlist" className="w-full cursor-pointer">
+                        <Heart className="mr-2 h-4 w-4 hover:text-white" />
+                        <span>Wishlist</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600">
+                      <LogOut className="mr-2 h-4 w-4 hover:text-white" />
+                      <span>Logout</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Wishlist - Hidden on desktop, shown on mobile */}
+              <Link
+                href="/account/wishlist"
+                className="lg:hidden p-2 text-gray-600 hover:text-white hover:bg-primary rounded-full transition-colors relative"
+                aria-label="Wishlist"
+              >
+                <Heart className="h-5 w-5" />
+                <span className="sr-only">Wishlist</span>
+              </Link>
 
               {/* Cart */}
-              <CartButton />
+              <div className="relative">
+                <CartButton />
+              </div>
 
-              {/* User account - Desktop only */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild className="hidden lg:flex">
-                  <Button variant="ghost" size="icon">
-                    <User className="h-5 w-5" />
-                    <span className="sr-only">User account</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem asChild>
-                    <Link href="/login">Sign In</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/signup">Create Account</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/account">My Account</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/orders">My Orders</Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Mobile Menu Button */}
+              <Button
+                type="button"
+                className="lg:hidden p-2 text-gray-600 hover:text-white hover:bg-primary"
+                onClick={() => setMobileMenuOpen(true)}
+                aria-label="Open menu"
+              >
+                <Menu className="h-6 w-6" />
+              </Button>
             </div>
           </div>
+
+          {/* Mobile Search Bar */}
+          {isSearchOpen && (
+            <div className="lg:hidden py-3">
+              <form onSubmit={(e) => handleSearch(e, true)} className="flex">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Search products..."
+                    className="pl-10 pr-4 py-2 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
+                    value={mobileSearchValue}
+                    onChange={(e) => setMobileSearchValue(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                <Button 
+                  type="submit" 
+                  variant="ghost" 
+                  className="ml-2 text-primary hover:bg-primary hover:text-white"
+                  onClick={(e) => handleSearch(e, true)}
+                >
+                  Search
+                </Button>
+              </form>
+            </div>
+          )}
         </div>
+
+        {/* Mobile Menu */}
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <SheetContent side="left" className="w-full max-w-xs sm:max-w-md p-0">
+            <div className="h-full overflow-y-auto">
+              <div className="flex items-center justify-between p-4 border-b">
+                <Link href="/" className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
+                  <div className="h-8 w-32 relative">
+                    <Image
+                      src="/logo.png"
+                      alt="Swadeshika"
+                      fill
+                      className="object-contain"
+                      priority
+                    />
+                  </div>
+                </Link>
+                <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none">
+                  <X className="h-5 w-5" />
+                  <span className="sr-only">Close</span>
+                </SheetClose>
+              </div>
+
+              <div className="p-4">
+                <nav className="space-y-2">
+                  {mainNav.map((item) => (
+                    <div key={item.name} className="border-b border-gray-100">
+                      <Link
+                        href={item.href}
+                        className="flex items-center justify-between py-3 text-base font-medium text-gray-900 hover:text-primary"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        {item.name}
+                        {item.submenu && <ChevronDown className="h-4 w-4 text-gray-500" />}
+                      </Link>
+                      {item.submenu && (
+                        <div className="pl-4 py-2 space-y-2">
+                          {item.submenu.map((subItem) => (
+                            <Link
+                              key={subItem.name}
+                              href={subItem.href}
+                              className="block py-2 text-sm text-gray-600 hover:text-primary"
+                              onClick={() => setMobileMenuOpen(false)}
+                            >
+                              {subItem.name}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </nav>
+
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                  <div className="space-y-4">
+                    {utilityNav.map((item) => (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className="flex items-center text-base font-medium text-gray-900 hover:text-primary"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        {item.icon && <item.icon className="mr-2 h-5 w-5" />}
+                        {item.name}
+                      </Link>
+                    ))}
+                    <Link
+                      href="/account"
+                      className="flex items-center text-base font-medium text-gray-900 hover:text-primary"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <User className="mr-2 h-5 w-5" />
+                      My Account
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
       </header>
     </>
   )

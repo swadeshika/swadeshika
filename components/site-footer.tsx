@@ -28,15 +28,15 @@ const footerLinks = {
   // Customer support resources
   support: [
     { name: "Track Order", href: "/track-order" },
-    { name: "Shipping Policy", href: "/shipping" },
-    { name: "Return Policy", href: "/returns" },
-    { name: "FAQs", href: "/faq" },
+    { name: "Shipping Policy", href: "/policies/shipping" },
+    { name: "Return Policy", href: "/policies/returns" },
+    { name: "FAQs", href: "/faqs" },
   ],
   // Legal and policy pages
   legal: [
-    { name: "Privacy Policy", href: "/privacy" },
-    { name: "Terms of Service", href: "/terms" },
-    { name: "Refund Policy", href: "/refund" },
+    { name: "Privacy Policy", href: "/policies/privacy" },
+    { name: "Terms of Service", href: "/policies/terms" },
+    { name: "Refund Policy", href: "/policies/refund" },
   ],
 }
 

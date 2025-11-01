@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { ProductGrid } from "@/components/product-grid"
@@ -23,10 +24,18 @@ import { ShopHeader } from "@/components/shop-header"
  */
 
 export default function ShopPage() {
+  const searchParams = useSearchParams()
+  const [searchQuery, setSearchQuery] = useState("")
   const [priceRange, setPriceRange] = useState([0, 2000])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+
+  // Update search query when URL changes
+  useEffect(() => {
+    const query = searchParams.get('q') || ""
+    setSearchQuery(query)
+  }, [searchParams])
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -54,6 +63,7 @@ export default function ShopPage() {
             {/* Products Grid */}
             <div className="lg:col-span-3">
               <ProductGrid
+                searchQuery={searchQuery}
                 priceRange={priceRange}
                 selectedCategories={selectedCategories}
                 selectedBrands={selectedBrands}

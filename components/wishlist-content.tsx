@@ -2,12 +2,12 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Heart, ShoppingCart, Trash2 } from "lucide-react"
+import { Heart, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useCartStore } from "@/lib/cart-store"
-import { Loader2 } from "lucide-react"
+import { ProductCard } from "@/components/product-card"
 
 // Mock wishlist data
 const initialWishlistItems = [
@@ -38,7 +38,6 @@ const initialWishlistItems = [
 
 export function WishlistContent() {
   const [wishlistItems, setWishlistItems] = useState(initialWishlistItems)
-  const [loadingId, setLoadingId] = useState<string | null>(null)
   const addItem = useCartStore((state) => state.addItem)
 
   const removeItem = (id: string) => {
@@ -61,73 +60,27 @@ export function WishlistContent() {
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
       {wishlistItems.map((item) => (
-        <Card key={item.id} className="group overflow-hidden rounded-2xl border-2 border-[#E8DCC8] bg-white hover:shadow-xl transition-all">
-          <div className="relative">
-            <Link href={`/products/${item.slug}`}>
-              <div className="relative aspect-square overflow-hidden bg-[#F5F1E8]">
-                <img
-                  src={item.image || "/placeholder.svg"}
-                  alt={item.name}
-                  className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                />
-                {item.badge && (
-                  <Badge className="absolute top-3 left-3 bg-[#FF7E00] text-white border-0">{item.badge}</Badge>
-                )}
-              </div>
-            </Link>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 bg-background/80 hover:bg-[#F5F1E8]"
-              onClick={() => removeItem(item.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-              <span className="sr-only">Remove from wishlist</span>
-            </Button>
-          </div>
-
-          <CardContent className="p-4">
-            <Link href={`/products/${item.slug}`}>
-              <p className="text-sm text-[#8B6F47] mb-1">{item.category}</p>
-              <h3 className="font-sans font-bold text-[#6B4423] mb-2 text-balance line-clamp-2">{item.name}</h3>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg font-bold text-[#2D5F3F]">₹{item.price}</span>
-                {item.comparePrice && (
-                  <span className="text-sm text-[#8B6F47] line-through">₹{item.comparePrice}</span>
-                )}
-              </div>
-            </Link>
-            <Button
-              className="w-full gap-2 bg-[#2D5F3F] hover:bg-[#234A32] text-white"
-              size="sm"
-              disabled={loadingId === item.id}
-              onClick={async () => {
-                try {
-                  setLoadingId(item.id)
-                  addItem({
-                    id: Number(item.productId),
-                    name: item.name,
-                    price: item.price,
-                    image: item.image,
-                    category: item.category,
-                  })
-                } finally {
-                  setLoadingId(null)
-                }
-              }}
-            >
-              {loadingId === item.id ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Adding...
-                </>
-              ) : (
-                <>
-                  <ShoppingCart className="h-4 w-4" /> Add to Cart
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+        <div key={item.id} className="relative">
+          <ProductCard
+            id={Number(item.productId)}
+            name={item.name}
+            slug={item.slug}
+            price={item.price}
+            comparePrice={item.comparePrice}
+            image={item.image}
+            badge={item.badge}
+            category={item.category}
+          />
+          <Button
+            aria-label="Remove from wishlist"
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 right-2 bg-background/80 hover:bg-[#F5F1E8]"
+            onClick={() => removeItem(item.id)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       ))}
     </div>
   )

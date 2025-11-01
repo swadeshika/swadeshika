@@ -21,7 +21,7 @@ import Link from "next/link"
 import { ProductCard } from "@/components/product-card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { LayoutGrid, List } from "lucide-react"
+import { LayoutGrid, List, Search } from "lucide-react"
 
 interface ProductGridProps {
   category?: string
@@ -123,26 +123,25 @@ const allProducts = [
   },
 ]
 
+interface ProductGridProps {
+  category?: string
+  priceRange?: number[]
+  selectedCategories?: string[]
+  selectedBrands?: string[]
+  selectedTags?: string[]
+  searchQuery?: string
+}
+
 export function ProductGrid({
   category,
   priceRange = [0, 2000],
   selectedCategories = [],
   selectedBrands = [],
   selectedTags = [],
+  searchQuery = ""
 }: ProductGridProps) {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [sortBy, setSortBy] = useState("featured")
-  const [query, setQuery] = useState("")
-
-  // Read query string on client after mount to keep prerender static
-  useEffect(() => {
-    try {
-      const sp = new URLSearchParams(window.location.search)
-      setQuery((sp.get("q") || "").trim().toLowerCase())
-    } catch {
-      // no-op
-    }
-  }, [])
 
   const filteredProducts = useMemo(() => {
     let filtered = [...allProducts]
@@ -158,7 +157,8 @@ export function ProductGrid({
     filtered = filtered.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1])
 
     // Filter by search query (name, category)
-    if (query) {
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
       filtered = filtered.filter((p) =>
         p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query)
       )
@@ -195,22 +195,36 @@ export function ProductGrid({
     }
 
     return filtered
-  }, [category, priceRange, selectedCategories, selectedBrands, selectedTags, sortBy, query])
+  }, [category, priceRange, selectedCategories, selectedBrands, selectedTags, sortBy, searchQuery])
 
   return (
     <div className="space-y-6">
       {/* Toolbar */}
       <div className="flex items-center justify-between rounded-2xl border-2 border-[#E8DCC8] bg-white p-4">
-        <p className="text-sm text-[#8B6F47]">
-          {query ? (
-            <>
-              Showing <span className="font-semibold text-[#6B4423]">{filteredProducts.length}</span> results for
-              <span className="ml-1 font-semibold text-[#6B4423]">“{query}”</span>
-            </>
-          ) : (
-            <>Showing <span className="font-semibold text-[#6B4423]">{filteredProducts.length}</span> products</>
-          )}
-        </p>
+        {filteredProducts.length > 0 ? (
+          <p className="text-sm text-[#8B6F47]">
+            {searchQuery ? (
+              <>
+                Showing <span className="font-semibold text-[#6B4423]">{filteredProducts.length}</span> results for
+                <span className="ml-1 font-semibold text-[#6B4423]">"{searchQuery}"</span>
+              </>
+            ) : (
+              <>
+                Showing <span className="font-semibold text-[#6B4423]">{filteredProducts.length}</span> products
+              </>
+            )}
+          </p>
+        ) : (
+          <p className="text-sm text-[#8B6F47] w-full text-center">
+            {searchQuery ? (
+              <>
+                We couldn't find any products matching "<span className="font-semibold text-[#6B4423]">{searchQuery}</span>"
+              </>
+            ) : (
+              "No products found matching the selected filters"
+            )}
+          </p>
+        )}
 
         <div className="flex items-center gap-4">
           {/* Sort */}
@@ -251,11 +265,11 @@ export function ProductGrid({
         </div>
       </div>
 
-      {/* Products - unified with Home via ProductCard */}
-      {viewMode === "grid" ? (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Products */}
+      {filteredProducts.length > 0 ? (
+        <div className={`grid gap-6 ${viewMode === 'grid' ? 'sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
           {filteredProducts.map((product) => (
-            <ProductCard
+            <ProductCard 
               key={product.id}
               id={Number(product.id)}
               name={product.name}
@@ -267,26 +281,29 @@ export function ProductGrid({
               category={product.category}
               rating={product.rating}
               reviews={product.reviews}
+              className={viewMode === 'list' ? 'flex-row' : ''}
             />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {filteredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              id={Number(product.id)}
-              name={product.name}
-              slug={product.slug}
-              price={product.price}
-              comparePrice={product.comparePrice}
-              image={product.image}
-              badge={product.badge}
-              category={product.category}
-              rating={product.rating}
-              reviews={product.reviews}
-            />
-          ))}
+        <div className="text-center py-12 bg-white rounded-2xl border-2 border-[#E8DCC8] p-8">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#F5F1E8]">
+            <Search className="h-6 w-6 text-[#6B4423]" />
+          </div>
+          <h3 className="mt-4 text-lg font-medium text-[#6B4423]">No products found</h3>
+          <p className="mt-2 text-sm text-[#8B6F47]">
+            {searchQuery 
+              ? `We couldn't find any products matching "${searchQuery}". Try checking your spelling or use more general terms.`
+              : 'No products match the selected filters. Try adjusting your search or filter criteria.'}
+          </p>
+          <div className="mt-6">
+            <Link 
+              href="/shop" 
+              className="inline-flex items-center rounded-md bg-[#6B4423] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#5A3A1F] focus:outline-none focus:ring-2 focus:ring-[#6B4423] focus:ring-offset-2"
+            >
+              Back to shop
+            </Link>
+          </div>
         </div>
       )}
     </div>

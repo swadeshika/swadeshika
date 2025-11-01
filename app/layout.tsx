@@ -8,6 +8,7 @@ import "primereact/resources/primereact.min.css"
 import "primeicons/primeicons.css"
 import "quill/dist/quill.snow.css"
 import { ScrollToTop } from "@/components/scroll-to-top"
+import { Toaster } from "@/components/ui/toaster"
 
 // Register Poppins for both sans and serif CSS variables so all text (including elements using `font-serif`) uses Poppins
 const poppinsSans = Poppins({
@@ -39,6 +40,7 @@ export default function RootLayout({
       <body className={`${poppinsSans.className} ${poppinsSerif.variable} antialiased`}>
         <ScrollToTop />
         {children}
+        <Toaster />
         <Analytics />
       </body>
     </html>

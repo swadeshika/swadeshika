@@ -103,9 +103,14 @@ export function AccountOverview() {
                     <Badge className="bg-[#FF7E00]/10 text-[#FF7E00] border-0">{order.status}</Badge>
                   )}
                 </div>
-                <Button variant="outline" size="sm" asChild className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]">
-                  <Link href={`/account/orders/${order.id}`}>View</Link>
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" asChild className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]">
+                    <Link href={`/account/orders/${order.id}`}>View</Link>
+                  </Button>
+                  <Button size="sm" asChild className="bg-[#2D5F3F] hover:bg-[#234A32] text-white">
+                    <Link href={`/account/orders/${order.id}/review`}>Write Review</Link>
+                  </Button>
+                </div>
               </div>
             </div>
           ))}

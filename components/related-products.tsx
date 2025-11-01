@@ -1,3 +1,17 @@
+/**
+ * RelatedProducts
+ *
+ * Purpose:
+ * - Displays a simple related products grid for product detail pages.
+ *
+ * Key Features:
+ * - Responsive 2/4-column layout with image, badge, category, rating, and pricing.
+ * - Uses brand-aligned Card and Badge components.
+ *
+ * Implementation Notes:
+ * - Currently uses a static list; replace with real recommendations from backend when available.
+ * - Keep stable keys (product.id) to avoid React key warnings.
+ */
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"

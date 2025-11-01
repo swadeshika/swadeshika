@@ -1,5 +1,21 @@
 "use client"
 
+/**
+ * ProductGrid
+ *
+ * Purpose:
+ * - Renders a responsive grid/list of products with sorting, view toggle, and optional filtering integration.
+ *
+ * Key Features:
+ * - Grid and list views with consistent card layout.
+ * - Accepts a filteredProducts array from parent; this component focuses on presentation.
+ * - Uses Tailwind/shadcn styles aligned to the brand palette.
+ *
+ * Implementation Notes:
+ * - Ensure each ProductCard gets a stable key (product.id).
+ * - When adding infinite scroll or pagination, wrap the mapped section appropriately.
+ */
+
 import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
 import { ProductCard } from "@/components/product-card"

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { User, Package, MapPin, Heart, Settings, LogOut } from "lucide-react"
+import { User, Package, MapPin, Heart, Settings, LogOut, Star } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator"
 const menuItems = [
   { icon: User, label: "Account Overview", href: "/account" },
   { icon: Package, label: "My Orders", href: "/account/orders" },
+  { icon: Star, label: "Write Reviews", href: "/account/reviews" },
   { icon: MapPin, label: "Addresses", href: "/account/addresses" },
   { icon: Heart, label: "Wishlist", href: "/account/wishlist" },
   { icon: Settings, label: "Settings", href: "/account/settings" },

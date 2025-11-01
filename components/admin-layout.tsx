@@ -1,5 +1,23 @@
 "use client"
 
+/**
+ * AdminLayout
+ *
+ * Purpose:
+ * - Provides the shell for all admin routes with a persistent sidebar, top header, and scrollable content area.
+ *
+ * Key Features:
+ * - Auth guard: redirects non-admin users to login after Zustand hydration.
+ * - Responsive sidebar: static on desktop, drawer via Sheet on mobile.
+ * - Right-aligned header actions: notifications dropdown with unread badge and user menu (settings/logout).
+ * - Robust scrolling: prevents double scrollbars using min-h-0 and overflow-y-auto on the correct containers.
+ *
+ * Implementation Notes:
+ * - Hook order is kept stable by declaring header state before early returns.
+ * - Sidebar and SheetContent use overflow-y-auto to remain usable on smaller screens.
+ * - Logout clears auth/cart state and localStorage fallbacks before redirect.
+ */
+
 import type React from "react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
@@ -15,15 +33,21 @@ import {
   BarChart3,
   Menu,
   Bell,
-  Search,
   LogOut,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useAuthStore } from "@/lib/auth-store"
 import { useToast } from "@/hooks/use-toast"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -43,6 +67,15 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, logout } = useAuthStore()
   // Track hydration state from Zustand persist to avoid redirect loops on refresh
   const [hasHydrated, setHasHydrated] = useState<boolean>(false)
+  // Header state (must be declared before any early returns to preserve hook order)
+  const [notifications, setNotifications] = useState<Array<{ id: string; title: string; desc?: string; read?: boolean }>>([
+    { id: "n1", title: "New order received", desc: "Order #1024", read: false },
+    { id: "n2", title: "Low stock alert", desc: "Turmeric Powder", read: false },
+    { id: "n3", title: "Customer signed up", desc: "Priya Sharma", read: true },
+  ])
+  const unreadCount = notifications.filter((n) => !n.read).length
+  const markAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+  const clearAll = () => setNotifications([])
 
   useEffect(() => {
     // Immediately set current hydration status (in case it's already done)
@@ -76,7 +109,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   }
 
   const Sidebar = () => (
-    <div className="flex h-full flex-col gap-6 p-6">
+    <div className="flex h-full flex-col gap-6 p-6 overflow-y-auto">
       <Link href="/admin" className="flex items-center gap-2">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2D5F3F] text-white font-sans font-bold text-xl">
           S
@@ -143,11 +176,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <aside className="hidden lg:flex w-64 flex-col border-r-2 border-[#E8DCC8] bg-white">
+      <aside className="hidden lg:flex w-64 flex-col border-r-2 border-[#E8DCC8] bg-white overflow-y-auto">
         <Sidebar />
       </aside>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
         <header className="border-b-2 border-[#E8DCC8] bg-white">
           <div className="flex h-16 items-center gap-4 px-6">
             <Sheet>
@@ -156,30 +189,85 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-64 p-0">
+              <SheetContent side="left" className="w-64 p-0 h-full overflow-y-auto">
                 <Sidebar />
               </SheetContent>
             </Sheet>
 
-            <div className="flex-1 max-w-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8B6F47]" />
-                <Input placeholder="Search..." className="pl-9 border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
-              </div>
-            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-[#2D5F3F] text-white text-[10px] flex items-center justify-center">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-72">
+                  <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {notifications.length === 0 ? (
+                    <div className="py-6 text-center text-sm text-[#8B6F47]">No notifications</div>
+                  ) : (
+                    notifications.map((n) => (
+                      <DropdownMenuItem key={n.id} className="group flex flex-col items-start gap-1 hover:bg-[#2D5F3F]">
+                        <span className={`text-sm ${n.read ? "text-[#8B6F47]" : "text-[#6B4423] font-medium"} group-hover:text-white`}>{n.title}</span>
+                        {n.desc && <span className="text-xs text-[#8B6F47] group-hover:text-white">{n.desc}</span>}
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                  <DropdownMenuSeparator />
+                  <div className="flex items-center justify-between px-2 py-1.5">
+                    <Button variant="outline" size="sm" className="bg-transparent" onClick={markAllRead}>Mark all read</Button>
+                    <Button variant="ghost" size="sm" onClick={clearAll}>Clear</Button>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon">
-                <Bell className="h-5 w-5" />
-              </Button>
-              <Avatar>
-                <AvatarFallback>{user?.name?.substring(0, 2).toUpperCase() || "AD"}</AvatarFallback>
-              </Avatar>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="p-0 h-8 w-8 rounded-full">
+                    <Avatar>
+                      <AvatarFallback>{user?.name?.substring(0, 2).toUpperCase() || "AD"}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>{user?.name || "Admin"}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push("/admin/settings")}>Settings</DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      try {
+                        logout()
+                        ;(useAuthStore as any).persist?.clearStorage?.()
+                        try {
+                          const { useCartStore } = require("@/lib/cart-store")
+                          useCartStore.getState().clearCart()
+                          ;(useCartStore as any).persist?.clearStorage?.()
+                        } catch {}
+                        if (typeof window !== "undefined") {
+                          window.localStorage.removeItem("auth-storage")
+                          window.localStorage.removeItem("cart-storage")
+                        }
+                      } finally {
+                        toast({ title: "Logged Out", description: "You have been successfully logged out." })
+                        router.replace("/login")
+                      }
+                    }}
+                  >
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-[#F5F1E8] p-6">{children}</main>
+        <main className="flex-1 min-h-0 overflow-y-auto bg-[#F5F1E8] p-6">{children}</main>
       </div>
     </div>
   )

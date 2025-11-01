@@ -57,13 +57,14 @@ const mockOrder = {
 }
 
 const statusConfig = {
+  placed: { label: "Placed", color: "bg-blue-500", icon: Clock },
   pending: { label: "Pending", color: "bg-yellow-500", icon: Clock },
   confirmed: { label: "Confirmed", color: "bg-blue-500", icon: CheckCircle },
   processing: { label: "Processing", color: "bg-purple-500", icon: Package },
   shipped: { label: "Shipped", color: "bg-orange-500", icon: Truck },
   delivered: { label: "Delivered", color: "bg-green-500", icon: CheckCircle },
   cancelled: { label: "Cancelled", color: "bg-red-500", icon: XCircle },
-}
+} as const
 
 export default function OrderDetailContent({ orderId }: { orderId: string }) {
   const order = mockOrder
@@ -78,10 +79,15 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
             <h1 className="text-3xl font-serif font-bold text-balance">Order Details</h1>
             <p className="text-muted-foreground mt-1">Order #{order.id}</p>
           </div>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Download Invoice
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild size="sm" className="bg-[#2D5F3F] hover:bg-[#234A32] text-white">
+              <Link href={`/account/orders/${orderId}/review`}>Write Review</Link>
+            </Button>
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              Download Invoice
+            </Button>
+          </div>
         </div>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -105,7 +111,7 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Order Timeline */}
-          <Card>
+          <Card className="py-6 border-2 border-[#E8DCC8]">
             <CardHeader>
               <CardTitle>Order Status</CardTitle>
               <CardDescription>Track your order progress</CardDescription>
@@ -117,7 +123,7 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
                   const isLast = index === order.timeline.length - 1
 
                   return (
-                    <div key={step.status} className="flex gap-4">
+                    <div key={step.status} className="flex gap-4 my-0">
                       <div className="flex flex-col items-center">
                         <div
                           className={`rounded-full p-2 ${
@@ -188,7 +194,7 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
           </Card>
 
           {/* Order Items */}
-          <Card>
+          <Card className="py-6 border-2 border-[#E8DCC8]">
             <CardHeader>
               <CardTitle>Order Items</CardTitle>
               <CardDescription>{order.items.length} items in this order</CardDescription>
@@ -220,7 +226,7 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Order Summary */}
-          <Card>
+          <Card className="py-6 border-2 border-[#E8DCC8]">
             <CardHeader>
               <CardTitle>Order Summary</CardTitle>
             </CardHeader>
@@ -246,7 +252,7 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
           </Card>
 
           {/* Shipping Address */}
-          <Card>
+          <Card className="py-6 border-2 border-[#E8DCC8]">
             <CardHeader>
               <CardTitle>Shipping Address</CardTitle>
             </CardHeader>
@@ -273,7 +279,7 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
           </Card>
 
           {/* Help */}
-          <Card>
+          <Card className="py-6 border-2 border-[#E8DCC8]" >
             <CardHeader>
               <CardTitle>Need Help?</CardTitle>
             </CardHeader>

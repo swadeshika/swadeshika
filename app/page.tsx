@@ -166,10 +166,12 @@ export default function HomePage() {
 
         <section className="py-12 bg-muted/30">
           <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-2 gap-6 h-auto md:h-[600px]">
+            <div className="grid grid-cols-2 md:grid-cols-2 md:grid-rows-2 gap-6 h-auto md:h-[600px]">
+
+              {/* Big banner */}
               <Link
                 href="/shop/festival"
-                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-full"
+                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all col-span-2 md:col-span-1 md:row-span-2 h-80 md:h-full"
               >
                 <div className="absolute inset-0">
                   <img
@@ -178,7 +180,7 @@ export default function HomePage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
                 <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
                   <h2 className="text-4xl md:text-5xl font-bold mb-3 text-balance leading-tight">
                     Festival Special Offers
@@ -193,57 +195,57 @@ export default function HomePage() {
                 </div>
               </Link>
 
-              <div className="flex flex-col gap-6 h-full">
-                <Link
-                  href="/shop/a2-ghee"
-                  className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all flex-1"
-                >
-                  <div className="absolute inset-0">
-                    <img
-                      src="/hero-slide-2-spices.jpg"
-                      alt="A2 Ghee from Free-Grazing Gir Cows"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    />
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                    <h3 className="text-2xl md:text-3xl font-bold mb-2 text-balance leading-tight">
-                      A2 Ghee from Free-Grazing Gir Cows
-                    </h3>
-                    <p className="text-lg text-white/95 mb-4 font-medium">Pure & Authentic</p>
-                    <Button
-                      size="default"
-                      className="bg-primary hover:bg-primary/90 text-white font-semibold px-6 rounded-lg"
-                    >
-                      Shop Now
-                    </Button>
-                  </div>
-                </Link>
+              {/* Small banner 1 */}
+              <Link
+                href="/shop/a2-ghee"
+                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-56 md:h-auto"
+              >
+                <div className="absolute inset-0">
+                  <img
+                    src="/hero-slide-2-spices.jpg"
+                    alt="A2 Ghee from Free-Grazing Gir Cows"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
+                <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                  <h3 className="text-2xl md:text-3xl font-bold mb-2 text-balance leading-tight">
+                    A2 Ghee from Free-Grazing Gir Cows
+                  </h3>
+                  <p className="text-lg text-white/95 mb-4 font-medium">Pure & Authentic</p>
+                  <Button
+                    size="default"
+                    className="bg-primary hover:bg-primary/90 text-white font-semibold px-6 rounded-lg"
+                  >
+                    Shop Now
+                  </Button>
+                </div>
+              </Link>
 
-                <Link
-                  href="/about/farmers"
-                  className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all flex-1 bg-gradient-to-br from-amber-800 to-amber-950"
-                >
-                  <div className="absolute inset-0 bg-[url('/pattern-leaves.jpg')] opacity-10" />
-                  <div className="relative h-full flex flex-col justify-center p-6 text-white">
-                    <div className="inline-block mb-3">
-                      <span className="bg-accent text-white text-xs font-bold px-3 py-1.5 rounded-md uppercase tracking-wide">
-                        BREAKING NEWS
-                      </span>
-                    </div>
-                    <h3 className="text-2xl md:text-3xl font-bold mb-4 text-balance leading-tight">
-                      Farmers to get more back to Your Roots
-                    </h3>
-                    <Button
-                      size="default"
-                      variant="outline"
-                      className="bg-white/10 border-white/40 text-white hover:bg-white hover:text-foreground font-semibold px-6 rounded-lg backdrop-blur-sm w-fit"
-                    >
-                      ORDER NOW
-                    </Button>
+              {/* Small banner 2 */}
+              <Link
+                href="/about/farmers"
+                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-56 md:h-auto bg-gradient-to-br from-amber-800 to-amber-950"
+              >
+                <div className="absolute inset-0 bg-[url('/pattern-leaves.jpg')] opacity-10 pointer-events-none" />
+                <div className="relative h-full flex flex-col justify-center p-6 text-white">
+                  <div className="inline-block mb-3">
+                    <span className="bg-accent text-white text-xs font-bold px-3 py-1.5 rounded-md uppercase tracking-wide">
+                      BREAKING NEWS
+                    </span>
                   </div>
-                </Link>
-              </div>
+                  <h3 className="text-2xl md:text-3xl font-bold mb-4 text-balance leading-tight">
+                    Farmers to get more back to Your Roots
+                  </h3>
+                  <Button
+                    size="default"
+                    variant="outline"
+                    className="bg-white/10 border-white/40 text-white hover:bg-white hover:text-foreground font-semibold px-6 rounded-lg backdrop-blur-sm w-fit"
+                  >
+                    ORDER NOW
+                  </Button>
+                </div>
+              </Link>
             </div>
           </div>
         </section>

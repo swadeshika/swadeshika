@@ -208,7 +208,7 @@ export function SiteHeader() {
               {/* Mobile Menu Button */}
               <Button
                 type="button"
-                className="lg:hidden p-2 text-gray-600 hover:text-white hover:bg-primary"
+                className="lg:hidden p-2 text-white bg-[#2D5F3F] hover:bg-[#234A32] hover:scale-105 transform transition-all shadow-sm"
                 onClick={() => setMobileMenuOpen(true)}
                 aria-label="Open menu"
               >
@@ -261,10 +261,10 @@ export function SiteHeader() {
                     />
                   </div>
                 </Link>
-                <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none">
+                {/* <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none">
                   <X className="h-5 w-5" />
                   <span className="sr-only">Close</span>
-                </SheetClose>
+                </SheetClose> */}
               </div>
 
               <div className="p-4">

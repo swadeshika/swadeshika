@@ -534,7 +534,7 @@ export function ProductDetailClientOptimized({
                       size="icon"
                       onClick={() => handleQuantityChange(-1)}
                       disabled={quantity <= 1}
-                      className="h-12 w-12 rounded-none hover:bg-[#2D5F3F]/10"
+                      className="h-12 w-12 rounded-none"
                       aria-label="Decrease quantity"
                     >
                       <Minus className="h-4 w-4" />
@@ -544,7 +544,7 @@ export function ProductDetailClientOptimized({
                       variant="ghost"
                       size="icon"
                       onClick={() => handleQuantityChange(1)}
-                      className="h-12 w-12 rounded-none hover:bg-[#2D5F3F]/10"
+                      className="h-12 w-12 rounded-none "
                       aria-label="Increase quantity"
                     >
                       <Plus className="h-4 w-4" />
@@ -632,7 +632,9 @@ export function ProductDetailClientOptimized({
       <section className="py-12 bg-[#F5F1E8]">
         <div className="container mx-auto px-4">
           <Tabs defaultValue="features" className="w-full">
-            <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 h-14 bg-white border-2 border-[#E8DCC8]">
+
+            <div className="w-full max-w-2xl mx-auto overflow-x-auto">
+            <TabsList className="w-max h-14 bg-white border-2 border-[#E8DCC8] gap-x-6">
               <TabsTrigger
                 value="features"
                 className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white"
@@ -658,7 +660,7 @@ export function ProductDetailClientOptimized({
                 Reviews ({reviews.length})
               </TabsTrigger>
             </TabsList>
-
+                  </div>
             {/* Features Tab */}
             <TabsContent value="features" className="mt-8">
               <Card className="border-2 border-[#E8DCC8] shadow-lg">

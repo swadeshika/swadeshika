@@ -312,7 +312,7 @@ export function ProductDetailClient({ product, relatedProducts, reviews }: Produ
               <div className="flex gap-4">
                 <Button
                   size="lg"
-                  className="flex-1 h-14 text-base font-semibold group bg-[#2D5F3F] hover:bg-[#234A32] text-white"
+                  className="flex-1 h-14 text-base font-semibold group bg-[#2D5F3F] hover:bg-[#000000] text-white"
                   disabled={!product.inStock || isAdding}
                   onClick={handleAddToCart}
                 >

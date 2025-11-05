@@ -1,10 +1,11 @@
 "use client"
+import { useState } from "react"
 import { Slider } from "@/components/ui/slider"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { X } from "lucide-react"
+import { X, Filter } from "lucide-react"
 
 interface ShopFiltersProps {
   category?: string
@@ -51,6 +52,7 @@ export function ShopFilters({
   selectedTags,
   setSelectedTags,
 }: ShopFiltersProps) {
+  const [mobileOpen, setMobileOpen] = useState(false)
   /**
    * Reset all filters to default values
    * Preserves category filter if on a category page
@@ -71,17 +73,21 @@ export function ShopFilters({
     (selectedCategories.length > 0 && !category) || selectedBrands.length > 0 || selectedTags.length > 0 ||
     !(priceRange[0] === 0 && priceRange[1] === 2000)
 
-  return (
-    <div className="space-y-6 sticky top-24 rounded-2xl border-2 border-[#E8DCC8] bg-white p-5">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-lg text-[#6B4423]">Filters</h2>
-        <Button variant="ghost" size="sm" onClick={handleClearAll} className="hover:bg-[#F5F1E8]">
-          <X className="h-4 w-4 mr-1" />
-          Clear All
-        </Button>
-      </div>
-
-      <Separator />
+  // Reusable inner content for filters (without the outer container)
+  const FiltersInner = ({ showHeading = true }: { showHeading?: boolean }) => (
+    <>
+      {showHeading && (
+        <>
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-lg text-[#6B4423]">Filters</h2>
+            <Button variant="ghost" size="sm" onClick={handleClearAll} className="hover:bg-[#F5F1E8]">
+              <X className="h-4 w-4 mr-1" />
+              Clear All
+            </Button>
+          </div>
+          <Separator />
+        </>
+      )}
 
       {/* Selected chips */}
       {anySelected && (
@@ -232,6 +238,33 @@ export function ShopFilters({
           ))}
         </div>
       </div>
-    </div>
+    </>
+  )
+
+  return (
+    <>
+      {/* Mobile: inline collapsible section below the button (no overlay, no scroll) */}
+      <div className="lg:hidden">
+        <Button
+          variant="outline"
+          className="gap-2 w-full justify-center"
+          onClick={() => setMobileOpen((v) => !v)}
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-filters"
+        >
+          <Filter className="h-4 w-4" /> {mobileOpen ? "Hide Filters" : "Show Filters"}
+        </Button>
+        {mobileOpen && (
+          <div id="mobile-filters" className="mt-3 space-y-6 rounded-2xl border-2 border-[#E8DCC8] bg-white p-5">
+            <FiltersInner />
+          </div>
+        )}
+      </div>
+
+      {/* Desktop: original sidebar panel */}
+      <div className="hidden lg:block space-y-6 sticky top-24 rounded-2xl border-2 border-[#E8DCC8] bg-white p-5">
+        <FiltersInner />
+      </div>
+    </>
   )
 }

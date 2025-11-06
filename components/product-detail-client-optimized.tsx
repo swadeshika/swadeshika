@@ -755,7 +755,7 @@ export function ProductDetailClientOptimized({
                           {showReviewForm && (
                             <div 
                               id="review-form-section"
-                              className="mb-8 p-6 bg-gradient-to-r from-[#FF7E00]/5 to-[#2D5F3F]/5 border-2 border-[#FF7E00]/20 rounded-xl shadow-lg"
+                              className="bg-gradient-to-r from-[#FF7E00]/5 to-[#2D5F3F]/5"
                             >
                               <div className="flex items-center gap-2 mb-4">
                                 <Edit3 className="h-5 w-5 text-[#FF7E00]" />
@@ -777,9 +777,9 @@ export function ProductDetailClientOptimized({
                               {reviews.map((review) => (
                                 <div key={review.id} className="border-b border-[#E8DCC8] pb-6 last:border-0">
                                   <div className="flex items-start justify-between mb-3">
-                                    <div>
+                                    <div className="min-w-0">
                                       <p className="font-semibold text-lg text-[#6B4423]">{review.userName}</p>
-                                      <div className="flex items-center gap-2 mt-1">
+                                      <div className="flex items-center gap-2 mt-1 flex-nowrap">
                                         <div className="flex items-center gap-1">
                                           {[...Array(5)].map((_, i) => (
                                             <Star
@@ -792,13 +792,13 @@ export function ProductDetailClientOptimized({
                                           ))}
                                         </div>
                                         {review.verified && (
-                                          <span className="text-xs text-[#2D5F3F] font-medium bg-[#2D5F3F]/10 px-2 py-1 rounded">
+                                          <span className="text-xs text-[#2D5F3F] font-medium bg-[#2D5F3F]/10 px-2 py-1 rounded whitespace-nowrap flex-shrink-0">
                                             Verified Purchase
                                           </span>
                                         )}
                                       </div>
+                                      <div className="text-sm text-[#8B6F47] mt-1">{review.date}</div>
                                     </div>
-                                    <span className="text-sm text-[#8B6F47]">{review.date}</span>
                                   </div>
                                   <h4 className="font-semibold text-base mb-2 text-[#6B4423]">{review.title}</h4>
                                   <p className="text-[#6B4423] leading-relaxed">{review.comment}</p>

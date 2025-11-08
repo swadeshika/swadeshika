@@ -18,7 +18,7 @@ const mainNav = [
   { name: "Shop", href: "/shop" },
   {
     name: "Categories",
-    href: "/categories",
+    href: "#",
     submenu: [
       { name: "Ghee & Butter", href: "/shop/ghee" },
       { name: "Spices & Masalas", href: "/shop/spices" },

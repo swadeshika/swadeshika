@@ -171,7 +171,7 @@ export default function HomePage() {
               {/* Big banner */}
               <Link
                 href="/shop/festival"
-                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all col-span-2 md:col-span-1 md:row-span-2 h-80 md:h-full"
+                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all col-span-2 md:col-span-1 md:row-span-2 h-[260px] sm:h-80 md:h-full"
               >
                 <div className="absolute inset-0">
                   <img
@@ -180,19 +180,25 @@ export default function HomePage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                 </div>
+
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
-                <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                  <h2 className="text-4xl md:text-5xl font-bold mb-3 text-balance leading-tight">
+
+                <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 md:p-8 text-white">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 text-balance leading-tight">
                     Festival Special Offers
                   </h2>
-                  <p className="text-xl text-white/95 mb-6 font-medium">Pure Desi Ghee at Best Prices</p>
+
+                  <p className="text-sm sm:text-base md:text-xl text-white/95 mb-6 font-medium">
+                    Pure Desi Ghee at Best Prices
+                  </p>
                   <Button
                     size="lg"
-                    className="bg-accent hover:bg-accent/90 text-white font-semibold px-8 h-12 rounded-lg shadow-lg"
+                    className="bg-accent hover:bg-accent/90 text-white font-semibold px-5 h-10 rounded-lg shadow-lg"
                   >
                     ORDER NOW
                   </Button>
                 </div>
+
               </Link>
 
               {/* Small banner 1 */}
@@ -209,13 +215,13 @@ export default function HomePage() {
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
                 <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                  <h3 className="text-2xl md:text-3xl font-bold mb-2 text-balance leading-tight">
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 text-balance leading-tight">
                     A2 Ghee from Free-Grazing Gir Cows
                   </h3>
-                  <p className="text-lg text-white/95 mb-4 font-medium">Pure & Authentic</p>
+                  <p className="text-sm sm:text-base md:text-lg text-white/95 mb-4 font-medium">Pure & Authentic</p>
                   <Button
                     size="default"
-                    className="bg-primary hover:bg-primary/90 text-white font-semibold px-6 rounded-lg"
+                    className="bg-primary hover:bg-primary/90 text-white font-semibold px-4 sm:px-6 rounded-lg"
                   >
                     Shop Now
                   </Button>
@@ -227,20 +233,25 @@ export default function HomePage() {
                 href="/about/farmers"
                 className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-56 md:h-auto bg-gradient-to-br from-amber-800 to-amber-950"
               >
-                <div className="absolute inset-0 bg-[url('/pattern-leaves.jpg')] opacity-10 pointer-events-none" />
+                {/* keep old pattern background, just enable smooth zoom on hover */}
+                <div className="absolute inset-0 overflow-hidden">
+                  <div
+                    className="absolute inset-0 bg-[url('/pattern-leaves.jpg')] opacity-10 pointer-events-none transform transition-transform duration-700 ease-out group-hover:scale-105"
+                  />
+                </div>
                 <div className="relative h-full flex flex-col justify-center p-6 text-white">
                   <div className="inline-block mb-3">
                     <span className="bg-accent text-white text-xs font-bold px-3 py-1.5 rounded-md uppercase tracking-wide">
                       BREAKING NEWS
                     </span>
                   </div>
-                  <h3 className="text-2xl md:text-3xl font-bold mb-4 text-balance leading-tight">
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 text-balance leading-tight">
                     Farmers to get more back to Your Roots
                   </h3>
                   <Button
                     size="default"
                     variant="outline"
-                    className="bg-white/10 border-white/40 text-white hover:bg-white hover:text-foreground font-semibold px-6 rounded-lg backdrop-blur-sm w-fit"
+                    className="bg-white/10 border-white/40 text-white hover:bg-white hover:text-foreground font-semibold px-4 sm:px-6 rounded-lg backdrop-blur-sm w-fit"
                   >
                     ORDER NOW
                   </Button>
@@ -252,32 +263,57 @@ export default function HomePage() {
 
         <section className="py-16 bg-[#F5F1E8]">
           <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between mb-10">
-              <div className="flex items-center gap-4">
-                <span className="bg-[#FF7E00] text-white text-xs font-bold px-3 py-1.5 rounded-md uppercase tracking-wide">Most Loved</span>
+            {/* Header: centered on mobile, default on md+ */}
+            <div className="flex flex-col md:flex-row items-center md:items-start justify-between mb-10 gap-4">
+              <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-4">
+                {/* Orange badge */}
+                <div className="mb-2 md:mb-0">
+                  <span className="inline-block bg-[#FF7E00] text-white text-sm font-bold px-3 py-2 rounded-md uppercase tracking-wide">
+                    Most Loved
+                  </span>
+                </div>
+
+                {/* Title and subtitle */}
                 <div>
-                  <h2 className="text-3xl md:text-4xl font-bold text-[#6B4423]">Customer Favorites</h2>
-                  <p className="text-sm mt-1 text-[#8B6F47]">Bestsellers picked by our community</p>
+                  <h2 className="text-4xl sm:text-4xl md:text-4xl font-bold text-[#6B4423] mb-2">
+                    Customer Favorites
+                  </h2>
+                  <p className="text-base sm:text-lg text-[#8B6F47]">
+                    Bestsellers picked by our community
+                  </p>
                 </div>
               </div>
+
+              {/* Desktop CTA */}
+              <div className="hidden md:block">
+                <Button
+                  variant="default"
+                  size="lg"
+                  asChild
+                  className="rounded-full shadow-md hover:shadow-lg transition-shadow bg-[#2D5F3F] hover:bg-[#234A32] text-white"
+                >
+                  <Link href="/shop">View All Products</Link>
+                </Button>
+              </div>
+            </div>
+
+            {/* Products grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center md:justify-items-stretch">
+              {featuredProducts.map((product) => (
+                <div key={product.id} className="w-full max-w-sm md:max-w-none">
+                  <ProductCard {...product} sizes={product.variants} />
+                </div>
+              ))}
+            </div>
+
+            {/* Mobile CTA */}
+            <div className="mt-10 text-center md:hidden">
               <Button
                 variant="default"
                 size="lg"
                 asChild
-                className="rounded-full shadow-md hover:shadow-lg transition-shadow hidden md:inline-flex bg-[#2D5F3F] hover:bg-[#234A32] text-white"
+                className="rounded-full shadow-md text-lg px-8 py-6"
               >
-                <Link href="/shop">View All Products</Link>
-              </Button>
-            </div>
-
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredProducts.map((product) => (
-                <ProductCard key={product.id} {...product} sizes={product.variants} />
-              ))}
-            </div>
-
-            <div className="mt-8 text-center md:hidden">
-              <Button variant="default" size="lg" asChild className="rounded-full shadow-md">
                 <Link href="/shop">View All Products</Link>
               </Button>
             </div>

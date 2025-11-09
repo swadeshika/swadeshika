@@ -130,15 +130,15 @@ export function ProductGrid({
         <div className="flex items-center gap-4">
           {/* Sort */}
           <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-48 border-2 border-[#E8DCC8] bg-white">
+            <SelectTrigger className="w-48 border-2 border-[#E8DCC8] bg-white cursor-pointer">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="featured">Featured</SelectItem>
-              <SelectItem value="price-low">Price: Low to High</SelectItem>
-              <SelectItem value="price-high">Price: High to Low</SelectItem>
-              <SelectItem value="newest">Newest</SelectItem>
-              <SelectItem value="rating">Highest Rated</SelectItem>
+              <SelectItem className="cursor-pointer" value="featured">Featured</SelectItem>
+              <SelectItem className="cursor-pointer" value="price-low">Price: Low to High</SelectItem>
+              <SelectItem className="cursor-pointer" value="price-high">Price: High to Low</SelectItem>
+              <SelectItem className="cursor-pointer" value="newest">Newest</SelectItem>
+              <SelectItem className="cursor-pointer" value="rating">Highest Rated</SelectItem>
             </SelectContent>
           </Select>
 
@@ -147,7 +147,7 @@ export function ProductGrid({
             <Button
               variant={viewMode === "grid" ? "secondary" : "ghost"}
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 cursor-pointer"
               onClick={() => setViewMode("grid")}
             >
               <LayoutGrid className="h-4 w-4" />
@@ -156,7 +156,7 @@ export function ProductGrid({
             <Button
               variant={viewMode === "list" ? "secondary" : "ghost"}
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 cursor-pointer"
               onClick={() => setViewMode("list")}
             >
               <List className="h-4 w-4" />
@@ -200,7 +200,7 @@ export function ProductGrid({
           <div className="mt-6">
             <Link 
               href="/shop" 
-              className="inline-flex items-center rounded-md bg-[#6B4423] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#5A3A1F] focus:outline-none focus:ring-2 focus:ring-[#6B4423] focus:ring-offset-2"
+              className="inline-flex items-center rounded-md bg-[#6B4423] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#5A3A1F] focus:outline-none focus:ring-2 focus:ring-[#6B4423] focus:ring-offset-2 cursor-pointer"
             >
               Back to shop
             </Link>

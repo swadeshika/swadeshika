@@ -366,15 +366,15 @@ export function ProductDetailClientOptimized({
       <div className="border-b bg-[#F5F1E8]">
         <div className="container mx-auto px-4 py-4">
           <nav className="flex items-center gap-2 text-sm text-[#6B4423]" aria-label="Breadcrumb">
-            <Link href="/" className="hover:text-[#2D5F3F] transition-colors">
+            <Link href="/" className="hover:text-[#2D5F3F] transition-colors cursor-pointer">
               Home
             </Link>
             <span>/</span>
-            <Link href="/shop" className="hover:text-[#2D5F3F] transition-colors">
+            <Link href="/shop" className="hover:text-[#2D5F3F] transition-colors cursor-pointer">
               Shop
             </Link>
             <span>/</span>
-            <Link href={`/shop/${product.category.toLowerCase()}`} className="hover:text-[#2D5F3F] transition-colors">
+            <Link href={`/shop/${product.category.toLowerCase()}`} className="hover:text-[#2D5F3F] transition-colors cursor-pointer">
               {product.category}
             </Link>
             <span>/</span>
@@ -412,14 +412,14 @@ export function ProductDetailClientOptimized({
                 {/* Navigation arrows for desktop */}
                 <button
                   onClick={() => setSelectedImage(prev => (prev - 1 + product.images.length) % product.images.length)}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg transition-all hidden lg:block"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg transition-all hidden lg:block cursor-pointer"
                   aria-label="Previous image"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <button
                   onClick={() => setSelectedImage(prev => (prev + 1) % product.images.length)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg transition-all hidden lg:block"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg transition-all hidden lg:block cursor-pointer"
                   aria-label="Next image"
                 >
                   <ChevronRight className="h-5 w-5" />
@@ -433,7 +433,7 @@ export function ProductDetailClientOptimized({
                     key={index}
                     onClick={() => setSelectedImage(index)}
                     className={cn(
-                      "relative aspect-square overflow-hidden rounded-xl bg-[#F5F1E8] border-2 transition-all duration-200",
+                      "relative aspect-square overflow-hidden rounded-xl bg-[#F5F1E8] border-2 transition-all duration-200 cursor-pointer",
                       selectedImage === index
                         ? "border-[#2D5F3F] shadow-md scale-105"
                         : "border-[#E8DCC8] hover:border-[#2D5F3F]/50",
@@ -506,7 +506,7 @@ export function ProductDetailClientOptimized({
                           key={variant.id}
                           onClick={() => handleVariantChange(variant)}
                           className={cn(
-                            "px-4 py-2 rounded-lg border-2 font-medium transition-all",
+                            "px-4 py-2 rounded-lg border-2 font-medium transition-all cursor-pointer",
                             selectedVariant?.id === variant.id
                               ? "border-[#2D5F3F] bg-[#2D5F3F] text-white"
                               : "border-[#E8DCC8] hover:border-[#2D5F3F]/50 bg-white"
@@ -534,7 +534,7 @@ export function ProductDetailClientOptimized({
                       size="icon"
                       onClick={() => handleQuantityChange(-1)}
                       disabled={quantity <= 1}
-                      className="h-12 w-12 rounded-none hover:bg-[#2D5F3F]/10"
+                      className="h-12 w-12 rounded-none hover:bg-[#2D5F3F]/10 cursor-pointer"
                       aria-label="Decrease quantity"
                     >
                       <Minus className="h-4 w-4" />
@@ -544,7 +544,7 @@ export function ProductDetailClientOptimized({
                       variant="ghost"
                       size="icon"
                       onClick={() => handleQuantityChange(1)}
-                      className="h-12 w-12 rounded-none hover:bg-[#2D5F3F]/10"
+                      className="h-12 w-12 rounded-none hover:bg-[#2D5F3F]/10 cursor-pointer"
                       aria-label="Increase quantity"
                     >
                       <Plus className="h-4 w-4" />
@@ -574,7 +574,7 @@ export function ProductDetailClientOptimized({
               <div className="flex gap-4">
                 <Button
                   size="lg"
-                  className="flex-1 h-14 text-base font-semibold group bg-[#2D5F3F] hover:bg-[#234A32] text-white"
+                  className="flex-1 h-14 text-base font-semibold group bg-[#2D5F3F] hover:bg-[#234A32] text-white cursor-pointer"
                   disabled={!isVariantInStock || loading}
                   onClick={handleAddToCart}
                 >
@@ -589,7 +589,7 @@ export function ProductDetailClientOptimized({
                   size="lg"
                   variant="outline"
                   className={cn(
-                    "h-14 w-14 border-2",
+                    "h-14 w-14 border-2 cursor-pointer",
                     isWishlisted ? "bg-red-50 border-red-300" : "border-[#E8DCC8] hover:border-[#FF7E00]",
                   )}
                   onClick={handleWishlistToggle}
@@ -600,7 +600,7 @@ export function ProductDetailClientOptimized({
                 <Button
                   size="lg"
                   variant="outline"
-                  className="h-14 w-14 border-2 border-[#E8DCC8] hover:border-[#FF7E00] bg-transparent"
+                  className="h-14 w-14 border-2 border-[#E8DCC8] hover:border-[#FF7E00] bg-transparent cursor-pointer"
                   onClick={handleShare}
                   aria-label="Share product"
                 >
@@ -632,28 +632,28 @@ export function ProductDetailClientOptimized({
       <section className="py-12 bg-[#F5F1E8]">
         <div className="container mx-auto px-4">
           <Tabs defaultValue="features" className="w-full">
-            <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 h-14 bg-white border-2 border-[#E8DCC8]">
+              <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 h-14 bg-white border-2 border-[#E8DCC8]">
               <TabsTrigger
                 value="features"
-                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white"
+                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white cursor-pointer"
               >
                 Features
               </TabsTrigger>
               <TabsTrigger
                 value="description"
-                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white"
+                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white cursor-pointer"
               >
                 Description
               </TabsTrigger>
               <TabsTrigger
                 value="specifications"
-                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white"
+                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white cursor-pointer"
               >
                 Specifications
               </TabsTrigger>
               <TabsTrigger
                 value="reviews"
-                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white"
+                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white cursor-pointer"
               >
                 Reviews ({reviews.length})
               </TabsTrigger>
@@ -738,7 +738,7 @@ export function ProductDetailClientOptimized({
                           </div>
                           <Button
                             onClick={handleReviewFormToggle}
-                            className="w-full h-12 text-base font-semibold bg-[#FF7E00] hover:bg-[#E67300] text-white"
+                            className="w-full h-12 text-base font-semibold bg-[#FF7E00] hover:bg-[#E67300] text-white cursor-pointer"
                           >
                             <Edit3 className="mr-2 h-5 w-5" />
                             {showReviewForm ? "Cancel" : "Write a Review"}

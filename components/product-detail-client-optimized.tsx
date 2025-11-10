@@ -361,7 +361,8 @@ export function ProductDetailClientOptimized({
   }
 
   return (
-    <div className="bg-background font-sans">
+    // prevent accidental horizontal overflow on small screens while keeping inner scrollable areas
+    <div className="bg-background font-sans overflow-x-hidden">
       {/* Breadcrumb Navigation */}
       <div className="border-b bg-[#F5F1E8]">
         <div className="container mx-auto px-4 py-4">
@@ -628,13 +629,14 @@ export function ProductDetailClientOptimized({
         </div>
       </section>
 
-      {/* Product Details Tabs with Lazy Loading */}
-      <section className="py-12 bg-[#F5F1E8]">
+  {/* Product Details Tabs with Lazy Loading */}
+  {/* No background on mobile, keep styled background on md+ */}
+  <section className="py-12 bg-[#F5F1E8] ">
         <div className="container mx-auto px-4">
           <Tabs defaultValue="features" className="w-full">
 
             <div className="w-full max-w-2xl mx-auto overflow-x-auto">
-            <TabsList className="w-max h-14 bg-white border-2 border-[#E8DCC8] gap-x-6">
+            <TabsList className="w-max h-14 bg-white md:bg-white border-2 border-[#E8DCC8] gap-x-6">
               <TabsTrigger
                 value="features"
                 className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white"
@@ -719,8 +721,8 @@ export function ProductDetailClientOptimized({
               <Suspense fallback={<div className="h-64 bg-gray-200 rounded animate-pulse"></div>}>
                 <div className="space-y-8">
                   <Card className="border-2 border-[#E8DCC8] shadow-lg">
-                    <CardContent className="p-8">
-                      <div className="grid lg:grid-cols-3 gap-8">
+                    <CardContent className="p-4">
+                      <div className="grid lg:grid-cols-3 gap-6">
                         {/* Rating Summary */}
                         <div className="space-y-6">
                           <div className="text-center p-6 bg-[#F5F1E8] rounded-xl">
@@ -757,11 +759,11 @@ export function ProductDetailClientOptimized({
                               id="review-form-section"
                               // Remove background on small screens, keep gradient and padding on md+
                               className={cn(
-                                "bg-transparent",
-                                "md:bg-gradient-to-r md:from-[#FF7E00]/5 md:to-[#2D5F3F]/5 md:p-6 md:rounded-lg"
-                              )}
+                                  "bg-transparent p-0",
+                                  "md:bg-gradient-to-r md:from-[#FF7E00]/5 md:to-[#2D5F3F]/5 md:p-3 md:rounded-lg"
+                                )}
                             >
-                              <div className="flex items-center gap-2 mb-4">
+                              <div className="flex items-center gap-0 mb-4">
                                 <Edit3 className="h-5 w-5 text-[#FF7E00]" />
                                 <h4 className="font-semibold text-lg text-[#6B4423]">Write Your Review</h4>
                               </div>

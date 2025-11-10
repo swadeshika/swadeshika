@@ -38,14 +38,14 @@ export function Breadcrumb({ currentCategory }: BreadcrumbProps) {
   return (
     <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
       {/* Home Link */}
-      <Link href="/" className="hover:text-foreground transition-colors">
+      <Link href="/" className="hover:text-foreground transition-colors cursor-pointer">
         Home
       </Link>
 
       <ChevronRight className="h-4 w-4" />
 
       {/* Shop Link */}
-      <Link href="/shop" className="hover:text-foreground transition-colors">
+      <Link href="/shop" className="hover:text-foreground transition-colors cursor-pointer">
         Shop
       </Link>
 

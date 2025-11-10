@@ -24,7 +24,7 @@ export function CartContent() {
         <ShoppingBag className="h-24 w-24 text-[#2D5F3F]/70 mb-4" />
         <h2 className="font-serif text-2xl font-bold mb-2 text-[#6B4423]">Your cart is empty</h2>
         <p className="text-[#8B6F47] mb-6">Add some products to get started</p>
-        <Button asChild className="bg-[#2D5F3F] hover:bg-[#234A32] text-white">
+        <Button asChild className="bg-[#2D5F3F] hover:bg-[#234A32] text-white cursor-pointer">
           <Link href="/shop">Continue Shopping</Link>
         </Button>
       </div>
@@ -49,7 +49,7 @@ export function CartContent() {
                       <h3 className="font-sans font-bold text-lg text-[#6B4423]">{item.name}</h3>
                       <p className="text-sm text-[#8B6F47]">{item.category}</p>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)} className="hover:bg-[#F5F1E8]">
+                    <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)} className="hover:bg-[#F5F1E8] cursor-pointer">
                       <Trash2 className="h-4 w-4" />
                       <span className="sr-only">Remove item</span>
                     </Button>
@@ -60,7 +60,7 @@ export function CartContent() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-8 w-8 cursor-pointer"
                         onClick={() => updateQuantity(item.id, item.quantity - 1)}
                         disabled={item.quantity <= 1}
                       >
@@ -70,7 +70,7 @@ export function CartContent() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-8 w-8 cursor-pointer"
                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
                       >
                         <Plus className="h-3 w-3" />
@@ -84,7 +84,7 @@ export function CartContent() {
           </Card>
         ))}
 
-        <Button variant="outline" asChild className="w-full bg-transparent">
+        <Button variant="outline" asChild className="w-full bg-transparent cursor-pointer">
           <Link href="/shop">Continue Shopping</Link>
         </Button>
       </div>
@@ -124,7 +124,7 @@ export function CartContent() {
               <span className="text-[#2D5F3F]">₹{total}</span>
             </div>
 
-            <Button className="w-full bg-[#2D5F3F] hover:bg-[#234A32] text-white" size="lg" asChild>
+            <Button className="w-full bg-[#2D5F3F] hover:bg-[#234A32] text-white cursor-pointer" size="lg" asChild>
               <Link href="/checkout">Proceed to Checkout</Link>
             </Button>
 
@@ -140,7 +140,7 @@ export function CartContent() {
                   onChange={(e) => setCouponCode(e.target.value)}
                   className="flex-1"
                 />
-                <Button variant="outline" className="bg-transparent border-2 border-[#E8DCC8]">
+                <Button variant="outline" className="bg-transparent border-2 border-[#E8DCC8] cursor-pointer">
                   Apply
                 </Button>
               </div>

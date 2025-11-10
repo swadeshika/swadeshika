@@ -57,15 +57,15 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
     <div className="space-y-8">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/" className="hover:text-foreground transition-colors">
+        <Link href="/" className="hover:text-foreground transition-colors cursor-pointer">
           Home
         </Link>
         <span>/</span>
-        <Link href="/shop" className="hover:text-foreground transition-colors">
+        <Link href="/shop" className="hover:text-foreground transition-colors cursor-pointer">
           Shop
         </Link>
         <span>/</span>
-        <Link href={`/shop/${product.category.toLowerCase()}`} className="hover:text-foreground transition-colors">
+        <Link href={`/shop/${product.category.toLowerCase()}`} className="hover:text-foreground transition-colors cursor-pointer">
           {product.category}
         </Link>
         <span>/</span>
@@ -74,7 +74,7 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
 
       {/* Back button */}
       <Button variant="ghost" asChild className="gap-2">
-        <Link href="/shop">
+        <Link href="/shop" className="cursor-pointer">
           <ChevronLeft className="h-4 w-4" />
           Back to Shop
         </Link>
@@ -97,7 +97,7 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
               <button
                 key={index}
                 onClick={() => setSelectedImage(index)}
-                className={`relative aspect-square overflow-hidden rounded-md bg-muted border-2 transition-colors ${
+                className={`relative aspect-square overflow-hidden rounded-md bg-muted border-2 transition-colors cursor-pointer ${
                   selectedImage === index ? "border-primary" : "border-transparent"
                 }`}
               >
@@ -182,13 +182,14 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
               <Button
                 variant="outline"
                 size="icon"
+                className="cursor-pointer"
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
                 disabled={quantity <= 1}
               >
                 -
               </Button>
               <span className="w-12 text-center font-medium">{quantity}</span>
-              <Button variant="outline" size="icon" onClick={() => setQuantity(quantity + 1)}>
+              <Button variant="outline" size="icon" className="cursor-pointer" onClick={() => setQuantity(quantity + 1)}>
                 +
               </Button>
             </div>
@@ -196,13 +197,13 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
 
           {/* Actions */}
           <div className="flex gap-3">
-            <Button size="lg" className="flex-1">
+            <Button size="lg" className="flex-1 cursor-pointer">
               Add to Cart
             </Button>
-            <Button size="lg" variant="outline" className="gap-2 bg-transparent">
+            <Button size="lg" variant="outline" className="gap-2 bg-transparent cursor-pointer">
               <Heart className="h-5 w-5" />
             </Button>
-            <Button size="lg" variant="outline" className="gap-2 bg-transparent">
+            <Button size="lg" variant="outline" className="gap-2 bg-transparent cursor-pointer">
               <Share2 className="h-5 w-5" />
             </Button>
           </div>

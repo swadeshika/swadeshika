@@ -146,7 +146,7 @@ export default function AboutPage() {
                 <h3 className="text-xl font-semibold">Taste the difference of honest food</h3>
                 <p className="text-white/80 text-sm mt-1">Explore our bestsellers curated from farms and artisanal kitchens.</p>
               </div>
-              <a href="/shop" className="inline-flex h-11 px-5 items-center justify-center rounded-lg bg-white text-[#2D5F3F] font-medium hover:bg-white/90">Shop Now</a>
+              <a href="/shop" className="inline-flex h-11 px-5 items-center justify-center rounded-lg bg-white text-[#2D5F3F] font-medium hover:bg-white/90 cursor-pointer">Shop Now</a>
             </div>
           </section>
         </div>

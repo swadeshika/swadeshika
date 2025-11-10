@@ -64,7 +64,7 @@ export function SiteFooter() {
           {/* Brand section - spans 2 columns on large screens */}
           <div className="lg:col-span-2">
             {/* Logo and brand name */}
-            <Link href="/" className="flex items-center gap-2 mb-4">
+            <Link href="/" className="flex items-center gap-2 mb-4 cursor-pointer">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-serif font-bold text-xl">
                 S
               </div>
@@ -82,21 +82,21 @@ export function SiteFooter() {
               <h3 className="font-semibold">Subscribe to our newsletter</h3>
               <div className="flex gap-2">
                 <Input type="email" placeholder="Enter your email" className="max-w-xs" />
-                <Button>Subscribe</Button>
+                <Button className="cursor-pointer">Subscribe</Button>
               </div>
             </div>
 
             {/* Social media links with icons */}
             <div className="flex gap-4 mt-6">
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
+              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer">
                 <Facebook className="h-5 w-5" />
                 <span className="sr-only">Facebook</span>
               </Link>
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
+              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer">
                 <Instagram className="h-5 w-5" />
                 <span className="sr-only">Instagram</span>
               </Link>
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
+              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer">
                 <Twitter className="h-5 w-5" />
                 <span className="sr-only">Twitter</span>
               </Link>
@@ -109,7 +109,7 @@ export function SiteFooter() {
             <ul className="space-y-3">
               {footerLinks.shop.map((link) => (
                 <li key={link.name}>
-                  <Link href={link.href} className="text-muted-foreground hover:text-foreground transition-colors">
+                  <Link href={link.href} className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
                     {link.name}
                   </Link>
                 </li>
@@ -123,7 +123,7 @@ export function SiteFooter() {
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.name}>
-                  <Link href={link.href} className="text-muted-foreground hover:text-foreground transition-colors">
+                  <Link href={link.href} className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
                     {link.name}
                   </Link>
                 </li>
@@ -137,7 +137,7 @@ export function SiteFooter() {
             <ul className="space-y-3">
               {footerLinks.support.map((link) => (
                 <li key={link.name}>
-                  <Link href={link.href} className="text-muted-foreground hover:text-foreground transition-colors">
+                  <Link href={link.href} className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
                     {link.name}
                   </Link>
                 </li>
@@ -179,7 +179,7 @@ export function SiteFooter() {
               <Link
                 key={link.name}
                 href={link.href}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
                 {link.name}
               </Link>

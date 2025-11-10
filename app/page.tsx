@@ -150,7 +150,7 @@ export default function HomePage() {
                 <Link
                   key={link.name}
                   href={link.href}
-                  className="flex flex-col items-center gap-3 group transition-transform hover:scale-105"
+                  className="flex flex-col items-center gap-3 group transition-transform hover:scale-105 cursor-pointer"
                 >
                   <div className="w-20 h-20 rounded-full flex items-center justify-center text-3xl shadow-md group-hover:shadow-lg transition-all border-2 border-[#E8DCC8] bg-white">
                     {link.icon}
@@ -169,7 +169,7 @@ export default function HomePage() {
             <div className="grid md:grid-cols-2 gap-6 h-auto md:h-[600px]">
               <Link
                 href="/shop/festival"
-                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-full"
+                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-full cursor-pointer"
               >
                 <div className="absolute inset-0">
                   <img
@@ -186,7 +186,7 @@ export default function HomePage() {
                   <p className="text-xl text-white/95 mb-6 font-medium">Pure Desi Ghee at Best Prices</p>
                   <Button
                     size="lg"
-                    className="bg-accent hover:bg-accent/90 text-white font-semibold px-8 h-12 rounded-lg shadow-lg"
+                    className="bg-accent hover:bg-accent/90 text-white font-semibold px-8 h-12 rounded-lg shadow-lg cursor-pointer"
                   >
                     ORDER NOW
                   </Button>
@@ -196,7 +196,7 @@ export default function HomePage() {
               <div className="flex flex-col gap-6 h-full">
                 <Link
                   href="/shop/a2-ghee"
-                  className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all flex-1"
+                  className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all flex-1 cursor-pointer"
                 >
                   <div className="absolute inset-0">
                     <img
@@ -213,7 +213,7 @@ export default function HomePage() {
                     <p className="text-lg text-white/95 mb-4 font-medium">Pure & Authentic</p>
                     <Button
                       size="default"
-                      className="bg-primary hover:bg-primary/90 text-white font-semibold px-6 rounded-lg"
+                      className="bg-primary hover:bg-primary/90 text-white font-semibold px-6 rounded-lg cursor-pointer"
                     >
                       Shop Now
                     </Button>
@@ -222,7 +222,7 @@ export default function HomePage() {
 
                 <Link
                   href="/about/farmers"
-                  className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all flex-1 bg-gradient-to-br from-amber-800 to-amber-950"
+                  className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all flex-1 bg-gradient-to-br from-amber-800 to-amber-950 cursor-pointer"
                 >
                   <div className="absolute inset-0 bg-[url('/pattern-leaves.jpg')] opacity-10" />
                   <div className="relative h-full flex flex-col justify-center p-6 text-white">
@@ -237,7 +237,7 @@ export default function HomePage() {
                     <Button
                       size="default"
                       variant="outline"
-                      className="bg-white/10 border-white/40 text-white hover:bg-white hover:text-foreground font-semibold px-6 rounded-lg backdrop-blur-sm w-fit"
+                      className="bg-white/10 border-white/40 text-white hover:bg-white hover:text-foreground font-semibold px-6 rounded-lg backdrop-blur-sm w-fit cursor-pointer"
                     >
                       ORDER NOW
                     </Button>
@@ -262,7 +262,7 @@ export default function HomePage() {
                 variant="default"
                 size="lg"
                 asChild
-                className="rounded-full shadow-md hover:shadow-lg transition-shadow hidden md:inline-flex bg-[#2D5F3F] hover:bg-[#234A32] text-white"
+                className="rounded-full shadow-md hover:shadow-lg transition-shadow hidden md:inline-flex bg-[#2D5F3F] hover:bg-[#234A32] text-white cursor-pointer"
               >
                 <Link href="/shop">View All Products</Link>
               </Button>
@@ -275,7 +275,7 @@ export default function HomePage() {
             </div>
 
             <div className="mt-8 text-center md:hidden">
-              <Button variant="default" size="lg" asChild className="rounded-full shadow-md">
+              <Button variant="default" size="lg" asChild className="rounded-full shadow-md cursor-pointer">
                 <Link href="/shop">View All Products</Link>
               </Button>
             </div>
@@ -343,7 +343,7 @@ export default function HomePage() {
                 size="lg"
                 variant="secondary"
                 asChild
-                className="px-8 py-3 text-base h-auto shadow-lg hover:shadow-xl rounded-full bg-[#FF7E00] hover:bg-[#E67300] text-white"
+                className="px-8 py-3 text-base h-auto shadow-lg hover:shadow-xl rounded-full bg-[#FF7E00] hover:bg-[#E67300] text-white cursor-pointer"
               >
                 <Link href="/shop">Start Shopping</Link>
               </Button>
@@ -351,7 +351,7 @@ export default function HomePage() {
                 size="lg"
                 variant="outline"
                 asChild
-                className="px-8 py-3 text-base h-auto bg-white/10 hover:bg-white/20 text-white border-white/40 backdrop-blur-sm rounded-full"
+                className="px-8 py-3 text-base h-auto bg-white/10 hover:bg-white/20 text-white border-white/40 backdrop-blur-sm rounded-full cursor-pointer"
               >
                 <Link href="/about">Learn More</Link>
               </Button>

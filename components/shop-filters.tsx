@@ -80,7 +80,7 @@ export function ShopFilters({
         <>
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-lg text-[#6B4423]">Filters</h2>
-            <Button variant="ghost" size="sm" onClick={handleClearAll} className="hover:bg-[#F5F1E8]">
+            <Button variant="ghost" size="sm" onClick={handleClearAll} className="hover:bg-[#F5F1E8] cursor-pointer">
               <X className="h-4 w-4 mr-1" />
               Clear All
             </Button>
@@ -97,7 +97,7 @@ export function ShopFilters({
             <Button
               variant="secondary"
               size="sm"
-              className="rounded-full"
+              className="rounded-full cursor-pointer"
               onClick={() => setPriceRange([0, 2000])}
             >
               ₹{priceRange[0]} - ₹{priceRange[1]} <X className="ml-1 h-3 w-3" />
@@ -110,7 +110,7 @@ export function ShopFilters({
                 key={`c-${c}`}
                 variant="secondary"
                 size="sm"
-                className="rounded-full"
+                className="rounded-full cursor-pointer"
                 onClick={() => setSelectedCategories(selectedCategories.filter((x) => x !== c))}
               >
                 {categoryMap[c] || c} <X className="ml-1 h-3 w-3" />
@@ -122,7 +122,7 @@ export function ShopFilters({
               key={`b-${b}`}
               variant="secondary"
               size="sm"
-              className="rounded-full"
+              className="rounded-full cursor-pointer"
               onClick={() => setSelectedBrands(selectedBrands.filter((x) => x !== b))}
             >
               {brandMap[b] || b} <X className="ml-1 h-3 w-3" />
@@ -134,7 +134,7 @@ export function ShopFilters({
               key={`t-${t}`}
               variant="secondary"
               size="sm"
-              className="rounded-full"
+              className="rounded-full cursor-pointer"
               onClick={() => setSelectedTags(selectedTags.filter((x) => x !== t))}
             >
               {tagMap[t] || t} <X className="ml-1 h-3 w-3" />
@@ -147,7 +147,7 @@ export function ShopFilters({
       <div className="space-y-4">
         <h3 className="font-medium">Price Range</h3>
         <div className="space-y-4">
-          <Slider value={priceRange} onValueChange={setPriceRange} max={2000} step={50} className="w-full" />
+          <Slider value={priceRange} onValueChange={setPriceRange} max={2000} step={50} className="w-full cursor-pointer" />
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">₹{priceRange[0]}</span>
             <span className="text-muted-foreground">₹{priceRange[1]}</span>
@@ -168,6 +168,7 @@ export function ShopFilters({
                   <Checkbox
                     id={cat.id}
                     checked={selectedCategories.includes(cat.id)}
+                    className="cursor-pointer"
                     onCheckedChange={(checked) => {
                       if (checked) {
                         setSelectedCategories([...selectedCategories, cat.id])
@@ -196,6 +197,7 @@ export function ShopFilters({
               <Checkbox
                 id={brand.id}
                 checked={selectedBrands.includes(brand.id)}
+                className="cursor-pointer"
                 onCheckedChange={(checked) => {
                   if (checked) {
                     setSelectedBrands([...selectedBrands, brand.id])
@@ -223,6 +225,7 @@ export function ShopFilters({
               <Checkbox
                 id={tag.id}
                 checked={selectedTags.includes(tag.id)}
+                className="cursor-pointer"
                 onCheckedChange={(checked) => {
                   if (checked) {
                     setSelectedTags([...selectedTags, tag.id])
@@ -247,7 +250,7 @@ export function ShopFilters({
       <div className="lg:hidden">
         <Button
           variant="outline"
-          className="gap-2 w-full justify-center"
+          className="gap-2 w-full justify-center cursor-pointer"
           onClick={() => setMobileOpen((v) => !v)}
           aria-expanded={mobileOpen}
           aria-controls="mobile-filters"

@@ -108,7 +108,7 @@ export function ProductCard({
       <Link
         href={`/products/${slug || name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()}`}
         className={cn(
-          "relative overflow-hidden bg-gray-50 rounded-lg",
+          "relative overflow-hidden bg-gray-50 rounded-lg cursor-pointer",
           isListView ? "w-[140px] h-[140px] flex-shrink-0" : "aspect-square"
         )}
       >
@@ -136,6 +136,7 @@ export function ProductCard({
         {/* Product Name - Clickable with hover effect */}
         <Link
           href={`/products/${slug || name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()}`}
+          className="cursor-pointer"
         >
           <h3 className="font-semibold text-base text-gray-900 group-hover:text-green-700 transition-colors line-clamp-2 leading-snug">
             {name}
@@ -187,7 +188,7 @@ export function ProductCard({
         <div className={cn(isListView ? "flex justify-end mt-2" : "")}>
           <Button
             className={cn(
-              "bg-green-700 hover:bg-green-800 text-white font-medium rounded-lg h-11",
+              "bg-green-700 hover:bg-green-800 text-white font-medium rounded-lg h-11 cursor-pointer",
               isListView ? "w-auto px-6" : "w-full"
             )}
             onClick={handleAddToCart}

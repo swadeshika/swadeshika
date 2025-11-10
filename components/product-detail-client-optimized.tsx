@@ -753,9 +753,13 @@ export function ProductDetailClientOptimized({
                           
                           {/* Review Form - Appears at the top when active */}
                           {showReviewForm && (
-                            <div 
+                            <div
                               id="review-form-section"
-                              className="bg-gradient-to-r from-[#FF7E00]/5 to-[#2D5F3F]/5"
+                              // Remove background on small screens, keep gradient and padding on md+
+                              className={cn(
+                                "bg-transparent",
+                                "md:bg-gradient-to-r md:from-[#FF7E00]/5 md:to-[#2D5F3F]/5 md:p-6 md:rounded-lg"
+                              )}
                             >
                               <div className="flex items-center gap-2 mb-4">
                                 <Edit3 className="h-5 w-5 text-[#FF7E00]" />

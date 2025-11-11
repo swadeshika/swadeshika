@@ -8,18 +8,6 @@ import { Star, Truck, Shield, Leaf, Award } from "lucide-react"
 
 /**
  * Homepage Component for Swadeshika E-commerce Platform
- *
- * This is the main landing page that showcases:
- * - Hero slider with promotional content
- * - Trust badges to build customer confidence
- * - Quick navigation links to popular categories
- * - Promotional banner grid for special offers
- * - Featured products section ("Most Loved")
- * - Customer testimonials for social proof
- * - Call-to-action section to drive conversions
- *
- * The page is designed to maximize user engagement and guide visitors
- * through the shopping journey with clear visual hierarchy and CTAs.
  */
 
 const quickLinks = [
@@ -40,12 +28,12 @@ const featuredProducts = [
     memberPrice: 799,
     comparePrice: 1000,
     image: "/golden-ghee-in-glass-jar.jpg",
-    badge: "Best Seller", // Badge to highlight product status
+    badge: "Best Seller",
     badgeColor: "bg-emerald-600",
     category: "Ghee",
     rating: 4.9,
     reviews: 234,
-    variants: ["500g", "1kg", "2kg"], // Available size options
+    variants: ["500g", "1kg", "2kg"],
   },
   {
     id: 2,
@@ -166,10 +154,12 @@ export default function HomePage() {
 
         <section className="py-12 bg-muted/30">
           <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-2 gap-6 h-auto md:h-[600px]">
+            <div className="grid grid-cols-2 md:grid-cols-2 md:grid-rows-2 gap-6 h-auto md:h-[600px]">
+
+              {/* Big banner */}
               <Link
                 href="/shop/festival"
-                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-full cursor-pointer"
+                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all col-span-2 md:col-span-1 md:row-span-2 h-[260px] sm:h-80 md:h-full cursor-pointer"
               >
                 <div className="absolute inset-0">
                   <img
@@ -178,104 +168,156 @@ export default function HomePage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                  <h2 className="text-4xl md:text-5xl font-bold mb-3 text-balance leading-tight">
-                    Festival Special Offers
-                  </h2>
-                  <p className="text-xl text-white/95 mb-6 font-medium">Pure Desi Ghee at Best Prices</p>
-                  <Button
-                    size="lg"
-                    className="bg-accent hover:bg-accent/90 text-white font-semibold px-8 h-12 rounded-lg shadow-lg cursor-pointer"
-                  >
-                    ORDER NOW
-                  </Button>
+
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
+
+                {/* Text container: responsive max-width so text wraps on small screens */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 text-white">
+                  <div className="max-w-[92%] sm:max-w-[70%] md:max-w-[520px] lg:max-w-[640px]">
+                    <h2 className="text-xl sm:text-2xl md:text-4xl font-bold mb-3 text-balance leading-tight whitespace-normal break-words">
+                      Festival Special Offers
+                    </h2>
+
+                    <p className="text-xs sm:text-sm md:text-xl text-white/95 mb-6 font-medium whitespace-normal break-words">
+                      Pure Desi Ghee at Best Prices
+                    </p>
+
+                    <Button
+                      size="lg"
+                      className="bg-accent hover:bg-accent/90 text-white font-semibold px-4 sm:px-5 md:px-6 h-9 sm:h-10 rounded-lg shadow-lg whitespace-nowrap text-[10px] sm:text-xs md:text-sm leading-none cursor-pointer"
+                    >
+                      ORDER NOW
+                    </Button>
+
+                  </div>
                 </div>
               </Link>
 
-              <div className="flex flex-col gap-6 h-full">
-                <Link
-                  href="/shop/a2-ghee"
-                  className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all flex-1 cursor-pointer"
-                >
-                  <div className="absolute inset-0">
-                    <img
-                      src="/hero-slide-2-spices.jpg"
-                      alt="A2 Ghee from Free-Grazing Gir Cows"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    />
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                    <h3 className="text-2xl md:text-3xl font-bold mb-2 text-balance leading-tight">
+              {/* Small banner 1 */}
+              <Link
+                href="/shop/a2-ghee"
+                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-56 md:h-auto min-h-[220px] cursor-pointer"
+              >
+                <div className="absolute inset-0">
+                  <img
+                    src="/hero-slide-2-spices.jpg"
+                    alt="A2 Ghee from Free-Grazing Gir Cows"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white">
+                  <div className="max-w-[92%] sm:max-w-[85%] md:max-w-[420px]">
+                    <h3 className="text-sm sm:text-xl md:text-3xl font-bold mb-2 text-balance leading-tight whitespace-normal break-words">
                       A2 Ghee from Free-Grazing Gir Cows
                     </h3>
-                    <p className="text-lg text-white/95 mb-4 font-medium">Pure & Authentic</p>
+                    <p className="text-xs sm:text-sm md:text-lg text-white/95 mb-4 font-medium whitespace-normal break-words cursor-pointer">
+                      Pure & Authentic
+                    </p>
                     <Button
                       size="default"
-                      className="bg-primary hover:bg-primary/90 text-white font-semibold px-6 rounded-lg cursor-pointer"
+                      className="bg-primary hover:bg-primary/90 text-white font-semibold px-4 sm:px-5 md:px-6 h-8 sm:h-9 rounded-lg whitespace-nowrap text-[10px] sm:text-xs md:text-sm leading-none cursor-pointer"
                     >
                       Shop Now
                     </Button>
-                  </div>
-                </Link>
 
-                <Link
-                  href="/about/farmers"
-                  className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all flex-1 bg-gradient-to-br from-amber-800 to-amber-950 cursor-pointer"
-                >
-                  <div className="absolute inset-0 bg-[url('/pattern-leaves.jpg')] opacity-10" />
-                  <div className="relative h-full flex flex-col justify-center p-6 text-white">
-                    <div className="inline-block mb-3">
-                      <span className="bg-accent text-white text-xs font-bold px-3 py-1.5 rounded-md uppercase tracking-wide">
-                        BREAKING NEWS
-                      </span>
-                    </div>
-                    <h3 className="text-2xl md:text-3xl font-bold mb-4 text-balance leading-tight">
+                  </div>
+                </div>
+              </Link>
+
+              {/* Small banner 2 */}
+              <Link
+                href="/about/farmers"
+                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-56 md:h-auto min-h-[220px] bg-gradient-to-br from-amber-800 to-amber-950 cursor-pointer"
+              >
+                <div className="absolute inset-0 overflow-hidden">
+                  <div
+                    className="absolute inset-0 bg-[url('/pattern-leaves.jpg')] opacity-10 pointer-events-none transform transition-transform duration-700 ease-out group-hover:scale-105"
+                  />
+                </div>
+                <div className="relative h-full flex flex-col justify-center p-4 sm:p-6 md:p-6 text-white">
+                  <div className="inline-block mb-3">
+                    <span
+                      className="bg-accent text-white font-bold px-3 py-1.5 rounded-md uppercase tracking-wide whitespace-nowrap leading-none inline-flex items-center"
+                      // using Tailwind arbitrary value for responsive clamping:
+                      // font size will clamp between 10px and 13px, scaling with viewport
+                      // (adjust numbers if you want it even smaller/larger)
+                      // If your Tailwind config disallows arbitrary values, you can replace
+                      // text-[clamp(...)] with text-xs / sm:text-sm etc.
+                      style={{ fontSize: "clamp(10px, 2.2vw, 13px)" }}
+                    >
+                      BREAKING NEWS
+                    </span>
+                  </div>
+
+                  <div className="max-w-[92%] sm:max-w-[80%] md:max-w-[420px]">
+                    <h3 className="text-sm sm:text-xl md:text-3xl font-bold mb-4 text-balance leading-tight whitespace-normal break-words">
                       Farmers to get more back to Your Roots
                     </h3>
                     <Button
                       size="default"
                       variant="outline"
-                      className="bg-white/10 border-white/40 text-white hover:bg-white hover:text-foreground font-semibold px-6 rounded-lg backdrop-blur-sm w-fit cursor-pointer"
+                      className="bg-white/10 border-white/40 text-white hover:bg-white hover:text-foreground font-semibold px-4 sm:px-5 md:px-6 h-8 sm:h-9 rounded-lg backdrop-blur-sm w-fit whitespace-nowrap text-[10px] sm:text-xs md:text-sm leading-none cursor-pointer"
                     >
                       ORDER NOW
                     </Button>
                   </div>
-                </Link>
-              </div>
+                </div>
+              </Link>
             </div>
           </div>
         </section>
 
         <section className="py-16 bg-[#F5F1E8]">
           <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between mb-10">
-              <div className="flex items-center gap-4">
-                <span className="bg-[#FF7E00] text-white text-xs font-bold px-3 py-1.5 rounded-md uppercase tracking-wide">Most Loved</span>
+            {/* Header */}
+            <div className="flex flex-col md:flex-row items-center md:items-start justify-between mb-10 gap-4">
+              <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-4">
+                <div className="mb-2 md:mb-0">
+                  <span className="inline-block bg-[#FF7E00] text-white text-sm font-bold px-3 py-2 rounded-md uppercase tracking-wide">
+                    Most Loved
+                  </span>
+                </div>
+
                 <div>
-                  <h2 className="text-3xl md:text-4xl font-bold text-[#6B4423]">Customer Favorites</h2>
-                  <p className="text-sm mt-1 text-[#8B6F47]">Bestsellers picked by our community</p>
+                  <h2 className="text-4xl sm:text-4xl md:text-4xl font-bold text-[#6B4423] mb-2">
+                    Customer Favorites
+                  </h2>
+                  <p className="text-base sm:text-lg text-[#8B6F47]">
+                    Bestsellers picked by our community
+                  </p>
                 </div>
               </div>
+
+              <div className="hidden md:block">
+                <Button
+                  variant="default"
+                  size="lg"
+                  asChild
+                  className="rounded-full shadow-md hover:shadow-lg transition-shadow bg-[#2D5F3F] hover:bg-[#234A32] text-white cursor-pointer"
+                >
+                  <Link href="/shop">View All Products</Link>
+                </Button>
+              </div>
+            </div>
+
+            {/* Products grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center md:justify-items-stretch">
+              {featuredProducts.map((product) => (
+                <div key={product.id} className="w-full max-w-sm md:max-w-none">
+                  <ProductCard {...product} sizes={product.variants} />
+                </div>
+              ))}
+            </div>
+
+            {/* Mobile CTA */}
+            <div className="mt-10 text-center md:hidden">
               <Button
                 variant="default"
                 size="lg"
                 asChild
-                className="rounded-full shadow-md hover:shadow-lg transition-shadow hidden md:inline-flex bg-[#2D5F3F] hover:bg-[#234A32] text-white cursor-pointer"
+                className="rounded-full shadow-md text-lg px-8 py-6 cursor-pointer"
               >
-                <Link href="/shop">View All Products</Link>
-              </Button>
-            </div>
-
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredProducts.map((product) => (
-                <ProductCard key={product.id} {...product} sizes={product.variants} />
-              ))}
-            </div>
-
-            <div className="mt-8 text-center md:hidden">
-              <Button variant="default" size="lg" asChild className="rounded-full shadow-md cursor-pointer">
                 <Link href="/shop">View All Products</Link>
               </Button>
             </div>

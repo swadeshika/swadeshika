@@ -20,7 +20,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -49,7 +49,7 @@ const slides = [
     id: 2,
     title: "The healthy choice for every home-cooked meal.",
     // subtitle: "Farm-Fresh Aromatics",
-    description: "Clean, natural, and perfect for your daily ooking needs.",
+    description: "Clean, natural, and perfect for your daily cooking needs.",
     image: "/second-slider.png",
     cta: "Explore Spices",
     ctaLink: "/shop/spices",
@@ -66,37 +66,24 @@ const slides = [
 ]
 
 export function HeroSlider() {
-  // State management for current slide index and auto-play status
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
 
-  // Auto-play effect - Advances to next slide every 6 seconds
-  // Cleans up interval on component unmount or when auto-play is disabled
   useEffect(() => {
     if (!isAutoPlaying) return
 
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length) // Loop back to first slide
-    }, 6000) // 6 second interval
+      setCurrentSlide((prev) => (prev + 1) % slides.length)
+    }, 5000)
 
-    return () => clearInterval(interval) // Cleanup on unmount
+    return () => clearInterval(interval)
   }, [isAutoPlaying])
 
-  // Manual slide navigation functions
-  // These disable auto-play to give user full control
   const goToSlide = (index: number) => {
     setCurrentSlide(index)
-    setIsAutoPlaying(false) // Stop auto-play when user manually selects slide
-  }
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length)
+    // Toggle isAutoPlaying to force the useEffect to restart
     setIsAutoPlaying(false)
-  }
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length) // Handle negative wrap-around
-    setIsAutoPlaying(false)
+    setTimeout(() => setIsAutoPlaying(true), 0)
   }
 
   return (
@@ -175,7 +162,7 @@ export function HeroSlider() {
       ))}
 
       {/* Navigation Arrows - Previous and Next buttons */}
-      <button
+      {/* <button
         onClick={prevSlide}
         className="absolute left-6 lg:left-12 top-1/2 -translate-y-1/2 z-20 w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md flex items-center justify-center text-white transition-all border border-white/20"
         aria-label="Previous slide"
@@ -188,7 +175,7 @@ export function HeroSlider() {
         aria-label="Next slide"
       >
         <ChevronRight className="h-6 w-6" />
-      </button>
+      </button> */}
 
       {/* Dot Indicators - Shows current slide position */}
       {/* Clicking a dot jumps directly to that slide */}

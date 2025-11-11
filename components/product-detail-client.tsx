@@ -162,15 +162,15 @@ export function ProductDetailClient({ product, relatedProducts, reviews }: Produ
       <div className="border-b bg-[#F5F1E8]">
         <div className="container mx-auto px-4 py-4">
           <nav className="flex items-center gap-2 text-sm text-[#6B4423]">
-            <Link href="/" className="hover:text-[#2D5F3F] transition-colors">
+            <Link href="/" className="hover:text-[#2D5F3F] transition-colors cursor-pointer">
               Home
             </Link>
             <span>/</span>
-            <Link href="/shop" className="hover:text-[#2D5F3F] transition-colors">
+            <Link href="/shop" className="hover:text-[#2D5F3F] transition-colors cursor-pointer">
               Shop
             </Link>
             <span>/</span>
-            <Link href={`/shop/${product.category.toLowerCase()}`} className="hover:text-[#2D5F3F] transition-colors">
+            <Link href={`/shop/${product.category.toLowerCase()}`} className="hover:text-[#2D5F3F] transition-colors cursor-pointer">
               {product.category}
             </Link>
             <span>/</span>
@@ -206,7 +206,7 @@ export function ProductDetailClient({ product, relatedProducts, reviews }: Produ
                     key={index}
                     onClick={() => setSelectedImage(index)}
                     className={cn(
-                      "relative aspect-square overflow-hidden rounded-xl bg-[#F5F1E8] border-2 transition-all duration-200",
+                      "relative aspect-square overflow-hidden rounded-xl bg-[#F5F1E8] border-2 transition-all duration-200 cursor-pointer",
                       selectedImage === index
                         ? "border-[#2D5F3F] shadow-md scale-105"
                         : "border-[#E8DCC8] hover:border-[#2D5F3F]/50",
@@ -276,7 +276,7 @@ export function ProductDetailClient({ product, relatedProducts, reviews }: Produ
                       size="icon"
                       onClick={() => handleQuantityChange(-1)}
                       disabled={quantity <= 1}
-                      className="h-12 w-12 rounded-none hover:bg-[#2D5F3F]/10"
+                      className="h-12 w-12 rounded-none hover:bg-[#2D5F3F]/10 cursor-pointer"
                     >
                       <Minus className="h-4 w-4" />
                     </Button>
@@ -285,7 +285,7 @@ export function ProductDetailClient({ product, relatedProducts, reviews }: Produ
                       variant="ghost"
                       size="icon"
                       onClick={() => handleQuantityChange(1)}
-                      className="h-12 w-12 rounded-none hover:bg-[#2D5F3F]/10"
+                      className="h-12 w-12 rounded-none hover:bg-[#2D5F3F]/10 cursor-pointer"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -312,7 +312,7 @@ export function ProductDetailClient({ product, relatedProducts, reviews }: Produ
               <div className="flex gap-4">
                 <Button
                   size="lg"
-                  className="flex-1 h-14 text-base font-semibold group bg-[#2D5F3F] hover:bg-[#000000] text-white"
+                  className="flex-1 h-14 text-base font-semibold group bg-[#2D5F3F] hover:bg-[#234A32] text-white cursor-pointer"
                   disabled={!product.inStock || isAdding}
                   onClick={handleAddToCart}
                 >
@@ -327,7 +327,7 @@ export function ProductDetailClient({ product, relatedProducts, reviews }: Produ
                   size="lg"
                   variant="outline"
                   className={cn(
-                    "h-14 w-14 border-2",
+                    "h-14 w-14 border-2 cursor-pointer",
                     isWishlisted ? "bg-red-50 border-red-300" : "border-[#E8DCC8] hover:border-[#FF7E00]",
                   )}
                   onClick={handleWishlistToggle}
@@ -337,7 +337,7 @@ export function ProductDetailClient({ product, relatedProducts, reviews }: Produ
                 <Button
                   size="lg"
                   variant="outline"
-                  className="h-14 w-14 border-2 border-[#E8DCC8] hover:border-[#FF7E00] bg-transparent"
+                  className="h-14 w-14 border-2 border-[#E8DCC8] hover:border-[#FF7E00] bg-transparent cursor-pointer"
                   onClick={handleShare}
                 >
                   <Share2 className="h-5 w-5" />
@@ -371,25 +371,25 @@ export function ProductDetailClient({ product, relatedProducts, reviews }: Produ
             <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 h-14 bg-white border-2 border-[#E8DCC8]">
               <TabsTrigger
                 value="features"
-                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white"
+                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white cursor-pointer"
               >
                 Features
               </TabsTrigger>
               <TabsTrigger
                 value="description"
-                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white"
+                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white cursor-pointer"
               >
                 Description
               </TabsTrigger>
               <TabsTrigger
                 value="specifications"
-                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white"
+                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white cursor-pointer"
               >
                 Specifications
               </TabsTrigger>
               <TabsTrigger
                 value="reviews"
-                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white"
+                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white cursor-pointer"
               >
                 Reviews
               </TabsTrigger>
@@ -473,7 +473,7 @@ export function ProductDetailClient({ product, relatedProducts, reviews }: Produ
                         </div>
                         <Button
                           onClick={() => setShowReviewForm(!showReviewForm)}
-                          className="w-full h-12 text-base font-semibold bg-[#FF7E00] hover:bg-[#E67300] text-white"
+                          className="w-full h-12 text-base font-semibold bg-[#FF7E00] hover:bg-[#E67300] text-white cursor-pointer"
                         >
                           <Edit3 className="mr-2 h-5 w-5" />
                           {showReviewForm ? "Cancel" : "Write a Review"}

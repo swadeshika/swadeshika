@@ -535,7 +535,7 @@ export function ProductDetailClientOptimized({
                       size="icon"
                       onClick={() => handleQuantityChange(-1)}
                       disabled={quantity <= 1}
-                      className="h-12 w-12 rounded-none hover:bg-[#2D5F3F]/10 cursor-pointer"
+                      className="h-12 w-12 rounded-none hover:bg-[#2D5F3F]/10 cursor-pointer hover:bg-accent hover:text-white"
                       aria-label="Decrease quantity"
                     >
                       <Minus className="h-4 w-4" />
@@ -545,7 +545,7 @@ export function ProductDetailClientOptimized({
                       variant="ghost"
                       size="icon"
                       onClick={() => handleQuantityChange(1)}
-                      className="h-12 w-12 rounded-none hover:bg-[#2D5F3F]/10 cursor-pointer"
+                      className="h-12 w-12 rounded-none hover:bg-[#2D5F3F]/10 cursor-pointer hover:bg-accent hover:text-white"
                       aria-label="Increase quantity"
                     >
                       <Plus className="h-4 w-4" />

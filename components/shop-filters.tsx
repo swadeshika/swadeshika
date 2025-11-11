@@ -1,10 +1,11 @@
 "use client"
+import { useState } from "react"
 import { Slider } from "@/components/ui/slider"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { X } from "lucide-react"
+import { X, Filter } from "lucide-react"
 
 interface ShopFiltersProps {
   category?: string
@@ -51,6 +52,7 @@ export function ShopFilters({
   selectedTags,
   setSelectedTags,
 }: ShopFiltersProps) {
+  const [mobileOpen, setMobileOpen] = useState(false)
   /**
    * Reset all filters to default values
    * Preserves category filter if on a category page
@@ -71,17 +73,21 @@ export function ShopFilters({
     (selectedCategories.length > 0 && !category) || selectedBrands.length > 0 || selectedTags.length > 0 ||
     !(priceRange[0] === 0 && priceRange[1] === 2000)
 
-  return (
-    <div className="space-y-6 sticky top-24 rounded-2xl border-2 border-[#E8DCC8] bg-white p-5">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-lg text-[#6B4423]">Filters</h2>
-        <Button variant="ghost" size="sm" onClick={handleClearAll} className="hover:bg-[#F5F1E8]">
-          <X className="h-4 w-4 mr-1" />
-          Clear All
-        </Button>
-      </div>
-
-      <Separator />
+  // Reusable inner content for filters (without the outer container)
+  const FiltersInner = ({ showHeading = true }: { showHeading?: boolean }) => (
+    <>
+      {showHeading && (
+        <>
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-lg text-[#6B4423]">Filters</h2>
+            <Button variant="ghost" size="sm" onClick={handleClearAll} className="hover:bg-[#F5F1E8] cursor-pointer">
+              <X className="h-4 w-4 mr-1" />
+              Clear All
+            </Button>
+          </div>
+          <Separator />
+        </>
+      )}
 
       {/* Selected chips */}
       {anySelected && (
@@ -91,7 +97,7 @@ export function ShopFilters({
             <Button
               variant="secondary"
               size="sm"
-              className="rounded-full"
+              className="rounded-full cursor-pointer"
               onClick={() => setPriceRange([0, 2000])}
             >
               ₹{priceRange[0]} - ₹{priceRange[1]} <X className="ml-1 h-3 w-3" />
@@ -104,7 +110,7 @@ export function ShopFilters({
                 key={`c-${c}`}
                 variant="secondary"
                 size="sm"
-                className="rounded-full"
+                className="rounded-full cursor-pointer"
                 onClick={() => setSelectedCategories(selectedCategories.filter((x) => x !== c))}
               >
                 {categoryMap[c] || c} <X className="ml-1 h-3 w-3" />
@@ -116,7 +122,7 @@ export function ShopFilters({
               key={`b-${b}`}
               variant="secondary"
               size="sm"
-              className="rounded-full"
+              className="rounded-full cursor-pointer"
               onClick={() => setSelectedBrands(selectedBrands.filter((x) => x !== b))}
             >
               {brandMap[b] || b} <X className="ml-1 h-3 w-3" />
@@ -128,7 +134,7 @@ export function ShopFilters({
               key={`t-${t}`}
               variant="secondary"
               size="sm"
-              className="rounded-full"
+              className="rounded-full cursor-pointer"
               onClick={() => setSelectedTags(selectedTags.filter((x) => x !== t))}
             >
               {tagMap[t] || t} <X className="ml-1 h-3 w-3" />
@@ -141,7 +147,7 @@ export function ShopFilters({
       <div className="space-y-4">
         <h3 className="font-medium">Price Range</h3>
         <div className="space-y-4">
-          <Slider value={priceRange} onValueChange={setPriceRange} max={2000} step={50} className="w-full" />
+          <Slider value={priceRange} onValueChange={setPriceRange} max={2000} step={50} className="w-full cursor-pointer" />
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">₹{priceRange[0]}</span>
             <span className="text-muted-foreground">₹{priceRange[1]}</span>
@@ -162,6 +168,7 @@ export function ShopFilters({
                   <Checkbox
                     id={cat.id}
                     checked={selectedCategories.includes(cat.id)}
+                    className="cursor-pointer"
                     onCheckedChange={(checked) => {
                       if (checked) {
                         setSelectedCategories([...selectedCategories, cat.id])
@@ -190,6 +197,7 @@ export function ShopFilters({
               <Checkbox
                 id={brand.id}
                 checked={selectedBrands.includes(brand.id)}
+                className="cursor-pointer"
                 onCheckedChange={(checked) => {
                   if (checked) {
                     setSelectedBrands([...selectedBrands, brand.id])
@@ -217,6 +225,7 @@ export function ShopFilters({
               <Checkbox
                 id={tag.id}
                 checked={selectedTags.includes(tag.id)}
+                className="cursor-pointer"
                 onCheckedChange={(checked) => {
                   if (checked) {
                     setSelectedTags([...selectedTags, tag.id])
@@ -232,6 +241,33 @@ export function ShopFilters({
           ))}
         </div>
       </div>
-    </div>
+    </>
+  )
+
+  return (
+    <>
+      {/* Mobile: inline collapsible section below the button (no overlay, no scroll) */}
+      <div className="lg:hidden">
+        <Button
+          variant="outline"
+          className="gap-2 w-full justify-center cursor-pointer"
+          onClick={() => setMobileOpen((v) => !v)}
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-filters"
+        >
+          <Filter className="h-4 w-4" /> {mobileOpen ? "Hide Filters" : "Show Filters"}
+        </Button>
+        {mobileOpen && (
+          <div id="mobile-filters" className="mt-3 space-y-6 rounded-2xl border-2 border-[#E8DCC8] bg-white p-5">
+            <FiltersInner />
+          </div>
+        )}
+      </div>
+
+      {/* Desktop: original sidebar panel */}
+      <div className="hidden lg:block space-y-6 sticky top-24 rounded-2xl border-2 border-[#E8DCC8] bg-white p-5">
+        <FiltersInner />
+      </div>
+    </>
   )
 }

@@ -93,35 +93,51 @@ export function ProductCard({
     }
   }
 
+  // Detect list view (ProductGrid passes "flex-row" class)
+  const isListView = className?.includes("flex-row")
+
   return (
     <Card
       className={cn(
         "group overflow-hidden bg-white rounded-xl border border-border/40 shadow-sm hover:shadow-lg transition-all duration-300",
+        isListView ? "flex flex-col sm:flex-row items-start gap-5 p-4" : "",
         className,
       )}
     >
       {/* Product Image Section - Clickable link to product detail page */}
-      <Link href={`/products/${slug || name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()}`}>
-        <div className="relative aspect-square overflow-hidden bg-gray-50">
-          {/* Product image with zoom effect on hover */}
-          <img
-            src={image || "/placeholder.svg"}
-            alt={name}
-            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
-          />
-          {/* Badge overlay (Best Seller, Trending, etc.) */}
-          {badge && (
-            <Badge className="absolute top-3 left-3 bg-green-600 hover:bg-green-700 text-white font-medium px-3 py-1 text-xs shadow-md">
-              {badge}
-            </Badge>
-          )}
-        </div>
+      <Link
+        href={`/products/${slug || name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()}`}
+        className={cn(
+          "relative overflow-hidden bg-gray-50 rounded-lg cursor-pointer",
+          isListView ? "w-[140px] h-[140px] flex-shrink-0" : "aspect-square"
+        )}
+      >
+        {/* Product image with zoom effect on hover */}
+        <img
+          src={image || "/placeholder.svg"}
+          alt={name}
+          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+        />
+        {/* Badge overlay (Best Seller, Trending, etc.) */}
+        {badge && (
+          <Badge className="absolute top-3 left-3 bg-green-600 hover:bg-green-700 text-white font-medium px-3 py-1 text-xs shadow-md">
+            {badge}
+          </Badge>
+        )}
       </Link>
 
       {/* Product Information Section */}
-      <CardContent className="p-4 space-y-3">
+      <CardContent
+        className={cn(
+          "p-4 space-y-3 w-full",
+          isListView ? "p-0 flex flex-col justify-between" : ""
+        )}
+      >
         {/* Product Name - Clickable with hover effect */}
-        <Link href={`/products/${slug || name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()}`}>
+        <Link
+          href={`/products/${slug || name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()}`}
+          className="cursor-pointer"
+        >
           <h3 className="font-semibold text-base text-gray-900 group-hover:text-green-700 transition-colors line-clamp-2 leading-snug">
             {name}
           </h3>
@@ -169,23 +185,28 @@ export function ProductCard({
         )}
 
         {/* Add to Cart Button - Primary CTA */}
-        <Button
-          className="w-full bg-green-700 hover:bg-green-800 text-white font-medium rounded-lg h-11"
-          onClick={handleAddToCart}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...
-            </>
-          ) : justAdded ? (
-            <>
-              <Check className="mr-2 h-4 w-4" /> Added
-            </>
-          ) : (
-            "ADD TO CART"
-          )}
-        </Button>
+        <div className={cn(isListView ? "flex justify-end mt-2" : "")}>
+          <Button
+            className={cn(
+              "bg-green-700 hover:bg-green-800 text-white font-medium rounded-lg h-11 cursor-pointer",
+              isListView ? "w-auto px-6" : "w-full"
+            )}
+            onClick={handleAddToCart}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...
+              </>
+            ) : justAdded ? (
+              <>
+                <Check className="mr-2 h-4 w-4" /> Added
+              </>
+            ) : (
+              "ADD TO CART"
+            )}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )

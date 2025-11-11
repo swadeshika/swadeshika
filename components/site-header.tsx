@@ -35,7 +35,7 @@ const mainNav = [
   { name: "Shop", href: "/shop" },
   {
     name: "Categories",
-    href: "/categories",
+    href: "#",
     submenu: [
       { name: "Ghee & Butter", href: "/shop/ghee" },
       { name: "Spices & Masalas", href: "/shop/spices" },
@@ -85,7 +85,7 @@ export function SiteHeader() {
           <div className="h-14 flex items-center justify-between w-full">
             {/* Logo + Navigation */}
             <div className="flex items-center flex-1 min-w-0">
-              <Link href="/" className="flex-shrink-0">
+              <Link href="/" className="flex-shrink-0 cursor-pointer">
                 <div className="h-10 w-28 sm:w-40 relative">
                   <Image
                     src="/logo.png"
@@ -103,7 +103,7 @@ export function SiteHeader() {
                   <div key={item.name} className="relative group">
                     <Link
                       href={item.href}
-                      className="flex items-center px-1 py-2 text-sm font-medium text-gray-700 hover:text-primary transition-colors"
+                      className="flex items-center px-1 py-2 text-sm font-medium text-gray-700 hover:text-primary transition-colors cursor-pointer"
                     >
                       {item.name}
                       {item.submenu && (
@@ -119,7 +119,7 @@ export function SiteHeader() {
                             <Link
                               key={subItem.name}
                               href={subItem.href}
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary"
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary cursor-pointer"
                             >
                               {subItem.name}
                             </Link>
@@ -137,7 +137,7 @@ export function SiteHeader() {
               {/* Mobile Search Toggle */}
               <button
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
-                className="lg:hidden p-2 text-gray-600 hover:text-primary"
+                className="lg:hidden p-2 text-gray-600 hover:text-primary cursor-pointer"
                 aria-label="Search"
               >
                 <Search className="h-5 w-5" />
@@ -164,7 +164,7 @@ export function SiteHeader() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="text-gray-600 hover:text-white hover:bg-primary"
+                      className="text-gray-600 hover:text-white hover:bg-primary cursor-pointer"
                     >
                       <User className="h-5 w-5" />
                       <span className="sr-only">User Account</span>
@@ -215,7 +215,7 @@ export function SiteHeader() {
               {/* Mobile Wishlist */}
               <Link
                 href="/account/wishlist"
-                className="lg:hidden p-2 text-gray-600 hover:text-white hover:bg-primary rounded-full transition-colors relative"
+                className="lg:hidden p-2 text-gray-600 hover:text-white hover:bg-primary rounded-full transition-colors relative cursor-pointer"
                 aria-label="Wishlist"
               >
                 <Heart className="h-5 w-5" />
@@ -229,7 +229,7 @@ export function SiteHeader() {
               {/* Mobile Menu Button */}
               <Button
                 type="button"
-                className="lg:hidden p-2 text-white bg-[#2D5F3F] hover:bg-[#234A32] hover:scale-105 transform transition-all shadow-sm"
+                className="lg:hidden p-2 text-white bg-[#2D5F3F] hover:bg-[#234A32] hover:scale-105 transform transition-all shadow-sm cursor-pointer"
                 onClick={() => setMobileMenuOpen(true)}
                 aria-label="Open menu"
               >
@@ -273,7 +273,7 @@ export function SiteHeader() {
               <div className="flex items-center justify-between p-4 border-b">
                 <Link
                   href="/"
-                  className="flex items-center"
+                  className="flex items-center cursor-pointer"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <div className="h-8 w-32 relative">
@@ -294,7 +294,7 @@ export function SiteHeader() {
                     <div key={item.name} className="border-b border-gray-100">
                       <Link
                         href={item.href}
-                        className="flex items-center justify-between py-3 text-base font-medium text-gray-900 hover:text-primary"
+                        className="flex items-center justify-between py-3 text-base font-medium text-gray-900 hover:text-primary cursor-pointer"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         {item.name}
@@ -308,7 +308,7 @@ export function SiteHeader() {
                             <Link
                               key={subItem.name}
                               href={subItem.href}
-                              className="block py-2 text-sm text-gray-600 hover:text-primary"
+                              className="block py-2 text-sm text-gray-600 hover:text-primary cursor-pointer"
                               onClick={() => setMobileMenuOpen(false)}
                             >
                               {subItem.name}
@@ -326,7 +326,7 @@ export function SiteHeader() {
                       <Link
                         key={item.name}
                         href={item.href}
-                        className="flex items-center text-base font-medium text-gray-900 hover:text-primary"
+                        className="flex items-center text-base font-medium text-gray-900 hover:text-primary cursor-pointer"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         {item.icon && <item.icon className="mr-2 h-5 w-5" />}
@@ -335,7 +335,7 @@ export function SiteHeader() {
                     ))}
                     <Link
                       href="/account"
-                      className="flex items-center text-base font-medium text-gray-900 hover:text-primary"
+                      className="flex items-center text-base font-medium text-gray-900 hover:text-primary cursor-pointer"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <User className="mr-2 h-5 w-5" />

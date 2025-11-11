@@ -138,7 +138,7 @@ export default function HomePage() {
                 <Link
                   key={link.name}
                   href={link.href}
-                  className="flex flex-col items-center gap-3 group transition-transform hover:scale-105"
+                  className="flex flex-col items-center gap-3 group transition-transform hover:scale-105 cursor-pointer"
                 >
                   <div className="w-20 h-20 rounded-full flex items-center justify-center text-3xl shadow-md group-hover:shadow-lg transition-all border-2 border-[#E8DCC8] bg-white">
                     {link.icon}
@@ -159,7 +159,7 @@ export default function HomePage() {
               {/* Big banner */}
               <Link
                 href="/shop/festival"
-                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all col-span-2 md:col-span-1 md:row-span-2 h-[260px] sm:h-80 md:h-full"
+                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all col-span-2 md:col-span-1 md:row-span-2 h-[260px] sm:h-80 md:h-full cursor-pointer"
               >
                 <div className="absolute inset-0">
                   <img
@@ -184,7 +184,7 @@ export default function HomePage() {
 
                     <Button
                       size="lg"
-                      className="bg-accent hover:bg-accent/90 text-white font-semibold px-4 sm:px-5 md:px-6 h-9 sm:h-10 rounded-lg shadow-lg whitespace-nowrap text-[10px] sm:text-xs md:text-sm leading-none"
+                      className="bg-accent hover:bg-accent/90 text-white font-semibold px-4 sm:px-5 md:px-6 h-9 sm:h-10 rounded-lg shadow-lg whitespace-nowrap text-[10px] sm:text-xs md:text-sm leading-none cursor-pointer"
                     >
                       ORDER NOW
                     </Button>
@@ -196,7 +196,7 @@ export default function HomePage() {
               {/* Small banner 1 */}
               <Link
                 href="/shop/a2-ghee"
-                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-56 md:h-auto min-h-[220px]"
+                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-56 md:h-auto min-h-[220px] cursor-pointer"
               >
                 <div className="absolute inset-0">
                   <img
@@ -211,12 +211,12 @@ export default function HomePage() {
                     <h3 className="text-sm sm:text-xl md:text-3xl font-bold mb-2 text-balance leading-tight whitespace-normal break-words">
                       A2 Ghee from Free-Grazing Gir Cows
                     </h3>
-                    <p className="text-xs sm:text-sm md:text-lg text-white/95 mb-4 font-medium whitespace-normal break-words">
+                    <p className="text-xs sm:text-sm md:text-lg text-white/95 mb-4 font-medium whitespace-normal break-words cursor-pointer">
                       Pure & Authentic
                     </p>
                     <Button
                       size="default"
-                      className="bg-primary hover:bg-primary/90 text-white font-semibold px-4 sm:px-5 md:px-6 h-8 sm:h-9 rounded-lg whitespace-nowrap text-[10px] sm:text-xs md:text-sm leading-none"
+                      className="bg-primary hover:bg-primary/90 text-white font-semibold px-4 sm:px-5 md:px-6 h-8 sm:h-9 rounded-lg whitespace-nowrap text-[10px] sm:text-xs md:text-sm leading-none cursor-pointer"
                     >
                       Shop Now
                     </Button>
@@ -228,7 +228,7 @@ export default function HomePage() {
               {/* Small banner 2 */}
               <Link
                 href="/about/farmers"
-                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-56 md:h-auto min-h-[220px] bg-gradient-to-br from-amber-800 to-amber-950"
+                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-56 md:h-auto min-h-[220px] bg-gradient-to-br from-amber-800 to-amber-950 cursor-pointer"
               >
                 <div className="absolute inset-0 overflow-hidden">
                   <div
@@ -257,7 +257,7 @@ export default function HomePage() {
                     <Button
                       size="default"
                       variant="outline"
-                      className="bg-white/10 border-white/40 text-white hover:bg-white hover:text-foreground font-semibold px-4 sm:px-5 md:px-6 h-8 sm:h-9 rounded-lg backdrop-blur-sm w-fit whitespace-nowrap text-[10px] sm:text-xs md:text-sm leading-none"
+                      className="bg-white/10 border-white/40 text-white hover:bg-white hover:text-foreground font-semibold px-4 sm:px-5 md:px-6 h-8 sm:h-9 rounded-lg backdrop-blur-sm w-fit whitespace-nowrap text-[10px] sm:text-xs md:text-sm leading-none cursor-pointer"
                     >
                       ORDER NOW
                     </Button>
@@ -294,7 +294,7 @@ export default function HomePage() {
                   variant="default"
                   size="lg"
                   asChild
-                  className="rounded-full shadow-md hover:shadow-lg transition-shadow bg-[#2D5F3F] hover:bg-[#234A32] text-white"
+                  className="rounded-full shadow-md hover:shadow-lg transition-shadow bg-[#2D5F3F] hover:bg-[#234A32] text-white cursor-pointer"
                 >
                   <Link href="/shop">View All Products</Link>
                 </Button>
@@ -316,7 +316,7 @@ export default function HomePage() {
                 variant="default"
                 size="lg"
                 asChild
-                className="rounded-full shadow-md text-lg px-8 py-6"
+                className="rounded-full shadow-md text-lg px-8 py-6 cursor-pointer"
               >
                 <Link href="/shop">View All Products</Link>
               </Button>
@@ -385,7 +385,7 @@ export default function HomePage() {
                 size="lg"
                 variant="secondary"
                 asChild
-                className="px-8 py-3 text-base h-auto shadow-lg hover:shadow-xl rounded-full bg-[#FF7E00] hover:bg-[#E67300] text-white"
+                className="px-8 py-3 text-base h-auto shadow-lg hover:shadow-xl rounded-full bg-[#FF7E00] hover:bg-[#E67300] text-white cursor-pointer"
               >
                 <Link href="/shop">Start Shopping</Link>
               </Button>
@@ -393,7 +393,7 @@ export default function HomePage() {
                 size="lg"
                 variant="outline"
                 asChild
-                className="px-8 py-3 text-base h-auto bg-white/10 hover:bg-white/20 text-white border-white/40 backdrop-blur-sm rounded-full"
+                className="px-8 py-3 text-base h-auto bg-white/10 hover:bg-white/20 text-white border-white/40 backdrop-blur-sm rounded-full cursor-pointer"
               >
                 <Link href="/about">Learn More</Link>
               </Button>

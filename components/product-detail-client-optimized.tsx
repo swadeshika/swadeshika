@@ -759,11 +759,10 @@ export function ProductDetailClientOptimized({
                               id="review-form-section"
                               // Remove background on small screens, keep gradient and padding on md+
                               className={cn(
-                                  "bg-transparent p-0",
-                                  "md:bg-gradient-to-r md:from-[#FF7E00]/5 md:to-[#2D5F3F]/5 md:p-3 md:rounded-lg"
+                                  "bg-transparent p-6 max-md:p-0 md:bg-gradient-to-r md:from-[#FF7E00]/5 md:to-[#2D5F3F]/5 md:rounded-lg md:border-2 md:border-[#FF7E00]/20"
                                 )}
                             >
-                              <div className="flex items-center gap-0 mb-4">
+                              <div className="flex items-center gap-2 mb-4">
                                 <Edit3 className="h-5 w-5 text-[#FF7E00]" />
                                 <h4 className="font-semibold text-lg text-[#6B4423]">Write Your Review</h4>
                               </div>

@@ -86,7 +86,7 @@ export function SiteHeader() {
             {/* Logo + Navigation */}
             <div className="flex items-center flex-1 min-w-0">
               <Link href="/" className="flex-shrink-0">
-                <div className="h-10 w-36 sm:w-40 relative">
+                <div className="h-10 w-28 sm:w-40 relative">
                   <Image
                     src="/logo.png"
                     alt="Swadeshika"

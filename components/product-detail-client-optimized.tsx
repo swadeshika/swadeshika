@@ -361,7 +361,8 @@ export function ProductDetailClientOptimized({
   }
 
   return (
-    <div className="bg-background font-sans">
+    // prevent accidental horizontal overflow on small screens while keeping inner scrollable areas
+    <div className="bg-background font-sans overflow-x-hidden">
       {/* Breadcrumb Navigation */}
       <div className="border-b bg-[#F5F1E8]">
         <div className="container mx-auto px-4 py-4">
@@ -628,11 +629,14 @@ export function ProductDetailClientOptimized({
         </div>
       </section>
 
-      {/* Product Details Tabs with Lazy Loading */}
-      <section className="py-12 bg-[#F5F1E8]">
+  {/* Product Details Tabs with Lazy Loading */}
+  {/* No background on mobile, keep styled background on md+ */}
+  <section className="py-12 bg-[#F5F1E8] ">
         <div className="container mx-auto px-4">
           <Tabs defaultValue="features" className="w-full">
-              <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 h-14 bg-white border-2 border-[#E8DCC8]">
+
+            <div className="w-full max-w-2xl mx-auto overflow-x-auto">
+            <TabsList className="w-max h-14 bg-white md:bg-white border-2 border-[#E8DCC8] gap-x-6">
               <TabsTrigger
                 value="features"
                 className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white cursor-pointer"
@@ -658,7 +662,7 @@ export function ProductDetailClientOptimized({
                 Reviews ({reviews.length})
               </TabsTrigger>
             </TabsList>
-
+                  </div>
             {/* Features Tab */}
             <TabsContent value="features" className="mt-8">
               <Card className="border-2 border-[#E8DCC8] shadow-lg">
@@ -717,8 +721,8 @@ export function ProductDetailClientOptimized({
               <Suspense fallback={<div className="h-64 bg-gray-200 rounded animate-pulse"></div>}>
                 <div className="space-y-8">
                   <Card className="border-2 border-[#E8DCC8] shadow-lg">
-                    <CardContent className="p-8">
-                      <div className="grid lg:grid-cols-3 gap-8">
+                    <CardContent className="p-4">
+                      <div className="grid lg:grid-cols-3 gap-6">
                         {/* Rating Summary */}
                         <div className="space-y-6">
                           <div className="text-center p-6 bg-[#F5F1E8] rounded-xl">
@@ -751,9 +755,12 @@ export function ProductDetailClientOptimized({
                           
                           {/* Review Form - Appears at the top when active */}
                           {showReviewForm && (
-                            <div 
+                            <div
                               id="review-form-section"
-                              className="mb-8 p-6 bg-gradient-to-r from-[#FF7E00]/5 to-[#2D5F3F]/5 border-2 border-[#FF7E00]/20 rounded-xl shadow-lg"
+                              // Remove background on small screens, keep gradient and padding on md+
+                              className={cn(
+                                  "bg-transparent p-6 max-md:p-0 md:bg-gradient-to-r md:from-[#FF7E00]/5 md:to-[#2D5F3F]/5 md:rounded-lg md:border-2 md:border-[#FF7E00]/20"
+                                )}
                             >
                               <div className="flex items-center gap-2 mb-4">
                                 <Edit3 className="h-5 w-5 text-[#FF7E00]" />
@@ -775,9 +782,9 @@ export function ProductDetailClientOptimized({
                               {reviews.map((review) => (
                                 <div key={review.id} className="border-b border-[#E8DCC8] pb-6 last:border-0">
                                   <div className="flex items-start justify-between mb-3">
-                                    <div>
+                                    <div className="min-w-0">
                                       <p className="font-semibold text-lg text-[#6B4423]">{review.userName}</p>
-                                      <div className="flex items-center gap-2 mt-1">
+                                      <div className="flex items-center gap-2 mt-1 flex-nowrap">
                                         <div className="flex items-center gap-1">
                                           {[...Array(5)].map((_, i) => (
                                             <Star
@@ -790,13 +797,13 @@ export function ProductDetailClientOptimized({
                                           ))}
                                         </div>
                                         {review.verified && (
-                                          <span className="text-xs text-[#2D5F3F] font-medium bg-[#2D5F3F]/10 px-2 py-1 rounded">
+                                          <span className="text-xs text-[#2D5F3F] font-medium bg-[#2D5F3F]/10 px-2 py-1 rounded whitespace-nowrap flex-shrink-0">
                                             Verified Purchase
                                           </span>
                                         )}
                                       </div>
+                                      <div className="text-sm text-[#8B6F47] mt-1">{review.date}</div>
                                     </div>
-                                    <span className="text-sm text-[#8B6F47]">{review.date}</span>
                                   </div>
                                   <h4 className="font-semibold text-base mb-2 text-[#6B4423]">{review.title}</h4>
                                   <p className="text-[#6B4423] leading-relaxed">{review.comment}</p>

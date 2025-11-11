@@ -78,6 +78,92 @@ export interface RelatedProduct {
 // Main product catalog
 export const products: Product[] = [
   {
+    id: 6,
+    name: "A2 Gir Cow Ghee",
+    slug: "a2-gir-cow-ghee",
+    price: 1200,
+    comparePrice: 1400,
+    images: [
+      "/gir-cow-ghee-jar.jpg",
+      "/gir-cow-grazing.jpg",
+      "/premium-ghee-pour.jpg",
+      "/gir-cow-ghee-spoon.jpg",
+    ],
+    badge: "Premium",
+    category: "Ghee",
+    description:
+      "Experience the unmatched purity of our A2 Gir Cow Ghee, sourced exclusively from free-grazing indigenous Gir cows. Made using the traditional bilona method, this golden elixir is rich in natural A2 beta-casein protein and essential nutrients. Our Gir cows graze freely on organic pastures, ensuring the highest quality milk that's transformed into this premium ghee. Perfect for both culinary delights and traditional wellness practices.",
+    shortDescription: "Premium A2 ghee from free-grazing Gir cows",
+    features: [
+      "100% A2 milk from pure Gir cows",
+      "Free-grazing cows on organic pastures",
+      "Traditional hand-churned bilona method",
+      "Rich in A2 beta-casein protein",
+      "Higher CLA and Omega-3 content",
+      "No additives or preservatives",
+      "Sourced from indigenous Gir breed",
+      "Perfect for Ayurvedic practices",
+    ],
+    specifications: {
+      Weight: "500g",
+      "Shelf Life": "12 months",
+      Storage: "Store in a cool, dry place",
+      Origin: "Gujarat, India",
+      Certification: "FSSAI Certified, Organic India",
+      "Smoke Point": "250°C",
+      "Fat Content": "99.9%",
+      "Cow Breed": "Pure Gir",
+      "Production Method": "Traditional Bilona",
+    },
+    inStock: true,
+    rating: 4.9,
+    reviewCount: 156,
+    sku: "GHEE-002",
+    weight: 0.5,
+    weightUnit: "kg",
+    tags: ["ghee", "a2-milk", "gir-cow", "premium", "organic", "traditional", "ayurvedic"],
+    metaTitle: "A2 Gir Cow Ghee - Premium Quality from Free-Grazing Cows | Swadeshika",
+    metaDescription: "Buy premium A2 ghee from free-grazing Gir cows. Pure, traditional, and packed with nutrients. Perfect for cooking and Ayurvedic uses.",
+    variants: [
+      {
+        id: "gir-ghee-500g",
+        name: "500g",
+        price: 650,
+        comparePrice: 750,
+        sku: "GHEE-002-500G",
+        weight: 0.5,
+        weightUnit: "kg",
+        quantity: 30,
+        attributes: { size: "500g", weight: "0.5kg" },
+        isActive: true,
+      },
+      {
+        id: "gir-ghee-1kg",
+        name: "1kg",
+        price: 1200,
+        comparePrice: 1400,
+        sku: "GHEE-002-1KG",
+        weight: 1.0,
+        weightUnit: "kg",
+        quantity: 20,
+        attributes: { size: "1kg", weight: "1kg" },
+        isActive: true,
+      },
+      {
+        id: "gir-ghee-2kg",
+        name: "2kg",
+        price: 2200,
+        comparePrice: 2600,
+        sku: "GHEE-002-2KG",
+        weight: 2.0,
+        weightUnit: "kg",
+        quantity: 15,
+        attributes: { size: "2kg", weight: "2kg" },
+        isActive: true,
+      }
+    ],
+  },
+  {
     id: 1,
     name: "Pure Desi Cow Ghee",
     slug: "pure-desi-cow-ghee",
@@ -392,6 +478,42 @@ export const products: Product[] = [
 
 // Product reviews data
 export const productReviews: Review[] = [
+  {
+    id: 30,
+    productId: 6,
+    userName: "Dr. Ayush Patel",
+    rating: 5,
+    title: "Authentic A2 Gir Cow Ghee - Exceptional Quality!",
+    comment:
+      "As an Ayurvedic practitioner, I've been searching for genuine A2 Gir cow ghee for my patients. This is absolutely authentic - the golden color, the granular texture, and the rich aroma are exactly what you expect from premium Gir cow ghee. My patients have reported excellent results.",
+    date: "2024-01-02",
+    verified: true,
+    helpful: 45
+  },
+  {
+    id: 31,
+    productId: 6,
+    userName: "Meena Sharma",
+    rating: 5,
+    title: "The Real Deal - Worth Every Penny",
+    comment:
+      "You can truly taste the difference in this A2 Gir cow ghee. The aroma takes me back to my grandmother's kitchen. Yes, it's pricier than regular ghee, but the quality justifies the cost. Perfect for both cooking and traditional remedies.",
+    date: "2024-01-15",
+    verified: true,
+    helpful: 38
+  },
+  {
+    id: 32,
+    productId: 6,
+    userName: "Rajesh Mehta",
+    rating: 4,
+    title: "Premium Quality but Expensive",
+    comment:
+      "Excellent quality ghee with authentic taste and aroma. You can tell it's from pure Gir cows. The granular texture and rich golden color are perfect. Only giving 4 stars because of the high price point, but understand it's due to the premium sourcing.",
+    date: "2024-01-20",
+    verified: true,
+    helpful: 28
+  },
   {
     id: 1,
     productId: 1,

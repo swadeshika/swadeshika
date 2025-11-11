@@ -94,7 +94,7 @@ export function ProductReviewForm({ productId, onReviewSubmit }: ProductReviewFo
 
   return (
     <Card className="border-2 border-[#E8DCC8] shadow-lg">
-      <CardContent className="p-6">
+      <CardContent className="p-4">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Rating Selector */}
           <div className="space-y-2">
@@ -141,7 +141,7 @@ export function ProductReviewForm({ productId, onReviewSubmit }: ProductReviewFo
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your name"
-              className="border-2 border-[#E8DCC8] focus:border-[#2D5F3F] h-12 text-base"
+              className="border-2 border-[#E8DCC8] focus:border-[#2D5F3F] h-12 text-base placeholder:text-xs md:placeholder:text-base"
               required
             />
           </div>
@@ -156,7 +156,7 @@ export function ProductReviewForm({ productId, onReviewSubmit }: ProductReviewFo
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Summarize your experience"
-              className="border-2 border-[#E8DCC8] focus:border-[#2D5F3F] h-12 text-base"
+              className="border-2 border-[#E8DCC8] focus:border-[#2D5F3F] h-12 text-base placeholder:text-xxs md:placeholder:text-base"
               required
             />
           </div>
@@ -171,7 +171,7 @@ export function ProductReviewForm({ productId, onReviewSubmit }: ProductReviewFo
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Share your experience with this product..."
-              className="border-2 border-[#E8DCC8] focus:border-[#2D5F3F] min-h-32 text-base resize-none"
+              className="border-2 border-[#E8DCC8] focus:border-[#2D5F3F] min-h-32 text-base resize-none placeholder:text-xs md:placeholder:text-base"
               required
             />
             <p className="text-sm text-[#8B6F47]">Minimum 50 characters ({comment.length}/50)</p>

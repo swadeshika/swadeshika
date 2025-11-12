@@ -65,10 +65,7 @@ export function SiteFooter() {
           <div className="lg:col-span-2">
             {/* Logo and brand name */}
             <Link href="/" className="flex items-center gap-2 mb-4 cursor-pointer">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-serif font-bold text-xl">
-                S
-              </div>
-              <span className="font-serif text-2xl font-bold">Swadeshika</span>
+              <img src="./logo.png" alt="logo" className=" w-[180px]"/>
             </Link>
 
             {/* Brand description */}
@@ -188,7 +185,8 @@ export function SiteFooter() {
 
           {/* Copyright notice with dynamic year */}
           <p className="text-sm text-muted-foreground text-center">
-            © {new Date().getFullYear()} Swadeshika. All rights reserved.
+            © {new Date().getFullYear()} Swadeshika. All rights reserved. |
+            👥 Visitors: <span id="visitorCount">0</span>
           </p>
         </div>
       </div>

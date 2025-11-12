@@ -4,7 +4,7 @@ import { ShopHeader } from "@/components/shop-header"
 
 export const metadata = {
   title: "About Us - Swadeshika",
-  description: "Learn about Swadeshika's mission, values, and story",
+  description: "Learn about Swadeshika's mission, values, and story ",
 }
 
 export default function AboutPage() {

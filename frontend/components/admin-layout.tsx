@@ -34,6 +34,8 @@ import {
   Menu,
   Bell,
   LogOut,
+  FileText,
+  PlusCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -55,6 +57,16 @@ const navigation = [
   { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Categories", href: "/admin/categories", icon: Tag },
+  {
+    name: "Blog",
+    icon: FileText,
+    items: [
+      { name: "All Posts", href: "/admin/blog" },
+      { name: "Add New", href: "/admin/blog/new" },
+      { name: "Categories", href: "/admin/blog/categories" },
+      { name: "Authors", href: "/admin/blog/authors" },
+    ],
+  },
   { name: "Coupons", href: "/admin/coupons", icon: Tag },
   { name: "Reports", href: "/admin/reports", icon: BarChart3 },
   { name: "Settings", href: "/admin/settings", icon: Settings },
@@ -67,6 +79,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, logout } = useAuthStore()
   // Track hydration state from Zustand persist to avoid redirect loops on refresh
   const [hasHydrated, setHasHydrated] = useState<boolean>(false)
+  // Track open/close state of dropdowns
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   // Header state (must be declared before any early returns to preserve hook order)
   const [notifications, setNotifications] = useState<Array<{ id: string; title: string; desc?: string; read?: boolean }>>([
     { id: "n1", title: "New order received", desc: "Order #1024", read: false },
@@ -122,7 +136,55 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
       <nav className="flex-1 space-y-2">
         {navigation.map((item) => {
-          const isActive = pathname === item.href
+          const isActive = item.items 
+            ? item.items.some(navItem => pathname === navItem.href) 
+            : pathname === item.href
+          
+          if (item.items) {
+            const isOpen = openDropdown === item.name || isActive
+            
+            return (
+              <div key={item.name} className="space-y-1">
+                <div 
+                  onClick={() => setOpenDropdown(openDropdown === item.name ? null : item.name)}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-xl border-2 transition-colors cursor-pointer ${
+                    isActive
+                      ? "bg-[#2D5F3F] text-white border-[#2D5F3F]"
+                      : "border-[#E8DCC8] hover:bg-[#F5F1E8] text-[#6B4423]"
+                  }`}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span className="font-medium flex-1">{item.name}</span>
+                  <svg 
+                    className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+                {isOpen && (
+                  <div className="ml-6 mt-1 space-y-1">
+                    {item.items.map((subItem) => (
+                      <Link
+                        key={subItem.name}
+                        href={subItem.href}
+                        className={`block px-3 py-2 text-sm rounded-lg transition-colors ${
+                          pathname === subItem.href
+                            ? 'text-[#2D5F3F] font-medium bg-[#E8F5E9]'
+                            : 'text-[#6B4423] hover:bg-[#F5F1E8]'
+                        }`}
+                      >
+                        {subItem.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          }
+
           return (
             <Link
               key={item.name}
@@ -175,7 +237,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   )
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex overflow-hidden">
       <aside className="hidden lg:flex w-64 flex-col border-r-2 border-[#E8DCC8] bg-white overflow-y-auto">
         <Sidebar />
       </aside>

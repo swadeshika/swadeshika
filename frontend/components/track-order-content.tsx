@@ -47,16 +47,51 @@ const statusBadge: Record<TimelineStep["status"], { label: string; className: st
 
 export default function TrackOrderContent() {
   const [orderId, setOrderId] = useState("")
+  const [orderIdError, setOrderIdError] = useState("")
   const [email, setEmail] = useState("")
+  const [emailError, setEmailError] = useState("")
   const [loading, setLoading] = useState(false)
   const [tracking, setTracking] = useState<TrackingData | null>(null)
 
+  const validateEmail = (emailValue: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(emailValue)
+  }
+
+  const validateOrderId = (id: string) => {
+    // Must match ORD-2025-00001 (5 digits at end)
+    return /^ORD-2025-\d{5}$/.test(id)
+  }
+
   const handleTrack = async () => {
+    setOrderIdError("")
+    setEmailError("")
+
+    // Validate orderId
+    if (!orderId.trim()) {
+      setOrderIdError("Order ID is required")
+      return
+    }
+    if (!validateOrderId(orderId)) {
+      setOrderIdError("Order ID must be in format ORD-2025-00001")
+      return
+    }
+
+    // Validate email
+    if (!email.trim()) {
+      setEmailError("Email is required")
+      return
+    }
+    if (!validateEmail(email)) {
+      setEmailError("Please enter a valid email address")
+      return
+    }
+
     setLoading(true)
     // Simulate API
     await new Promise((r) => setTimeout(r, 800))
     const data: TrackingData = {
-      orderId: orderId || "ORD-2025-001",
+      orderId: orderId,
       status: "shipped",
       estimatedDelivery: "2025-11-05T00:00:00Z",
       carrier: "Blue Dart",
@@ -100,12 +135,14 @@ export default function TrackOrderContent() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="orderId">Order ID</Label>
-              <Input id="orderId" placeholder="ORD-2025-001" value={orderId} onChange={(e) => setOrderId(e.target.value)} />
+              <Label htmlFor="orderId">Order ID *</Label>
+              <Input id="orderId" placeholder="ORD-2025-00001" value={orderId} onChange={(e) => setOrderId(e.target.value)} required />
+              {orderIdError && <p className="text-sm text-red-500">{orderIdError}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input id="email" type="email" placeholder="you@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Label htmlFor="email">Email Address *</Label>
+              <Input id="email" type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              {emailError && <p className="text-sm text-red-500">{emailError}</p>}
             </div>
             <Button onClick={handleTrack} disabled={loading} className="w-full bg-[#2D5F3F] hover:bg-[#234A32] text-white">
               <Search className="h-4 w-4 mr-2" /> {loading ? "Tracking..." : "Track Order"}
@@ -177,7 +214,7 @@ export default function TrackOrderContent() {
                   <CardDescription>Latest shipment updates</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="space-y-0">
                     {tracking.timeline.map((step, idx) => {
                       const Icon = statusIcon[step.status]
                       const isLast = idx === tracking.timeline.length - 1
@@ -189,7 +226,7 @@ export default function TrackOrderContent() {
                             <div className={`rounded-full p-2 ${dotClass}`}>
                               <Icon className="h-4 w-4" />
                             </div>
-                            {!isLast && <div className={`w-0.5 h-12 ${barClass}`} />}
+                            {!isLast && <div className={`w-0.5 flex-1 ${barClass}`} />}
                           </div>
                           <div className="flex-1 pb-8">
                             <p className={`font-medium ${step.completed ? "text-foreground" : "text-muted-foreground"}`}>{step.label}</p>

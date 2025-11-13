@@ -1,7 +1,7 @@
+// src/config/db.js
 const mysql = require('mysql2/promise');
 const { DB_HOST, DB_USER, DB_PASSWORD, DB_NAME } = require('./env');
 
-// Create a connection pool
 const pool = mysql.createPool({
   host: DB_HOST,
   user: DB_USER,
@@ -10,30 +10,23 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 10000
 });
 
-// Test the connection
-async function testConnection() {
+async function connectDB() {
   try {
-    const connection = await pool.getConnection();
+    const conn = await pool.getConnection();
+    conn.release();
     console.log('✅ Database connected successfully');
-    connection.release();
-    return true;
-  } catch (error) {
-    console.error('❌ Database connection failed:', error);
-    return false;
+    return pool;
+  } catch (err) {
+    console.error('❌ Database connection failed:', err);
+    throw err;
   }
 }
 
 module.exports = {
   pool,
-  testConnection,
-  // Export a function to get a connection from the pool
+  connectDB,
+  query: (sql, params) => pool.execute(sql, params || []),
   getConnection: () => pool.getConnection(),
-  // Export a function to execute a query
-  query: (sql, params) => {
-    return pool.execute(sql, params || []);
-  }
 };

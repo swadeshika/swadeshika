@@ -1,107 +1,87 @@
+// src/utils/jwt.js
 const jwt = require('jsonwebtoken');
-const { JWT_SECRET, JWT_EXPIRES_IN } = require('../config/env');
-const { TOKEN_TYPES } = require('../constants/tokens');
+const { JWT_SECRET, JWT_ISSUER } = require('../config/env');
+const {
+  TOKEN_TYPES,
+  TOKEN_EXPIRATION,
+  TOKEN_ERRORS,
+  TOKEN_SETTINGS
+} = require('../constants/tokens');
 
-/**
- * Generate a JWT token with the provided payload
- * @param {Object} payload - The data to include in the token
- * @param {string} [type='access'] - The type of token (access or refresh)
- * @returns {string} The generated JWT token
- */
-const generateToken = (payload, type = 'access') => {
-  const expiresIn = type === 'refresh' 
-    ? '30d' // Refresh token expires in 30 days
-    : JWT_EXPIRES_IN; // Access token uses configured expiration
-
-  return jwt.sign(
-    { 
-      ...payload, 
-      type 
-    },
-    JWT_SECRET,
-    { expiresIn }
-  );
+const createTokenError = (code, message) => {
+  const err = new Error(message);
+  err.code = code;
+  return err;
 };
 
-/**
- * Verify a JWT token
- * @param {string} token - The JWT token to verify
- * @param {string} [type='access'] - The expected token type
- * @returns {Object} The decoded token payload
- * @throws {Error} If token is invalid or expired
- */
-const verifyToken = (token, type = 'access') => {
+const decodeToken = (token) => {
+  if (!token) return null;
+  return jwt.decode(token, { complete: true });
+};
+
+const getJwtOptions = (settings) => ({
+  expiresIn: settings.expiresIn,
+  subject: settings.subject,
+  issuer: JWT_ISSUER,
+  audience: 'swadeshika-users',
+  algorithm: 'HS256',
+});
+
+const generateToken = (payload, type = TOKEN_TYPES.ACCESS) => {
+  const settings = TOKEN_SETTINGS[type] || { expiresIn: TOKEN_EXPIRATION[TOKEN_TYPES.ACCESS], subject: type };
+  return jwt.sign({ ...payload, type }, JWT_SECRET, getJwtOptions(settings));
+};
+
+const verifyToken = (token, expectedType = TOKEN_TYPES.ACCESS) => {
+  if (!token) throw createTokenError('MISSING_TOKEN', TOKEN_ERRORS.MISSING);
   try {
-    if (!token) {
-      throw new Error('No token provided');
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      issuer: JWT_ISSUER,
+      audience: 'swadeshika-users',
+    });
+    if (expectedType && decoded.type !== expectedType) {
+      throw createTokenError(TOKEN_ERRORS.INVALID, `Invalid token type: expected ${expectedType}`);
     }
-
-    const decoded = jwt.verify(token, JWT_SECRET);
-    
-    // Verify token type if specified
-    if (type && decoded.type !== type) {
-      throw new Error(`Invalid token type: expected ${type}`);
-    }
-    
     return decoded;
-  } catch (error) {
-    if (error.name === 'TokenExpiredError') {
-      throw new Error('Token has expired');
-    } else if (error.name === 'JsonWebTokenError') {
-      throw new Error('Invalid token');
-    }
-    throw error;
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') throw createTokenError(TOKEN_ERRORS.EXPIRED, 'Token has expired');
+    if (err.name === 'JsonWebTokenError') throw createTokenError(TOKEN_ERRORS.INVALID, 'Invalid token');
+    throw err;
   }
 };
 
 /**
- * Extract token from Authorization header
- * @param {string} authHeader - The Authorization header value
- * @returns {string|null} The extracted token or null if not found
- */
-const extractTokenFromHeader = (authHeader) => {
-  if (!authHeader) return null;
-  
-  const parts = authHeader.split(' ');
-  if (parts.length === 2 && parts[0] === 'Bearer') {
-    return parts[1];
-  }
-  
-  return null;
-};
-
-/**
- * Generate both access and refresh tokens for a user
- * @param {Object} user - The user object
- * @returns {Object} Object containing access and refresh tokens
+ * Returns object:
+ * {
+ *   access: { token, expiresIn },
+ *   refresh: { token, expiresIn }
+ * }
  */
 const generateAuthTokens = (user) => {
-  const accessToken = generateToken(
-    { 
-      id: user.id, 
-      email: user.email, 
-      role: user.role 
-    },
-    TOKEN_TYPES.ACCESS
-  );
-  
-  const refreshToken = generateToken(
-    { 
-      id: user.id,
-      tokenVersion: user.tokenVersion || 0 
-    },
-    TOKEN_TYPES.REFRESH
-  );
-  
+  const accessToken = generateToken({ id: user.id, role: user.role }, TOKEN_TYPES.ACCESS);
+  const refreshToken = generateToken({ id: user.id, role: user.role }, TOKEN_TYPES.REFRESH);
+
   return {
-    accessToken,
-    refreshToken,
+    access: { token: accessToken, expiresIn: TOKEN_EXPIRATION[TOKEN_TYPES.ACCESS] },
+    refresh: { token: refreshToken, expiresIn: TOKEN_EXPIRATION[TOKEN_TYPES.REFRESH] },
   };
+};
+
+const extractTokenFromHeader = (authHeader) => {
+  if (!authHeader) return null;
+  const [bearer, token] = authHeader.split(' ');
+  if (!bearer || !token) return null;
+  if (bearer.toLowerCase() !== 'bearer') return null;
+  return token;
 };
 
 module.exports = {
   generateToken,
   verifyToken,
-  extractTokenFromHeader,
+  decodeToken,
   generateAuthTokens,
+  extractTokenFromHeader,
+  createTokenError,
+  TOKEN_TYPES,
+  TOKEN_ERRORS,
 };

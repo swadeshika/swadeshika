@@ -111,8 +111,8 @@ export default function BlogPage() {
 
   const filteredPosts = blogPosts.filter(post => {
     const query = searchQuery.toLowerCase()
-    const matchesSearch = query === '' || 
-                         post.title.toLowerCase().includes(query) || 
+    const matchesSearch = query === '' ||
+                         post.title.toLowerCase().includes(query) ||
                          post.excerpt.toLowerCase().includes(query) ||
                          (post.tags && post.tags.some(tag => tag.toLowerCase().includes(query)))
     const matchesCategory = selectedCategory === 'All' || post.category === selectedCategory
@@ -120,9 +120,9 @@ export default function BlogPage() {
   })
 
   return (
-    <div className="flex min-h-screen flex-col overflow-x-hidden w-screen">
+    <div className="flex min-h-screen flex-col w-full overflow-x-hidden">
       <SiteHeader />
-      
+
       <main className="flex-1 w-full overflow-x-hidden">
         {/* Hero Section */}
         <section className="relative bg-[#F9F5F0] overflow-hidden w-full">
@@ -135,7 +135,7 @@ export default function BlogPage() {
               <p className="mx-auto mt-6 max-w-2xl text-lg text-[#6B4423] md:text-xl">
                 Expert insights on health, wellness, and sustainable living to help you live your best life.
               </p>
-              
+
               <div className="mt-10 max-w-md mx-auto">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8B6F47]" />
@@ -150,8 +150,8 @@ export default function BlogPage() {
               </div>
             </div>
           </div>
-          
-          {/* Decorative elements */}
+
+          {/* Decorative elements — safe because page-level overflow-x-hidden hides any tiny overflow */}
           <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 transform pointer-events-none">
             <div className="h-24 w-24 rounded-full bg-[#E8DCC8] opacity-30 blur-xl"></div>
           </div>
@@ -169,7 +169,7 @@ export default function BlogPage() {
                 <Button
                   key={category.name}
                   variant={selectedCategory === category.name ? 'default' : 'outline'}
-                  className={`h-auto flex-col items-center justify-center p-4 rounded-xl transition-all duration-200 ${
+                  className={`relative h-auto flex-col items-center justify-center p-4 rounded-xl transition-all duration-200 ${
                     selectedCategory === category.name
                       ? 'bg-[#6B4423] text-white hover:bg-[#5A3A1F] shadow-md'
                       : 'border-[#E8DCC8] bg-white text-[#6B4423] hover:bg-[#F5F1E8] hover:border-[#D4C8B8] hover:text-[#5A3A1F]'
@@ -203,7 +203,7 @@ export default function BlogPage() {
                         fill
                         className="object-cover transition-transform duration-500 group-hover:scale-105"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        priority={post.id <= 3} // Only preload first 3 images
+                        priority={post.id <= 3}
                       />
                       <Badge className="absolute top-4 right-4 bg-[#6B4423]/90 hover:bg-[#5A3A1F] backdrop-blur-sm">
                         {post.category}
@@ -229,7 +229,7 @@ export default function BlogPage() {
                       <CardDescription className="mt-2 text-[#5A3A1F] line-clamp-3">
                         {post.excerpt}
                       </CardDescription>
-                      
+
                       {post.tags && post.tags.length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-2">
                           {post.tags.slice(0, 2).map((tag, index) => (
@@ -271,12 +271,18 @@ export default function BlogPage() {
                     ? `We couldn't find any articles matching "${searchQuery}". Try different keywords or browse our categories.`
                     : 'No articles match the selected category. Try another category or check back soon for new content.'}
                 </p>
-                <Link 
-                  href="/blog" 
+
+                {/* BUTTON now resets filters to show all posts */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory('All')
+                    setSearchQuery('')
+                  }}
                   className="inline-flex items-center justify-center mt-6 rounded-full bg-[#6B4423] px-6 py-6 text-base font-medium text-white hover:bg-[#5A3A1F] transition-colors"
                 >
                   View All Articles
-                </Link>
+                </button>
               </div>
             )}
           </div>
@@ -286,16 +292,16 @@ export default function BlogPage() {
         <section className="bg-white py-16 md:py-24 w-full overflow-hidden">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
             <div className="bg-[#F9F5F0] rounded-2xl p-6 md:p-12 relative overflow-hidden">
-              {/* Decorative elements */}
+              {/* Decorative elements (kept but safe due to overflow-x-hidden at page level) */}
               <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#E8DCC8] opacity-40"></div>
               <div className="absolute -left-10 -bottom-10 h-40 w-40 rounded-full bg-[#2D5F3F] opacity-10"></div>
-              
+
               <div className="relative z-10 text-center">
                 <h2 className="text-2xl font-bold text-[#2D5F3F] md:text-3xl">Join Our Community</h2>
                 <p className="mx-auto mt-3 max-w-2xl text-[#6B4423] md:text-lg">
                   Get the latest articles, wellness tips, and exclusive offers delivered straight to your inbox.
                 </p>
-                
+
                 <form className="mt-8 max-w-md mx-auto">
                   <div className="flex flex-col sm:flex-row gap-3">
                     <div className="flex-grow">
@@ -320,7 +326,7 @@ export default function BlogPage() {
                     We respect your privacy. Unsubscribe at any time.
                   </p>
                 </form>
-                
+
                 <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm text-[#6B4423]">
                   <div className="flex items-center">
                     <svg className="h-5 w-5 text-[#2D5F3F] mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -340,7 +346,7 @@ export default function BlogPage() {
           </div>
         </section>
       </main>
-      
+
       <SiteFooter />
     </div>
   )

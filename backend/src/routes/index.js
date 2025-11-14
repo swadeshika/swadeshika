@@ -12,9 +12,9 @@ let orderRoutes;
 try { orderRoutes = require('./orderRoutes'); } catch (e) { orderRoutes = express.Router().get('/', (req,res)=>res.json({msg:'orders route placeholder'})); }
 
 router.use('/auth', authRoutes);
-router.use('/users', userRoutes);
-router.use('/products', productRoutes);
-router.use('/orders', orderRoutes);
+// router.use('/users', userRoutes);
+// router.use('/products', productRoutes);
+// router.use('/orders', orderRoutes);
 
 router.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 

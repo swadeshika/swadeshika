@@ -1,5 +1,4 @@
 // src/app.js
-require('express-async-errors');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -17,44 +16,45 @@ const apiRoutes = require('./routes');
 
 const app = express();
 
-// Security headers
+// 1. Security headers
 app.use(helmet());
 
-// Logging
+// 2. Logging
 if (NODE_ENV === 'development') app.use(morgan('dev'));
 
-// Rate limiter (applies to API)
+// 3. Rate limiter
 const limiter = rateLimit({
-  max: parseInt(RATE_LIMIT_MAX, 10) || 100,
-  windowMs: parseInt(RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
-  message: 'Too many requests from this IP, please try again later.'
+  max: RATE_LIMIT_MAX || 100,
+  windowMs: RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000,
+  message: "Too many requests, try again later.",
 });
 app.use('/api', limiter);
 
-// Body + cookie parsers
-app.use(express.json({ limit: '10kb' }));
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+// 4. Parsers
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Data sanitization (safe to keep even for SQL; mainly defends against malicious payloads)
+// 5. Data sanitization (SQL safe too)
 app.use(mongoSanitize());
 app.use(xss());
+
+// 6. Prevent HTTP param pollution
 app.use(hpp());
 
-// CORS
+// 7. CORS (100% Express 4 safe)
 app.use(cors({
-  origin: CORS_ORIGIN || '*',
+  origin: CORS_ORIGIN,
   credentials: true,
 }));
-app.options('*', cors());
 
-// Static
+// 8. Static files
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// Routes (versioned)
+// 9. API routes
 app.use('/api/v1', apiRoutes);
 
-// 404 and error handler
+// 10. Error Handlers
 app.use(notFound);
 app.use(errorHandler);
 

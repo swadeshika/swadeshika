@@ -1,31 +1,82 @@
 # Swadeshika E-commerce API Documentation
 
-This document provides detailed information about the Swadeshika E-commerce API endpoints, including request/response formats and examples.
+## Table of Contents
+- [Base URL](#base-url)
+- [Authentication](#authentication)
+- [Rate Limiting](#rate-limiting)
+- [Error Handling](#error-handling)
+- [Endpoints](#endpoints)
+  - [Authentication](#authentication-endpoints)
+  - [User Profile](#user-profile)
+  - [Password Management](#password-management)
+  - [Products](#products)
+  - [Orders](#orders)
+  - [Categories](#categories)
 
 ## Base URL
 
 ```
-http://localhost:5000/api
+http://localhost:5000/api/v1
 ```
 
 ## Authentication
 
-Most endpoints require authentication using a JWT token. Include the token in the `Authorization` header:
+Most endpoints require authentication using JWT (JSON Web Tokens).
 
-```
+### Obtaining Tokens
+1. Register a new user or log in to receive an access token and refresh token
+2. Include the access token in the `Authorization` header for protected routes
+3. When the access token expires, use the refresh token to get a new one
+
+### Headers
+```http
 Authorization: Bearer <access_token>
+Content-Type: application/json
 ```
+
+### Token Types
+- **Access Token**: Short-lived (15 minutes), used for API authorization
+- **Refresh Token**: Long-lived (7 days), stored as HTTP-only cookie
+
+## Rate Limiting
+- **100 requests** per 15 minutes per IP address
+- Exceeding the limit returns HTTP `429 Too Many Requests`
+
+## Error Handling
+
+### Standard Error Response
+```json
+{
+  "success": false,
+  "message": "Error message",
+  "code": "ERROR_CODE",
+  "errors": [
+    {
+      "field": "field_name",
+      "message": "Validation error message"
+    }
+  ]
+}
+```
+
+### Common HTTP Status Codes
+- `200 OK` - Request successful
+- `201 Created` - Resource created successfully
+- `400 Bad Request` - Invalid request data
+- `401 Unauthorized` - Authentication required
+- `403 Forbidden` - Insufficient permissions
+- `404 Not Found` - Resource not found
+- `429 Too Many Requests` - Rate limit exceeded
+- `500 Internal Server Error` - Server error
 
 ## Endpoints
 
-### 1. Authentication
+### Authentication Endpoints
 
-#### Register a new user
-
+#### Register New User
 ```http
 POST /auth/register
 ```
-
 **Request Body:**
 ```json
 {
@@ -35,7 +86,6 @@ POST /auth/register
   "phone": "+1234567890"
 }
 ```
-
 **Success Response (201 Created):**
 ```json
 {
@@ -43,38 +93,20 @@ POST /auth/register
   "message": "Registration successful",
   "data": {
     "user": {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "id": "uuid-here",
       "name": "John Doe",
       "email": "john@example.com",
       "role": "customer"
     },
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "accessToken": "jwt-token-here"
   }
 }
 ```
 
-**Error Response (400 Bad Request):**
-```json
-{
-  "success": false,
-  "message": "Validation error",
-  "errors": [
-    {
-      "field": "email",
-      "message": "Email already exists"
-    }
-  ]
-}
-```
-
----
-
-#### Login user
-
+#### Login User
 ```http
 POST /auth/login
 ```
-
 **Request Body:**
 ```json
 {
@@ -82,7 +114,6 @@ POST /auth/login
   "password": "SecurePass123!"
 }
 ```
-
 **Success Response (200 OK):**
 ```json
 {
@@ -90,14 +121,158 @@ POST /auth/login
   "message": "Login successful",
   "data": {
     "user": {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "id": "uuid-here",
       "name": "John Doe",
       "email": "john@example.com",
       "role": "customer"
     },
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "accessToken": "jwt-token-here"
   }
 }
+```
+
+#### Refresh Access Token
+```http
+POST /auth/refresh-token
+```
+**Headers:**
+```
+Cookie: refreshToken=<refresh_token>
+```
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "accessToken": "new-jwt-token-here"
+  }
+}
+```
+
+### User Profile
+
+#### Get Current User
+```http
+GET /users/me
+```
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid-here",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phone": "+1234567890",
+    "role": "customer",
+    "createdAt": "2023-01-01T00:00:00.000Z"
+  }
+}
+```
+
+### Password Management
+
+#### Forgot Password
+```http
+POST /auth/forgot-password
+```
+**Request Body:**
+```json
+{
+  "email": "john@example.com"
+}
+```
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Password reset link has been sent to your email"
+}
+```
+
+#### Reset Password
+```http
+POST /auth/reset-password/:token
+```
+**Request Body:**
+```json
+{
+  "password": "NewSecurePass123!",
+  "confirmPassword": "NewSecurePass123!"
+}
+```
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Password has been reset successfully"
+}
+```
+
+### Products
+
+#### Get All Products
+```http
+GET /products
+```
+**Query Parameters:**
+- `page` - Page number (default: 1)
+- `limit` - Items per page (default: 10, max: 100)
+- `category` - Filter by category ID
+- `sort` - Sort field (name, price, createdAt)
+- `order` - Sort order (asc, desc)
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "products": [
+      {
+        "id": "product-1",
+        "name": "Handmade Cotton Shirt",
+        "description": "Eco-friendly cotton shirt",
+        "price": 29.99,
+        "stock": 100,
+        "category": "Clothing",
+        "images": ["image1.jpg", "image2.jpg"],
+        "createdAt": "2023-01-01T00:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "total": 1,
+      "page": 1,
+      "limit": 10,
+      "totalPages": 1
+    }
+  }
+}
+```
+
+## Security
+
+### Password Requirements
+- Minimum 8 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one number
+- At least one special character
+
+### JWT Tokens
+- **Access Token**: 15 minutes expiration
+- **Refresh Token**: 7 days expiration (HTTP-only cookie)
+- **Reset Token**: 1 hour expiration
+
+## Best Practices
+1. Always check response status codes
+2. Handle token expiration gracefully
+3. Implement retry logic for failed requests
+4. Store tokens securely (HTTP-only cookies for web)
+5. Never expose sensitive information in client-side code
 ```
 
 **Error Response (401 Unauthorized):**

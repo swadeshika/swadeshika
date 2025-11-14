@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Search, Edit, Trash2, MoreVertical, FileText as BlogIcon } from "lucide-react"
+import { Plus, Search, Edit, Trash2, MoreVertical } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,80 +10,56 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { useToast } from "@/hooks/use-toast"
+import { BLOGS } from "@/lib/blogs-data"
 
-const posts = [
-  {
-    id: "1",
-    title: "The Health Benefits of Pure Desi Ghee",
-    author: "Dr. Anjali Sharma",
-    category: "Health & Wellness",
-    status: "published",
-    date: "2025-10-15",
-    views: 1245,
-    image: "/golden-ghee-in-glass-jar.jpg",
-  },
-  {
-    id: "2",
-    title: "Organic Farming: Why It Matters",
-    author: "Rahul Verma",
-    category: "Sustainable Living",
-    status: "published",
-    date: "2025-10-10",
-    views: 892,
-    image: "/organic-farming.jpg",
-  },
-  {
-    id: "3",
-    title: "The Art of Mindful Eating",
-    author: "Priya Patel",
-    category: "Health & Wellness",
-    status: "draft",
-    date: "2025-10-05",
-    views: 0,
-    image: "/mindful-eating.jpg",
-  },
-  {
-    id: "4",
-    title: "Ayurvedic Herbs for Daily Wellness",
-    author: "Dr. Rajesh Kumar",
-    category: "Ayurveda",
-    status: "published",
-    date: "2025-09-28",
-    views: 1560,
-    image: "/ayurvedic-herbs.jpg",
-  },
-  {
-    id: "5",
-    title: "5 Traditional Indian Superfoods",
-    author: "Ananya Gupta",
-    category: "Nutrition",
-    status: "published",
-    date: "2025-09-20",
-    views: 2034,
-    image: "/indian-superfoods.jpg",
-  },
-]
+// Data moved to shared module for reuse in edit page
 
 export function AdminBlogList() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [selectedPost, setSelectedPost] = useState<string | null>(null)
+  const [filter, setFilter] = useState<"all" | "published" | "draft">("all")
+  const [postsData, setPostsData] = useState(BLOGS)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const { toast } = useToast()
 
-  const filteredPosts = posts.filter((post) =>
+  const filteredPosts = postsData.filter((post) => {
+    const matchesSearch =
     post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     post.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
     post.category.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+    const matchesFilter =
+    filter === "all" ? true : post.status === filter
+  return matchesSearch && matchesFilter
+  })
+
 
   const handleDeleteClick = (postId: string) => {
     setSelectedPost(postId)
     setShowDeleteDialog(true)
   }
 
-  const confirmDelete = () => {
-    // TODO: Implement actual delete logic
-    console.log("Deleting post:", selectedPost)
-    setShowDeleteDialog(false)
+  const confirmDelete = async () => {
+    if (!selectedPost) {
+      setShowDeleteDialog(false)
+      return
+    }
+    try {
+      setIsDeleting(true)
+      // Optional: Call your backend API here
+      // await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/admin/blogs/${selectedPost}`, { method: "DELETE" })
+
+      // Update UI optimistically
+      setPostsData((prev) => prev.filter((p) => p.id !== selectedPost))
+      toast({ title: "Post deleted", description: "The blog post was removed successfully." })
+    } catch (err) {
+      toast({ title: "Delete failed", description: "We couldn't delete the post. Please try again.", variant: "destructive" })
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteDialog(false)
+      setSelectedPost(null)
+    }
   }
 
   return (
@@ -116,15 +92,30 @@ export function AdminBlogList() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="border-[#E8DCC8] hover:bg-[#F5F1E8]">
+              <Button
+                variant={filter === "all" ? "default" : "outline"}
+                size="sm"
+                className={`border-[#E8DCC8] ${filter === "all" ? "bg-[#2D5F3F] text-white" : "hover:bg-[#F5F1E8]"}`}
+                onClick={() => setFilter("all")}
+              >
                 All Posts
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button
+                variant={filter === "published" ? "default" : "ghost"}
+                size="sm"
+                className={filter === "published" ? "bg-[#2D5F3F] text-white" : ""}
+                onClick={() => setFilter("published")}
+              >
                 Published
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button
+                variant={filter === "draft" ? "default" : "ghost"}
+                size="sm"
+                className={filter === "draft" ? "bg-[#2D5F3F] text-white" : ""}
+                onClick={() => setFilter("draft")}
+              >
                 Drafts
-              </Button>
+              </Button>            
             </div>
           </div>
         </div>
@@ -147,7 +138,7 @@ export function AdminBlogList() {
                   <TableRow key={post.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-md border">
+                        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border">
                           <img
                             src={post.image}
                             alt={post.title}
@@ -222,11 +213,12 @@ export function AdminBlogList() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={confirmDelete}
               className="bg-red-600 hover:bg-red-700"
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

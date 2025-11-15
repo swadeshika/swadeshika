@@ -18,6 +18,7 @@ const AUTH_MESSAGES = {
 
   TOKEN_REQUIRED: 'Authentication token is required',
   INVALID_TOKEN: 'Invalid or expired token',
+  INVALID_REFRESH_TOKEN: 'Refresh token is invalid or expired',
   REFRESH_TOKEN_EXPIRED: 'Refresh token has expired',
 
   USER_NOT_FOUND: 'User not found',

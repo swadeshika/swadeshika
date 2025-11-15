@@ -95,7 +95,7 @@ export function AdminBlogList() {
               <Button
                 variant={filter === "all" ? "default" : "outline"}
                 size="sm"
-                className={`border-[#E8DCC8] ${filter === "all" ? "bg-[#2D5F3F] text-white" : "hover:bg-[#F5F1E8]"}`}
+                className={`border-[#E8DCC8] ${filter === "all" ? "bg-[#2D5F3F] text-white" : ""}`}
                 onClick={() => setFilter("all")}
               >
                 All Posts

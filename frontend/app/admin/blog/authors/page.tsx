@@ -1,9 +1,16 @@
+"use client"
+
 import { AdminLayout } from "@/components/admin-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Plus, Search, Edit, Trash2 } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Image as ImageIcon } from "lucide-react"
+import { useMemo, useState } from "react"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { Label } from "@/components/ui/label"
+import { useToast } from "@/hooks/use-toast"
 
 type Author = {
   id: string
@@ -21,8 +28,8 @@ type Author = {
 }
 
 export default function BlogAuthorsPage() {
-  // Mock data - replace with actual API calls
-  const authors: Author[] = [
+  // Initial data - replace with API integration later
+  const initialAuthors: Author[] = [
     {
       id: '1',
       name: 'Dr. Priya Sharma',
@@ -49,6 +56,104 @@ export default function BlogAuthorsPage() {
     }
   ]
 
+  const { toast } = useToast()
+  const [authors, setAuthors] = useState<Author[]>(initialAuthors)
+  const [search, setSearch] = useState("")
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editing, setEditing] = useState<Author | null>(null)
+  const [form, setForm] = useState<Omit<Author, 'id' | 'createdAt'> & { id?: string }>({
+    id: undefined,
+    name: "",
+    email: "",
+    bio: "",
+    avatar: "",
+    social: {},
+  })
+  const [isSaving, setIsSaving] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [toDeleteId, setToDeleteId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim()
+    if (!q) return authors
+    return authors.filter(a =>
+      a.name.toLowerCase().includes(q) ||
+      a.email.toLowerCase().includes(q) ||
+      a.bio.toLowerCase().includes(q)
+    )
+  }, [search, authors])
+
+  const startCreate = () => {
+    setEditing(null)
+    setForm({ id: undefined, name: "", email: "", bio: "", avatar: "", social: {} })
+    setDialogOpen(true)
+  }
+
+  const startEdit = (author: Author) => {
+    setEditing(author)
+    setForm({ id: author.id, name: author.name, email: author.email, bio: author.bio, avatar: author.avatar, social: { ...author.social } })
+    setDialogOpen(true)
+  }
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setForm(prev => ({ ...prev, avatar: reader.result as string }))
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const saveAuthor = async () => {
+    if (!form.name.trim()) {
+      toast({ title: "Name required", description: "Please enter a name.", variant: "destructive" })
+      return
+    }
+    if (!form.email.trim()) {
+      toast({ title: "Email required", description: "Please enter an email.", variant: "destructive" })
+      return
+    }
+    setIsSaving(true)
+    try {
+      if (editing) {
+        setAuthors(prev => prev.map(a => a.id === editing.id ? { ...a, name: form.name.trim(), email: form.email.trim(), bio: form.bio, avatar: form.avatar || a.avatar, social: form.social } : a))
+        toast({ title: "Author updated" })
+      } else {
+        const id = Date.now().toString()
+        setAuthors(prev => [...prev, { id, name: form.name.trim(), email: form.email.trim(), bio: form.bio, avatar: form.avatar || '/default-avatar.png', social: form.social, createdAt: new Date().toISOString() }])
+        toast({ title: "Author added" })
+      }
+      setDialogOpen(false)
+      setEditing(null)
+    } catch (e) {
+      toast({ title: "Save failed", description: "Please try again.", variant: "destructive" })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const confirmDelete = (id: string) => {
+    setToDeleteId(id)
+    setConfirmOpen(true)
+  }
+
+  const doDelete = async () => {
+    if (!toDeleteId) return
+    setIsDeleting(true)
+    try {
+      setAuthors(prev => prev.filter(a => a.id !== toDeleteId))
+      toast({ title: "Author deleted" })
+    } catch (e) {
+      toast({ title: "Delete failed", description: "Please try again.", variant: "destructive" })
+    } finally {
+      setIsDeleting(false)
+      setConfirmOpen(false)
+      setToDeleteId(null)
+    }
+  }
+
   return (
     <AdminLayout>
       <div className="p-6">
@@ -57,10 +162,66 @@ export default function BlogAuthorsPage() {
             <h1 className="text-2xl font-bold text-[#6B4423]">Blog Authors</h1>
             <p className="text-[#8B6F47]">Manage your blog authors and their profiles</p>
           </div>
-          <Button className="bg-[#2D5F3F] hover:bg-[#1e4a30]">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Author
-          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={startCreate} className="bg-[#2D5F3F] hover:bg-[#1e4a30]">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Author
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editing ? "Edit Author" : "Add Author"}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto">
+                <div className="space-y-2">
+                  <Label htmlFor="author-name">Name</Label>
+                  <Input id="author-name" value={form.name} onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Author name" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="author-email">Email</Label>
+                  <Input id="author-email" type="email" value={form.email} onChange={(e) => setForm(p => ({ ...p, email: e.target.value }))} placeholder="email@example.com" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="author-bio">Bio</Label>
+                  <Input id="author-bio" value={form.bio} onChange={(e) => setForm(p => ({ ...p, bio: e.target.value }))} placeholder="Short biography" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Avatar</Label>
+                  {form.avatar ? (
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={form.avatar} />
+                        <AvatarFallback>{form.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                      </Avatar>
+                      <Button variant="outline" onClick={() => setForm(p => ({ ...p, avatar: "" }))}>Remove</Button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer border-[#E8DCC8] hover:bg-[#F5F1E8]">
+                      <ImageIcon className="w-8 h-8 mb-2 text-[#8B6F47]" />
+                      <span className="text-sm text-[#6B4423]">Click to upload avatar</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                    </label>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>Social Links</Label>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Input placeholder="Twitter username" value={form.social.twitter || ""} onChange={(e) => setForm(p => ({ ...p, social: { ...p.social, twitter: e.target.value || undefined } }))} />
+                    <Input placeholder="LinkedIn path (in/...)" value={form.social.linkedin || ""} onChange={(e) => setForm(p => ({ ...p, social: { ...p.social, linkedin: e.target.value || undefined } }))} />
+                    <Input placeholder="Instagram username" value={form.social.instagram || ""} onChange={(e) => setForm(p => ({ ...p, social: { ...p.social, instagram: e.target.value || undefined } }))} />
+                    <Input placeholder="Facebook username" value={form.social.facebook || ""} onChange={(e) => setForm(p => ({ ...p, social: { ...p.social, facebook: e.target.value || undefined } }))} />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                <Button onClick={saveAuthor} disabled={isSaving} className="bg-[#2D5F3F] hover:bg-[#1e4a30]">
+                  {editing ? (isSaving ? "Saving..." : "Save Changes") : (isSaving ? "Creating..." : "Create Author")}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="bg-white rounded-xl border-2 border-[#E8DCC8] p-6">
@@ -70,6 +231,8 @@ export default function BlogAuthorsPage() {
               <Input
                 placeholder="Search authors..."
                 className="pl-9 border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
               />
             </div>
           </div>
@@ -86,7 +249,7 @@ export default function BlogAuthorsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {authors.map((author) => (
+              {filtered.map((author) => (
                 <TableRow key={author.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center space-x-3">
@@ -130,20 +293,39 @@ export default function BlogAuthorsPage() {
                   <TableCell>{new Date(author.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" onClick={() => startEdit(author)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700">
+                      <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700" onClick={() => confirmDelete(author.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
+              {filtered.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">No authors found.</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
       </div>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete author?</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently remove the author. This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={doDelete} disabled={isDeleting} className="bg-red-600 hover:bg-red-700">
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   )
 }

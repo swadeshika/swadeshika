@@ -186,7 +186,7 @@ export function SiteFooter() {
           {/* Copyright notice with dynamic year */}
           <p className="text-sm text-muted-foreground text-center">
           © {new Date().getFullYear()} Swadeshika. All rights reserved. |
-            👥 Visitors: <span id="visitorCount">0</span>
+            👥 Visitors: <span id="visitorCount">0</span> |
           </p>
         </div>
       </div>

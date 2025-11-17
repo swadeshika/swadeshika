@@ -84,10 +84,13 @@ export function OrdersList() {
                 <p className="text-sm text-[#8B6F47]">Total Amount</p>
                 <p className="font-bold text-lg text-[#2D5F3F]">₹{order.total}</p>
               </div>
-              <div className="flex gap-2">
+
+              {/* Buttons: View Details on top, Write Review below */}
+              <div className="flex flex-col items-end gap-2">
                 <Button variant="outline" size="sm" asChild className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]">
                   <Link href={`/account/orders/${order.id}`}>View Details</Link>
                 </Button>
+
                 {order.status === "Delivered" && (
                   <Button size="sm" asChild className="bg-[#2D5F3F] hover:bg-[#234A32] text-white">
                     <Link href={`/account/orders/${order.id}/review`}>Write Review</Link>

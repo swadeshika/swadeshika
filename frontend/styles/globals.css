@@ -116,6 +116,14 @@
 }
 
 @layer base {
+  /* keep default size on small viewports */
+  html { font-size: 16px; }
+
+  /* increase base font-size for viewports wider than 370px */
+  @media (min-width: 371px) {
+    html { font-size: 20px; } /* adjust 18px/20px as desired */
+  }
+
   * {
     @apply border-border outline-ring/50;
   }

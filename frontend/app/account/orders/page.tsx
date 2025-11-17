@@ -6,7 +6,7 @@ import { ShopHeader } from "@/components/shop-header"
 
 export default function OrdersPage() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col text-xs sm:text-base">
       <SiteHeader />
 
       <main className="flex-1 bg-muted/30">

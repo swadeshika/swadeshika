@@ -27,7 +27,7 @@ export function AccountSidebar() {
 					<h3 className="font-semibold text-lg max-[370px]:text-sm text-[#6B4423] truncate">
 						John Doe
 					</h3>
-					<p className="text-sm max-[370px]:text-xs text-[#8B6F47] truncate">
+					<p className="text-sm max-[370px]:text-sm text-[#8B6F47] truncate">
 						john@example.com
 					</p>
 				</div>
@@ -64,7 +64,7 @@ export function AccountSidebar() {
 					className="w-full justify-start gap-3 text-destructive hover:text-destructive"
 				>
 					<LogOut className="h-5 w-5 max-[370px]:h-4 max-[370px]:w-4" />
-					<span className="text-sm max-[370px]:text-xs font-medium truncate">Sign Out</span>
+					<span className="text-sm max-[370px]:text-sm font-medium truncate">Sign Out</span>
 				</Button>
 			</CardContent>
 		</Card>

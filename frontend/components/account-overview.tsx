@@ -99,7 +99,7 @@ export function AccountOverview() {
 				{/* header: title left, small "View All" button inline at the right */}
 				<CardHeader className="px-4 sm:px-6">
 					<div className="flex items-center justify-between gap-4">
-						<CardTitle className="text-[#6B4423] text-sm">Recent Orders</CardTitle>
+						<CardTitle className="text-[#6B4423] text-lg max-[370px]:text-sm">Recent Orders</CardTitle>
 						<Button
 							variant="outline"
 							size="sm"
@@ -113,10 +113,11 @@ export function AccountOverview() {
 
 				<CardContent className="space-y-3 px-3 sm:px-4">
 					{recentOrders.map((order) => (
-						<div key={order.id} className="w-full max-w-2xl mx-auto">
-							<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 border-2 border-[#E8DCC8] rounded-lg min-w-0">
+						<div key={order.id} className="w-full max-w-2xl lg:max-w-none mx-auto">
+							{/* mobile: stacked; large: full-width row with left meta and right price/buttons */}
+							<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between lg:flex-row lg:items-center lg:justify-between gap-2 p-3 lg:px-6 border-2 border-[#E8DCC8] rounded-lg min-w-0">
 								{/* left: order meta */}
-								<div className="min-w-0 w-full sm:w-1/2 text-center sm:text-left">
+								<div className="min-w-0 w-full sm:w-1/2 lg:w-2/3 text-center sm:text-left">
 									<p className="font-semibold text-[#6B4423] truncate text-sm">
 										{order.orderNumber}
 									</p>
@@ -126,7 +127,7 @@ export function AccountOverview() {
 								</div>
 
 								{/* right: price + buttons (keep button alignment intact) */}
-								<div className="mt-2 sm:mt-0 flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end min-w-0">
+								<div className="mt-2 sm:mt-0 flex items-center gap-2 w-full sm:w-auto lg:w-1/3 justify-center sm:justify-end lg:justify-end min-w-0">
 									<div className="flex items-center gap-2 min-w-0">
 										<div className="text-center sm:text-right min-w-0">
 											<p className="font-semibold text-[#2D5F3F] truncate text-sm">
@@ -175,7 +176,7 @@ export function AccountOverview() {
 			{/* Account Details */}
 			<Card className="rounded-xl py-3 border-2 border-[#E8DCC8]">
 				<CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-3 sm:px-4">
-					<CardTitle className="text-[#6B4423] text-center sm:text-left text-sm">
+					<CardTitle className="text-[#6B4423] text-center sm:text-left text-lg max-[370px]:text-sm">
 						Account Details
 					</CardTitle>
 					<Button

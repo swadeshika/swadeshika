@@ -80,7 +80,7 @@ export function SiteHeader() {
 
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
         {/* Reduced left & right padding */}
-        <div className="max-w-10xl mx-auto px-3 sm:px-5 lg:px-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-5 lg:px-8">
           {/* Top Bar */}
           <div className="h-14 flex items-center justify-between w-full">
             {/* Logo + Navigation */}

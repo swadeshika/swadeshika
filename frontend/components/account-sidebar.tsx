@@ -24,10 +24,10 @@ export function AccountSidebar() {
 		<Card className="w-full md:w-auto sticky top-24 rounded-2xl border-2 border-[#E8DCC8] box-border">
 			<CardContent className="p-4 sm:p-6 max-[370px]:p-3 space-y-6 box-border">
 				<div className="space-y-1">
-					<h3 className="font-semibold text-lg max-[370px]:text-sm text-[#6B4423] truncate">
+					<h3 className="font-semibold text-lg max-[370px]:text-base text-[#6B4423] truncate">
 						John Doe
 					</h3>
-					<p className="text-sm max-[370px]:text-sm text-[#8B6F47] truncate">
+					<p className="text-sm max-[370px]:text-base text-[#8B6F47] truncate">
 						john@example.com
 					</p>
 				</div>
@@ -50,7 +50,7 @@ export function AccountSidebar() {
 								aria-current={isActive ? "page" : undefined}
 							>
 								<item.icon className="h-5 w-5 max-[370px]:h-4 max-[370px]:w-4 flex-shrink-0" />
-								<span className="text-sm max-[370px]:text-[11px] font-medium truncate">
+								<span className="text-sm max-[370px]:text-[18px] font-medium truncate">
 									{item.label}
 								</span>
 							</Link>

@@ -71,21 +71,27 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
   const StatusIcon = statusConfig[order.status as keyof typeof statusConfig].icon
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="container mx-auto px-1 py-8 max-w-6xl">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-serif font-bold text-balance">Order Details</h1>
-            <p className="text-muted-foreground mt-1">Order #{order.id}</p>
+        {/* Mobile (stacked): title / order number / buttons.
+            Desktop (sm+): title+order number on left, buttons on right (unchanged). */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+          {/* left: title + order number (stacked on mobile, inline on sm+) */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+            <h1 className="text-3xl font-serif font-bold text-balance whitespace-nowrap">Order Details</h1>
+            <p className="text-base max-[370px]:text-sm text-muted-foreground sm:ml-0">{/* on mobile will be below title, on sm+ inline */}Order #{order.id}</p>
           </div>
-          <div className="flex items-center gap-2">
+
+          {/* right: two buttons side-by-side — on mobile this becomes its own line below the order number */}
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <Download className="h-4 w-4" />
+              Download Invoice
+            </Button>
+
             <Button asChild size="sm" className="bg-[#2D5F3F] hover:bg-[#234A32] text-white">
               <Link href={`/account/orders/${orderId}/review`}>Write Review</Link>
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Download Invoice
             </Button>
           </div>
         </div>
@@ -111,7 +117,7 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Order Timeline */}
-          <Card className="py-6 border-2 border-[#E8DCC8]">
+          <Card className="px-1 py-6 border-2 border-[#E8DCC8]">
             <CardHeader>
               <CardTitle>Order Status</CardTitle>
               <CardDescription>Track your order progress</CardDescription>

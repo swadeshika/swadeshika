@@ -129,9 +129,12 @@ export function AddressesList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <p className="text-[#8B6F47]">Manage your saved addresses</p>
-        <Button onClick={startAdd} className="gap-2 bg-[#2D5F3F] hover:bg-[#234A32] text-white">
+        <Button
+          onClick={startAdd}
+          className="gap-2 bg-[#2D5F3F] hover:bg-[#234A32] text-white w-3/5 sm:w-auto"
+        >
           <Plus className="h-4 w-4" />
           Add New Address
         </Button>
@@ -205,7 +208,7 @@ export function AddressesList() {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-[#6B4423]">{editing ? "Edit Address" : "Add New Address"}</DialogTitle>
           </DialogHeader>

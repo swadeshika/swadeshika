@@ -96,19 +96,19 @@ export function AdminDashboard() {
   return (
     <div className="space-y-6 font-sans">
       <div>
-        <h1 className="font-serif text-3xl font-bold mb-2 text-[#6B4423]">Dashboard</h1>
-        <p className="text-[#8B6F47]">Welcome back! Here's what's happening with your store.</p>
+        <h1 className="font-serif text-2xl md:text-3xl font-bold mb-2 text-[#6B4423]">Dashboard</h1>
+        <p className="text-[#8B6F47] text-sm md:text-base">Welcome back! Here's what's happening with your store.</p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => (
           <Card key={stat.title} className="rounded-2xl border-2 border-[#E8DCC8]">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2D5F3F]/10 text-[#2D5F3F]">
-                  <stat.icon className="h-5 w-5" />
-                </div>
+            <CardContent className="p-3 md:p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full bg-[#2D5F3F]/10 text-[#2D5F3F]">
+                    <stat.icon className="h-4 w-4 md:h-5 md:w-5" />
+                  </div>
                 <div
                   className={`flex items-center gap-1 text-sm font-medium ${
                     stat.trend === "up" ? "text-[#2D5F3F]" : "text-red-600"
@@ -119,8 +119,8 @@ export function AdminDashboard() {
                 </div>
               </div>
               <div>
-                <p className="text-2xl font-bold text-[#6B4423]">{stat.value}</p>
-                <p className="text-sm text-[#8B6F47]">{stat.title}</p>
+                <p className="text-xl md:text-2xl font-bold text-[#6B4423]">{stat.value}</p>
+                <p className="text-xs md:text-sm text-[#8B6F47]">{stat.title}</p>
               </div>
             </CardContent>
           </Card>
@@ -128,7 +128,7 @@ export function AdminDashboard() {
       </div>
 
       {/* Low Stock Alerts Section */}
-      <Card className="rounded-2xl py-5 border-2 border-[#E8DCC8] bg-white">
+      <Card className="rounded-2xl py-2 md: py-4 border-2 border-[#E8DCC8] bg-white">
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-[#FF7E00]" />
@@ -138,11 +138,11 @@ export function AdminDashboard() {
             <Link href="/admin/products?filter=low-stock">View All</Link>
           </Button>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-2 md:space-y-3">
           {lowStockProducts.map((product, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-white rounded-xl border-2 border-[#E8DCC8]">
-              <div className="flex items-center gap-3">
-                <div className="relative w-10 h-10 flex-shrink-0 overflow-hidden rounded-md bg-[#F5F1E8] border-2 border-[#E8DCC8]">
+            <div key={index} className="flex items-center justify-between p-2 md:p-3 bg-white rounded-xl border-2 border-[#E8DCC8]">
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="relative w-8 h-8 md:w-10 md:h-10 flex-shrink-0 overflow-hidden rounded-md bg-[#F5F1E8] border-2 border-[#E8DCC8]">
                   <img
                     src={product.image || "/placeholder.svg"}
                     alt={product.name}
@@ -150,11 +150,11 @@ export function AdminDashboard() {
                   />
                 </div>
                 <div>
-                  <p className="font-medium text-sm text-[#6B4423]">{product.name}</p>
-                  <p className="text-xs text-[#8B6F47]">Threshold: {product.threshold} units</p>
+                  <p className="font-medium text-xs md:text-sm text-[#6B4423]">{product.name}</p>
+                  <p className="text-[10px] md:text-xs text-[#8B6F47]">Threshold: {product.threshold} units</p>
                 </div>
               </div>
-              <Badge variant="outline" className="bg-[#FF7E00]/10 text-[#FF7E00] border-0">
+              <Badge variant="outline" className="bg-[#FF7E00]/10 text-[#FF7E00] border-0 text-xs md:text-sm">
                 {product.stock} left
               </Badge>
             </div>
@@ -164,25 +164,25 @@ export function AdminDashboard() {
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Recent Orders */}
-        <Card className="rounded-2xl py-5 border-2 border-[#E8DCC8]">
+        <Card className="rounded-2xl py-2 md:px- 3 py-4 border-2 border-[#E8DCC8]">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-[#6B4423]">Recent Orders</CardTitle>
             <Button variant="outline" size="sm" asChild className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]">
               <Link href="/admin/orders">View All</Link>
             </Button>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-2 md:space-y-4">
             {recentOrders.map((order) => (
-              <div key={order.id} className="flex items-center justify-between p-4 border-2 border-[#E8DCC8] rounded-xl">
-                <div className="space-y-1">
-                  <p className="font-semibold text-[#6B4423]">{order.orderNumber}</p>
-                  <p className="text-sm text-[#8B6F47]">{order.customer}</p>
-                  <p className="text-xs text-[#8B6F47]">{order.date}</p>
+              <div key={order.id} className="flex items-center justify-between p-2 md:p-4 border-2 border-[#E8DCC8] rounded-xl">
+                <div className="space-y-0 md:space-y-1">
+                  <p className="font-semibold text-sm md:text-base text-[#6B4423]">{order.orderNumber}</p>
+                  <p className="text-xs md:text-sm text-[#8B6F47]">{order.customer}</p>
+                  <p className="text-[10px] md:text-xs text-[#8B6F47]">{order.date}</p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 md:gap-4">
                   <div className="text-right">
-                    <p className="font-semibold text-[#2D5F3F]">₹{order.amount}</p>
-                    <Badge className={`${statusColors[order.status]} border-0`}>{order.status}</Badge>
+                    <p className="font-semibold text-sm md:text-base text-[#2D5F3F]">₹{order.amount}</p>
+                    <Badge className={`${statusColors[order.status]} border-0 text-xs md:text-sm`}>{order.status}</Badge>
                   </div>
                 </div>
               </div>
@@ -191,17 +191,17 @@ export function AdminDashboard() {
         </Card>
 
         {/* Top Products */}
-        <Card className="rounded-2xl py-5 border-2 border-[#E8DCC8]">
+        <Card className="rounded-2xl py-2 md: px-3 py-4 border-2 border-[#E8DCC8]">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-[#6B4423]">Top Products</CardTitle>
             <Button variant="outline" size="sm" asChild className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]">
               <Link href="/admin/products">View All</Link>
             </Button>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-2 md:space-y-4">
             {topProducts.map((product, index) => (
-              <div key={index} className="flex items-center gap-4">
-                <div className="relative w-12 h-12 flex-shrink-0 overflow-hidden rounded-md bg-[#F5F1E8] border-2 border-[#E8DCC8]">
+              <div key={index} className="flex items-center gap-2 md:gap-4 mb-2 md:mb-4">
+                <div className="relative w-8 h-8 md:w-12 md:h-12 flex-shrink-0 overflow-hidden rounded-md bg-[#F5F1E8] border-2 border-[#E8DCC8]">
                   <img
                     src={product.image || "/placeholder.svg"}
                     alt={product.name}
@@ -209,10 +209,10 @@ export function AdminDashboard() {
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate text-[#6B4423]">{product.name}</p>
-                  <p className="text-sm text-[#8B6F47]">{product.sales} sales</p>
+                  <p className="font-medium text-sm md:text-base max-w-[10rem] md:max-w-none whitespace-normal text-[#6B4423]">{product.name}</p>
+                  <p className="text-xs md:text-sm text-[#8B6F47]">{product.sales} sales</p>
                 </div>
-                <p className="font-semibold text-[#2D5F3F]">₹{product.revenue.toLocaleString()}</p>
+                <p className="font-semibold text-sm md:text-base text-[#2D5F3F]">₹{product.revenue.toLocaleString()}</p>
               </div>
             ))}
           </CardContent>

@@ -156,8 +156,8 @@ export default function BlogAuthorsPage() {
 
   return (
     <AdminLayout>
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
+      <div className="p-3">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4 sm:gap-0">
           <div>
             <h1 className="text-2xl font-bold text-[#6B4423]">Blog Authors</h1>
             <p className="text-[#8B6F47]">Manage your blog authors and their profiles</p>

@@ -125,15 +125,17 @@ export function AdminOrdersList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-center sm:text-left">
+        <div className="mb-4 sm:mb-0">
           <h1 className="font-serif text-3xl font-bold mb-2 text-[#6B4423]">Orders</h1>
           <p className="text-[#8B6F47]">Manage and track customer orders</p>
         </div>
-        <Button onClick={handleExportCsv} variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]">
-          <Download className="h-4 w-4" />
-          Export
-        </Button>
+        <div className="w-full sm:w-auto flex justify-center sm:justify-end mt-3 sm:mt-0">
+          <Button onClick={handleExportCsv} variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]">
+            <Download className="h-4 w-4" />
+            Export
+          </Button>
+        </div>
       </div>
 
       <Card className="rounded-2xl border-2 border-[#E8DCC8]">

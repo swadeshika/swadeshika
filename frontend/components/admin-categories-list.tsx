@@ -127,14 +127,14 @@ export function AdminCategoriesList() {
 
   return (
     <div className="space-y-6 font-sans">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-center text-center md:flex-row md:items-center md:justify-between md:text-left md:space-x-4">
         <div>
           <h1 className="text-3xl font-bold mb-2 text-[#6B4423]">Categories</h1>
           <p className="text-[#8B6F47]">Organize your products into categories</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2 bg-[#2D5F3F] hover:bg-[#2D5F3F]/90">
+            <Button className="gap-2 bg-[#2D5F3F] hover:bg-[#2D5F3F]/90 mt-3 md:mt-0">
               <Plus className="h-4 w-4" />
               Add Category
             </Button>

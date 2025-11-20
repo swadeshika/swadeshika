@@ -1,5 +1,6 @@
 "use client"
 
+import React from 'react'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import { Calendar, Clock, Home, ChevronRight, MessageSquare, Facebook, Twitter, Linkedin, ArrowUp, Link as LinkIcon, Bookmark, Heart, Share, Mail } from 'lucide-react'
@@ -74,8 +75,8 @@ interface BlogPostProps {
 
 export default function BlogPost({ params }: BlogPostProps) {
   // Use React.use() to unwrap the params Promise
-  const { slug } = params
-  return <BlogPostContent slug={slug} />
+  const unwrappedParams = React.use(params)
+  return <BlogPostContent slug={unwrappedParams.slug} />
 }
 
 function BlogPostContent({ slug }: { slug: string }) {

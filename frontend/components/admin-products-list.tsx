@@ -76,12 +76,12 @@ export function AdminProductsList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col md:flex-row items-center justify-between">
+        <div className="text-center md:text-left">
           <h1 className="font-serif text-3xl font-bold mb-2 text-[#6B4423]">Products</h1>
           <p className="text-[#8B6F47]">Manage your product inventory</p>
         </div>
-        <Button className="gap-2 bg-[#2D5F3F] hover:bg-[#234A32] text-white" asChild>
+        <Button className="gap-2 bg-[#2D5F3F] hover:bg-[#234A32] text-white mt-3 md:mt-0" asChild>
           <Link href="/admin/products/new">
             <Plus className="h-4 w-4" />
             Add Product

@@ -168,38 +168,29 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col items-start w-full md:flex-row md:items-center md:justify-between md:gap-6">
+        <div className="flex flex-col">
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" asChild className="h-8 w-8">
               <Link href="/admin/blog">
                 <ArrowLeft className="h-4 w-4" />
               </Link>
             </Button>
-            <h1 className="text-3xl font-bold mb-2 text-[#6B4423]">
-              {isNew ? 'New Blog Post' : 'Edit Blog Post'}
-            </h1>
+            <h1 className="text-3xl font-bold mb-2 text-[#6B4423]">{isNew ? 'New Blog Post' : 'Edit Blog Post'}</h1>
           </div>
-          <p className="text-sm text-[#8B6F47] ml-10">
-            {isNew ? 'Create and publish a new blog post' : 'Edit and update this blog post'}
-          </p>
+          <p className="text-sm text-[#8B6F47] mt-1">{isNew ? 'Create and publish a new blog post' : 'Edit and update this blog post'}</p>
         </div>
-        <div className="flex items-center gap-4">
+
+        <div className="flex flex-col items-start gap-4 mt-4 md:mt-0 md:flex-row md:items-center">
           <div className="flex items-center space-x-2">
-            <Switch 
-              id="publish-status" 
+            <Switch
+              id="publish-status"
               checked={post.status === 'published'}
-              onCheckedChange={(checked) => setPost({...post, status: checked ? 'published' : 'draft'})}
+              onCheckedChange={(checked) => setPost({ ...post, status: checked ? 'published' : 'draft' })}
             />
-            <Label htmlFor="publish-status">
-              {post.status === 'published' ? 'Published' : 'Draft'}
-            </Label>
+            <Label htmlFor="publish-status">{post.status === 'published' ? 'Published' : 'Draft'}</Label>
           </div>
-          <Button 
-            onClick={handleSubmit}
-            disabled={isSaving}
-            className="bg-[#2D5F3F] hover:bg-[#1e4a30]"
-          >
+          <Button onClick={handleSubmit} disabled={isSaving} className="w-full md:w-auto mt-2 md:mt-0 bg-[#2D5F3F] hover:bg-[#1e4a30]">
             <Save className="mr-2 h-4 w-4" />
             {isSaving ? 'Saving...' : 'Save Post'}
           </Button>
@@ -252,9 +243,9 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
                   
                   <div className="space-y-2">
                     <Label>Content</Label>
-                    <div className="border-2 border-[#E8DCC8] rounded-lg overflow-hidden p-6">
+                    <div className="border-0 px-0 rounded-lg overflow-hidden sm:border-2 sm:border-[#E8DCC8] sm:p-6">
                       <RichTextEditor
-                        value={post.content}
+                        value={post.content ?? ""}
                         onChange={(content) => setPost({...post, content})}
                         placeholder="Write your post content here..."
                       />

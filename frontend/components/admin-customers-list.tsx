@@ -116,19 +116,12 @@ export function AdminCustomersList() {
           <h1 className="font-serif text-3xl font-bold mb-2 text-[#6B4423]">Customers</h1>
           <p className="text-[#8B6F47]">Manage your customer base</p>
         </div>
-<<<<<<< HEAD
-        <Button onClick={handleExportCsv} variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-[#2D5F3F]">
-          <Download className="h-4 w-4" />
-          Export
-        </Button>
-=======
         <div className="w-full sm:w-auto flex justify-center sm:justify-end mt-3 sm:mt-0">
-          <Button onClick={handleExportCsv} variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]">
+          <Button onClick={handleExportCsv} variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-[#2D5F3F]">
             <Download className="h-4 w-4" />
             Export
           </Button>
         </div>
->>>>>>> 4a2dc29823b2af169e3a09c9b51352e69742e2dd
       </div>
 
       <Card className="rounded-2xl border-2 border-[#E8DCC8]">

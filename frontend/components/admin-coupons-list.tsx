@@ -205,7 +205,7 @@ export function AdminCouponsList() {
 
   return (
     <div className="space-y-6 font-sans">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0">
         <div>
           <h1 className="text-3xl font-bold mb-2 text-[#6B4423]">Coupons & Discounts</h1>
           <p className="text-[#8B6F47]">Create and manage promotional codes</p>
@@ -323,7 +323,7 @@ export function AdminCouponsList() {
             <DialogTitle>Create Coupon</DialogTitle>
             <DialogDescription>Configure a new coupon code</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2 max-h-[70vh] overflow-y-auto">
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="code">Code</Label>
               <Input id="code" placeholder="e.g., WELCOME10" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
@@ -407,7 +407,7 @@ export function AdminCouponsList() {
             <DialogTitle>Edit Coupon</DialogTitle>
             <DialogDescription>Update coupon details</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2 max-h-[70vh] overflow-y-auto">
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="edit-code">Code</Label>
               <Input id="edit-code" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />

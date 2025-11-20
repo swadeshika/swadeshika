@@ -178,12 +178,12 @@ export function AdminProductForm({ initial, mode = "create", initialVariants = [
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 font-sans">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-center sm:text-left">
+        <div className="mb-4 sm:mb-0">
           <h1 className="text-3xl font-bold mb-2 text-[#6B4423]">Add Product</h1>
           <p className="text-[#8B6F47]">Create a new product and manage its details</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mt-4 w-full justify-center sm:w-auto sm:justify-end sm:mt-0">
           <Button type="button" variant="outline" className="border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]" onClick={() => router.push("/admin/products")}>Cancel</Button>
           <Button type="submit" className="bg-[#2D5F3F] hover:bg-[#234A32] text-white" disabled={submitting || !isValid}>{submitting ? (mode === "edit" ? "Updating..." : "Saving...") : (mode === "edit" ? "Update Product" : "Save Product")}</Button>
         </div>

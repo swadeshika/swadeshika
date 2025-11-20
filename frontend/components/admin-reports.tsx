@@ -126,7 +126,7 @@ export function AdminReports() {
 
   return (
     <div className="space-y-6 font-sans">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0">
         <div>
           <h1 className="text-3xl font-bold mb-2 text-[#6B4423]">Reports</h1>
           <p className="text-[#8B6F47]">Analyze performance across sales, products, and customers</p>

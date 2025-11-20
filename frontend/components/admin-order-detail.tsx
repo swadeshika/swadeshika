@@ -131,7 +131,7 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
       </div>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-serif font-bold text-[#6B4423] text-balance">Order #{order.id}</h1>
           <p className="text-[#8B6F47] mt-1">
@@ -145,7 +145,7 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
             })}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mt-3 sm:mt-0">
           <Badge className={statusConfig[order.status as keyof typeof statusConfig].color}>
             {statusConfig[order.status as keyof typeof statusConfig].label}
           </Badge>

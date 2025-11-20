@@ -144,7 +144,7 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
           ref={videoInputRef}
           type="file"
           accept="video/*"
-          className="hidden"
+          className=""
           onChange={handleVideoUpload}
         />
       </div>

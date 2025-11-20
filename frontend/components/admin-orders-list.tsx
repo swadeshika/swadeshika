@@ -130,7 +130,7 @@ export function AdminOrdersList() {
           <h1 className="font-serif text-3xl font-bold mb-2 text-[#6B4423]">Orders</h1>
           <p className="text-[#8B6F47]">Manage and track customer orders</p>
         </div>
-        <Button onClick={handleExportCsv} variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]">
+        <Button onClick={handleExportCsv} variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-[#2D5F3F]">
           <Download className="h-4 w-4" />
           Export
         </Button>

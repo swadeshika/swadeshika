@@ -49,7 +49,7 @@ export function CartContent() {
                       <h3 className="font-sans font-bold text-lg text-[#6B4423]">{item.name}</h3>
                       <p className="text-sm text-[#8B6F47]">{item.category}</p>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)} className="hover:bg-[#F5F1E8] cursor-pointer">
+                    <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)} className="hover:bg-[#2D5F3F] cursor-pointer">
                       <Trash2 className="h-4 w-4" />
                       <span className="sr-only">Remove item</span>
                     </Button>

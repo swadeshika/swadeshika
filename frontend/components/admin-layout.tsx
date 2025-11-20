@@ -36,6 +36,7 @@ import {
   LogOut,
   FileText,
   PlusCircle,
+  Ghost,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -289,12 +290,12 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <DropdownMenu>
+              <DropdownMenu >
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="p-0 h-8 w-8 rounded-full">
-                    <Avatar>
-                      <AvatarFallback>{user?.name?.substring(0, 2).toUpperCase() || "AD"}</AvatarFallback>
-                    </Avatar>
+                  <Button variant={Ghost} className="p-0 h-8 w-8 rounded-full">
+                    <Avatar >
+                      <AvatarFallback >{user?.name?.substring(0, 2).toUpperCase() || "AD"}</AvatarFallback>
+                    </Avatar> 
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">

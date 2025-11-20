@@ -143,7 +143,7 @@ export function AdminReports() {
               <SelectItem value="365">Last 12 months</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={exportOverview} variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]">
+          <Button onClick={exportOverview} variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-[#2D5F3F]">
             <Download className="h-4 w-4" />
             Export CSV
           </Button>

@@ -27,7 +27,7 @@ function DropdownMenuTrigger({
   return (
     <DropdownMenuPrimitive.Trigger
       data-slot="dropdown-menu-trigger"
-      className={cn('cursor-pointer disabled:cursor-not-allowed outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]', className)}
+      className={cn('cursor-pointer disabled:cursor-not-allowed outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:bg-black', className)}
       {...props}
     />
   )

@@ -80,7 +80,7 @@ export function ShopFilters({
         <>
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-lg text-[#6B4423]">Filters</h2>
-            <Button variant="ghost" size="sm" onClick={handleClearAll} className="hover:bg-[#F5F1E8] cursor-pointer">
+            <Button variant="ghost" size="sm" onClick={handleClearAll} className="hover:bg-[#2D5F3F] cursor-pointer">
               <X className="h-4 w-4 mr-1" />
               Clear All
             </Button>

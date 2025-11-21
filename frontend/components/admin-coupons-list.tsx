@@ -24,6 +24,8 @@ import {
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { allProducts } from "@/data/products"
+import { useMemo } from "react"
 import { Calendar } from "@/components/ui/calendar"
 import { Calendar as CalendarIcon } from "lucide-react"
 
@@ -64,12 +66,22 @@ const coupons = [
 ]
 
 export function AdminCouponsList() {
+  // Admin coupons management component.
+  // - Manages local coupon list state used for display in the table.
+  // - Provides Create / Edit dialogs to configure coupons, including
+  //   scope (all products | specific categories | specific products).
+  // - Uses `allProducts` to populate product/category selector UIs.
   const [searchQuery, setSearchQuery] = useState("")
   const [items, setItems] = useState(coupons)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; code: string } | null>(null)
+  // `form` stores the in-progress create/edit coupon values shown in dialogs.
+  // fields:
+  // - code/type/value/minOrder/usageLimit/used/expiryDate/status: coupon metadata
+  // - appliesTo: 'all' | 'categories' | 'products' controls scope
+  // - categories/products: arrays of selected category names or product slugs
   const [form, setForm] = useState({
     code: "",
     type: "Percentage" as "Percentage" | "Fixed",
@@ -79,11 +91,22 @@ export function AdminCouponsList() {
     used: 0,
     expiryDate: null as Date | null,
     status: "Active" as "Active" | "Inactive" | "Expiring Soon",
+    appliesTo: "all" as "all" | "categories" | "products",
+    categories: [] as string[],
+    products: [] as string[],
   })
   const [editing, setEditing] = useState<string | null>(null)
+  // Temporary inputs and search helpers used by the selectors.
+  const [categoryInput, setCategoryInput] = useState("")
+  const [productInput, setProductInput] = useState("")
+  const [categorySearch, setCategorySearch] = useState("")
+  const [productSearch, setProductSearch] = useState("")
+  // Derive available category list from `allProducts` (de-duplicated and sorted).
+  const availableCategories = useMemo(() => Array.from(new Set(allProducts.map((p) => p.category))).sort(), [])
   const { toast } = useToast()
 
   const handleCopyCode = (code: string) => {
+    // Copies coupon code to clipboard and shows a toast notification.
     navigator.clipboard.writeText(code)
     setCopiedCode(code)
     toast({
@@ -103,9 +126,24 @@ export function AdminCouponsList() {
     )
   })
 
-  const resetForm = () =>
-    setForm({ code: "", type: "Percentage", value: 10, minOrder: 0, usageLimit: 100, used: 0, expiryDate: null, status: "Active" })
-
+  const resetForm = () => {
+    // Reset the create/edit form to initial defaults.
+    setForm({ 
+      code: "",
+      type: "Percentage",
+      value: 10,
+      minOrder: 0,
+      usageLimit: 100,
+      used: 0,
+      expiryDate: null,
+      status: "Active",
+      appliesTo: "all",
+      categories: [],
+      products: [] 
+    })
+    setCategoryInput("")
+    setProductInput("")
+  }
   const openCreate = () => {
     resetForm()
     setEditing(null)
@@ -113,6 +151,7 @@ export function AdminCouponsList() {
   }
 
   const openEdit = (id: string) => {
+    // Load an existing coupon into the `form` for editing.
     const c = items.find((x) => x.id === id)
     if (!c) return
     const value = c.type === "Percentage" ? parseInt(c.discount.replace("%", ""), 10) : parseInt(c.discount.replace(/[^0-9]/g, ""), 10)
@@ -129,9 +168,43 @@ export function AdminCouponsList() {
       used: c.used,
       expiryDate: parsedDate,
       status: (c.status as any) || "Active",
+      appliesTo: ((c as any).appliesTo as any) || "all",
+      categories: ((c as any).categories as any) || [],
+      products: ((c as any).products as any) || [],
     })
     setEditing(c.id)
     setEditOpen(true)
+  }
+
+  const addCategoryToForm = (value?: string) => {
+    // Adds a category to `form.categories` (deduplicated). Accepts an optional
+    // `value` argument (used by click-to-add in the popover) or falls back
+    // to the free-text `categoryInput` value.
+    const val = (value ?? categoryInput).trim()
+    if (!val) return
+    setForm((prev) => ({ ...prev, categories: Array.from(new Set([...(prev.categories || []), val])) }))
+    setCategoryInput("")
+    setCategorySearch("")
+  }
+
+  const removeCategoryFromForm = (val: string) => {
+    // Remove a category from the `form.categories` array.
+    setForm((prev) => ({ ...prev, categories: prev.categories?.filter((c) => c !== val) || [] }))
+  }
+
+  const addProductToForm = (value?: string) => {
+    // Adds a product slug to `form.products` (deduplicated). The popover
+    // passes a product slug via `value` when an item is clicked.
+    const val = (value ?? productInput).trim()
+    if (!val) return
+    setForm((prev) => ({ ...prev, products: Array.from(new Set([...(prev.products || []), val])) }))
+    setProductInput("")
+    setProductSearch("")
+  }
+
+  const removeProductFromForm = (val: string) => {
+    // Remove a product slug from `form.products`.
+    setForm((prev) => ({ ...prev, products: prev.products?.filter((p) => p !== val) || [] }))
   }
 
   const validateForm = () => {
@@ -153,12 +226,14 @@ export function AdminCouponsList() {
     }
     return true
   }
-
   const toDisplayDiscount = () => (form.type === "Percentage" ? `${form.value}%` : `₹${form.value}`)
   const formatDisplayDate = (d: Date) =>
     d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
 
   const createCoupon = () => {
+    // Build a new coupon object from `form` and add it to local `items`.
+    // Note: this currently only updates in-memory state. Persisting to a
+    // backend would require calling an API here.
     if (!validateForm()) return
     const newItem = {
       id: Date.now().toString(),
@@ -170,6 +245,9 @@ export function AdminCouponsList() {
       used: form.used,
       expiryDate: formatDisplayDate(form.expiryDate as Date),
       status: form.status,
+      appliesTo: form.appliesTo,
+      categories: form.categories,
+      products: form.products,
     }
     setItems((prev) => [newItem, ...prev])
     toast({ title: "Coupon Created", description: `${newItem.code} has been created.` })
@@ -178,6 +256,7 @@ export function AdminCouponsList() {
   }
 
   const saveEdit = () => {
+    // Save edited coupon data back into the `items` list (in-memory).
     if (!validateForm() || !editing) return
     const updated = {
       code: form.code.trim().toUpperCase(),
@@ -188,6 +267,9 @@ export function AdminCouponsList() {
       used: form.used,
       expiryDate: formatDisplayDate(form.expiryDate as Date),
       status: form.status,
+      appliesTo: form.appliesTo,
+      categories: form.categories,
+      products: form.products,
     }
     setItems((prev) => prev.map((c) => (c.id === editing ? { ...c, ...updated } : c)))
     toast({ title: "Coupon Updated", description: `${updated.code} has been updated.` })
@@ -197,6 +279,7 @@ export function AdminCouponsList() {
 
   const confirmDelete = (id: string, code: string) => setDeleteTarget({ id, code })
   const doDelete = () => {
+    // Remove the coupon with id stored in `deleteTarget` from `items`.
     if (!deleteTarget) return
     setItems((prev) => prev.filter((c) => c.id !== deleteTarget.id))
     toast({ title: "Coupon Deleted", description: `${deleteTarget.code} has been removed.` })
@@ -392,6 +475,88 @@ export function AdminCouponsList() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Applies To</Label>
+              <Select value={form.appliesTo} onValueChange={(v) => setForm({ ...form, appliesTo: v as any })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Products</SelectItem>
+                  <SelectItem value="categories">Specific Categories</SelectItem>
+                  <SelectItem value="products">Specific Products</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {form.appliesTo === 'categories' && (
+              <div className="space-y-2 md:col-span-2">
+                <Label>Categories</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      {form.categories && form.categories.length > 0 ? `${form.categories.length} selected` : 'Select categories'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64">
+                    <Input placeholder="Search categories..." value={categorySearch} onChange={(e) => setCategorySearch(e.target.value)} className="mb-2" />
+                    <div className="max-h-48 overflow-auto" onWheel={(e) => { (e.currentTarget as HTMLElement).scrollTop += e.deltaY; }}>
+                      {availableCategories.filter((c) => c.toLowerCase().includes(categorySearch.trim().toLowerCase())).map((cat) => (
+                        <div key={cat} className="p-2 cursor-pointer hover:bg-slate-50" onClick={() => addCategoryToForm(cat)}>
+                          {cat}
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {form.categories?.map((cat) => (
+                    <span key={cat} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E8DCC8] text-[#6B4423]">
+                      {cat}
+                      <button type="button" className="ml-2 text-sm" onClick={() => removeCategoryFromForm(cat)}>×</button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {form.appliesTo === 'products' && (
+              <div className="space-y-2 md:col-span-2">
+                <Label>Products</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      {form.products && form.products.length > 0 ? `${form.products.length} selected` : 'Select products'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <Input placeholder="Search products..." value={productSearch} onChange={(e) => setProductSearch(e.target.value)} className="mb-2" />
+                    <div className="max-h-48 overflow-auto" onWheel={(e) => { (e.currentTarget as HTMLElement).scrollTop += e.deltaY; }}>
+                      {allProducts.filter((p) => (p.name + ' ' + p.slug).toLowerCase().includes(productSearch.trim().toLowerCase())).map((prod) => (
+                        <div key={prod.id} className="p-2 cursor-pointer hover:bg-slate-50 flex justify-between" onClick={() => addProductToForm(prod.slug)}>
+                          <div>
+                            <div className="font-medium">{prod.name}</div>
+                            <div className="text-xs text-muted-foreground">{prod.category}</div>
+                          </div>
+                          <div className="text-xs text-muted-foreground">{prod.price ? `₹${prod.price}` : ''}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {form.products?.map((p) => {
+                    const prod = allProducts.find((x) => x.slug === p)
+                    return (
+                      <span key={p} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E8DCC8] text-[#6B4423]">
+                        {prod ? prod.name : p}
+                        <button type="button" className="ml-2 text-sm" onClick={() => removeProductFromForm(p)}>×</button>
+                      </span>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
@@ -476,6 +641,89 @@ export function AdminCouponsList() {
                 </SelectContent>
               </Select>
             </div>
+            
+            {form.appliesTo === 'categories' && (
+              <div className="space-y-2 md:col-span-2">
+                <Label>Categories</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      {form.categories && form.categories.length > 0 ? `${form.categories.length} selected` : 'Select categories'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64">
+                    <Input placeholder="Search categories..." value={categorySearch} onChange={(e) => setCategorySearch(e.target.value)} className="mb-2" />
+                    <div className="max-h-48 overflow-auto" onWheel={(e) => { (e.currentTarget as HTMLElement).scrollTop += e.deltaY; }}>
+                      {availableCategories.filter((c) => c.toLowerCase().includes(categorySearch.trim().toLowerCase())).map((cat) => (
+                        <div key={cat} className="p-2 cursor-pointer hover:bg-slate-50" onClick={() => addCategoryToForm(cat)}>
+                          {cat}
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {form.categories?.map((cat) => (
+                    <span key={cat} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E8DCC8] text-[#6B4423]">
+                      {cat}
+                      <button type="button" className="ml-2 text-sm" onClick={() => removeCategoryFromForm(cat)}>×</button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {form.appliesTo === 'products' && (
+              <div className="space-y-2 md:col-span-2">
+                <Label>Products</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      {form.products && form.products.length > 0 ? `${form.products.length} selected` : 'Select products'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <Input placeholder="Search products..." value={productSearch} onChange={(e) => setProductSearch(e.target.value)} className="mb-2" />
+                    <div className="max-h-48 overflow-auto" onWheel={(e) => { (e.currentTarget as HTMLElement).scrollTop += e.deltaY; }}>
+                      {allProducts.filter((p) => (p.name + ' ' + p.slug).toLowerCase().includes(productSearch.trim().toLowerCase())).map((prod) => (
+                        <div key={prod.id} className="p-2 cursor-pointer hover:bg-slate-50 flex justify-between" onClick={() => addProductToForm(prod.slug)}>
+                          <div>
+                            <div className="font-medium">{prod.name}</div>
+                            <div className="text-xs text-muted-foreground">{prod.category}</div>
+                          </div>
+                          <div className="text-xs text-muted-foreground">{prod.price ? `₹${prod.price}` : ''}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {form.products?.map((p) => {
+                    const prod = allProducts.find((x) => x.slug === p)
+                    return (
+                      <span key={p} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E8DCC8] text-[#6B4423]">
+                        {prod ? prod.name : p}
+                        <button type="button" className="ml-2 text-sm" onClick={() => removeProductFromForm(p)}>×</button>
+                      </span>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+            <div className="space-y-2 md:col-span-2">
+              <Label>Applies To</Label>
+              <Select value={form.appliesTo} onValueChange={(v) => setForm({ ...form, appliesTo: v as any })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Products</SelectItem>
+                  <SelectItem value="categories">Specific Categories</SelectItem>
+                  <SelectItem value="products">Specific Products</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>

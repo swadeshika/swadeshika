@@ -88,7 +88,7 @@ export function AccountOverview() {
 							variant="outline"
 							size="sm"
 							asChild
-							className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8] px-2 py-1 text-sm"
+							className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#FF7E00] px-2 py-1 text-sm"
 						>
 							<Link href="/account/orders">View All</Link>
 						</Button>

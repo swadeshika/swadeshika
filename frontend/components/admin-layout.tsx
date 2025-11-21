@@ -205,7 +205,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
       <Button
         variant="outline"
-        className="w-full justify-start gap-3 bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]"
+        className="w-full text-red-500  justify-start gap-3 bg-transparent border-2 border-[#E8DCC8]"
         onClick={() => {
           try {
             // 1) Clear auth state

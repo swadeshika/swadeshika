@@ -173,15 +173,15 @@ export function AdminBlogList() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
                               <Link href={`/admin/blog/edit/${post.id}`} className="cursor-pointer">
-                                <Edit className="mr-2 h-4 w-4" />
+                                <Edit className="mr-2 h-4 w-4 hover:text-white" />
                                 Edit
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem 
-                              className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                              className="text-red-600 "
                               onClick={() => handleDeleteClick(post.id)}
                             >
-                              <Trash2 className="mr-2 h-4 w-4" />
+                              <Trash2 className="mr-2 h-4 w-4 hover:text-white hover:bg-[#FF7E00]" />
                               Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>

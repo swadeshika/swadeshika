@@ -86,7 +86,7 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
   // Memoize the header template to prevent unnecessary re-renders
   const headerTemplate = useCallback(
     () => (
-      <span className="ql-formats">
+      <span className="ql-formats flex flex-wrap items-center gap-1">
         <select className="ql-header" defaultValue="">
           <option value="">P</option>
           <option value="2">H2</option>
@@ -258,12 +258,12 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
   )
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 w-full">
       {/* Client-only insertion controls (local file uploads) */}
-      <div className="mb-2 flex gap-2">
+      <div className="mb-2 flex flex-wrap gap-2">
         <button
           type="button"
-          className="rounded-md border-2 border-[#E8DCC8] bg-white px-3 py-1 text-sm transition-colors hover:bg-gray-50"
+          className="w-full sm:w-auto rounded-md border-2 border-[#E8DCC8] bg-white px-3 py-1 text-xs sm:text-sm transition-colors hover:bg-gray-50"
           onClick={() => {
             try {
               editorRef.current?.getQuill()?.focus()
@@ -275,7 +275,7 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
         </button>
         <button
           type="button"
-          className="rounded-md border-2 border-[#E8DCC8] bg-white px-3 py-1 text-sm transition-colors hover:bg-gray-50"
+          className="w-full sm:w-auto rounded-md border-2 border-[#E8DCC8] bg-white px-3 py-1 text-xs sm:text-sm transition-colors hover:bg-gray-50"
           onClick={() => {
             try {
               editorRef.current?.getQuill()?.focus()
@@ -304,7 +304,7 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
       {/* URL bar for ql-video (inline, won't cut off screen) */}
       {showVideoUrlBar && (
         <div className="space-y-1">
-          <div className="flex items-center gap-2 rounded-lg border border-[#E8DCC8] bg-white px-3 py-2 text-xs sm:text-sm">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 rounded-lg border border-[#E8DCC8] bg-white px-3 py-2 text-xs sm:text-sm">
             <span className="whitespace-nowrap">Enter video:</span>
             <input
               className={`h-8 flex-1 min-w-0 rounded border px-2 text-xs sm:text-sm ${
@@ -320,7 +320,7 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
             <button
               type="button"
               onClick={handleSaveVideoUrl}
-              className="h-8 whitespace-nowrap rounded border px-2 text-xs sm:text-sm"
+              className="h-8 w-full sm:w-auto whitespace-nowrap rounded border px-2 text-xs sm:text-sm"
             >
               Save
             </button>
@@ -331,7 +331,7 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
                 setVideoUrlError(null)
                 setShowVideoUrlBar(false)
               }}
-              className="h-8 whitespace-nowrap rounded border px-2 text-xs sm:text-sm"
+              className="h-8 w-full sm:w-auto whitespace-nowrap rounded border px-2 text-xs sm:text-sm"
             >
               Cancel
             </button>
@@ -342,15 +342,15 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border-2 border-[#E8DCC8] bg-white">
+      <div className="overflow-hidden rounded-xl border-2 border-[#E8DCC8] bg-white w-full">
         <Editor
           ref={editorRef}
           value={value}
           onTextChange={handleTextChange}
           headerTemplate={headerTemplate()}
           placeholder={placeholder}
-          style={{ minHeight: "400px" }}
-          className="richtext"
+          style={{ minHeight: "250px" }}
+          className="richtext w-full text-sm sm:text-base"
         />
       </div>
     </div>

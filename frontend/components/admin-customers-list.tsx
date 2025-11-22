@@ -117,7 +117,7 @@ export function AdminCustomersList() {
           <p className="text-[#8B6F47]">Manage your customer base</p>
         </div>
         <div className="w-full sm:w-auto flex justify-center sm:justify-end mt-3 sm:mt-0">
-          <Button onClick={handleExportCsv} variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-[#FF7E00]">
+          <Button onClick={handleExportCsv} variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-accent">
             <Download className="h-4 w-4" />
             Export
           </Button>

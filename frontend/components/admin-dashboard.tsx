@@ -134,7 +134,7 @@ export function AdminDashboard() {
             <AlertTriangle className="h-5 w-5 text-[#FF7E00]" />
             <CardTitle className="text-[#6B4423]">Low Stock Alerts</CardTitle>
           </div>
-          <Button variant="outline" size="sm" asChild className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#FF7E00]">
+          <Button variant="outline" size="sm" asChild className="bg-transparent border-2 border-[#E8DCC8] hover:bg-accent">
             <Link href="/admin/products?filter=low-stock">View All</Link>
           </Button>
         </CardHeader>
@@ -167,7 +167,7 @@ export function AdminDashboard() {
         <Card className="rounded-2xl py-2 md:px- 3 py-4 border-2 border-[#E8DCC8]">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-[#6B4423]">Recent Orders</CardTitle>
-            <Button variant="outline" size="sm" asChild className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#FF7E00]">
+            <Button variant="outline" size="sm" asChild className="bg-transparent border-2 border-[#E8DCC8] hover:bg-accent">
               <Link href="/admin/orders">View All</Link>
             </Button>
           </CardHeader>
@@ -194,7 +194,7 @@ export function AdminDashboard() {
         <Card className="rounded-2xl py-2 md: px-3 py-4 border-2 border-[#E8DCC8]">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-[#6B4423]">Top Products</CardTitle>
-            <Button variant="outline" size="sm" asChild className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#FF7E00]">
+            <Button variant="outline" size="sm" asChild className="bg-transparent border-2 border-[#E8DCC8] hover:bg-accent">
               <Link href="/admin/products">View All</Link>
             </Button>
           </CardHeader>

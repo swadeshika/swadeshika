@@ -27,7 +27,9 @@ const {
 
 const { getMessage } = require('../constants/messages');
 const { TOKEN_TYPES } = require('../constants/tokens');
-const { comparePasswords } = require('../utils/hash');
+const { comparePasswords, hashPassword } = require('../utils/hash');
+const sendEmail = require('../utils/email');
+const crypto = require('crypto');
 
 
 /**
@@ -65,14 +67,6 @@ const COOKIE_OPTIONS = {
  */
 const register = async (req, res) => {
   try {
-    // Validate express-validator results
-    const errors = validationResult(req);
-    if (!errors.isEmpty())
-      return res.status(400).json({
-        success: false,
-        errors: errors.array(),
-      });
-
     const { name, email, password, phone } = req.body;
 
     // Create new user
@@ -129,14 +123,6 @@ const register = async (req, res) => {
  */
 const login = async (req, res) => {
   try {
-    // Validation
-    const errors = validationResult(req);
-    if (!errors.isEmpty())
-      return res.status(400).json({
-        success: false,
-        errors: errors.array(),
-      });
-
     const { email, password } = req.body;
 
     // Check if user exists
@@ -313,23 +299,31 @@ const forgotPassword = async (req, res) => {
 
     const user = await UserModel.findByEmail(email);
 
-    // Do not reveal whether user exists
-    if (!user)
+    if (!user) {
       return res.status(200).json({
         success: true,
-        message: getMessage('PASSWORD_RESET_LINK_SENT'),
+        message: 'If the email exists, a new password has been sent.',
       });
+    }
 
-    // Generate RESET token
-    const resetToken = generateToken(
-      { id: user.id },
-      TOKEN_TYPES.RESET_PASSWORD
-    );
+    // 1. Generate a random password (8 characters)
+    const newPassword = crypto.randomBytes(4).toString('hex');
+
+    // 2. Hash and update password in DB
+    await UserModel.forceSetPassword(user.id, newPassword);
+
+    // 3. Send email
+    const message = `Your password has been reset. Your new password is: ${newPassword}\n\nPlease login and change it immediately.`;
+
+    await sendEmail({
+      email: user.email,
+      subject: 'Your New Password - Swadeshika',
+      message,
+    });
 
     return res.status(200).json({
       success: true,
-      message: getMessage('PASSWORD_RESET_LINK_SENT'),
-      ...(process.env.NODE_ENV !== 'production' && { resetToken }), // show only in dev
+      message: 'If the email exists, a new password has been sent.',
     });
   } catch (err) {
     console.error('Forgot password error:', err);

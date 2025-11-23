@@ -43,10 +43,11 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
           return node.getAttribute("src") || ""
         }
       }
-      ;(VideoBlot as any).blotName = "video"
-      ;(VideoBlot as any).tagName = "video"
-      Quill.register(VideoBlot, true)
-      ;(Quill as any).__swadeshika_video_blot_registered = true
+      // Register under a custom name so we DON'T overwrite Quill's default 'video'
+      ; (VideoBlot as any).blotName = "customVideo"
+        ; (VideoBlot as any).tagName = "video"
+      Quill.register({ "formats/customVideo": VideoBlot }, true)
+        ; (Quill as any).__swadeshika_video_blot_registered = true
     } catch (err) {
       // eslint-disable-next-line no-console
       console.warn("Could not register custom VideoBlot", err)
@@ -71,7 +72,7 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
       toolbar.addHandler("video", () => {
         try {
           quill.focus()
-        } catch {}
+        } catch { }
         setVideoUrlError(null)
         setShowVideoUrlBar(true)
       })
@@ -117,21 +118,21 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
     if (editor) {
       try {
         editor.focus()
-      } catch {}
+      } catch { }
       const range = editor.getSelection()
       if (range) {
         editor.clipboard.dangerouslyPasteHTML(range.index, content)
         editor.setSelection(range.index + 1, 0)
         try {
           editor.focus()
-        } catch {}
+        } catch { }
       } else {
         const length = editor.getLength()
         editor.clipboard.dangerouslyPasteHTML(length, content)
         editor.setSelection(length + 1, 0)
         try {
           editor.focus()
-        } catch {}
+        } catch { }
       }
       onChange(editor.root.innerHTML)
     } else {
@@ -170,14 +171,15 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
         if (quill) {
           try {
             quill.focus()
-          } catch {}
+          } catch { }
           const range = quill.getSelection()
           const index = range ? range.index : quill.getLength()
-          quill.insertEmbed(index, "video", blobUrl)
+          // Insert using our custom blot so a real <video> element is created for local files
+          quill.insertEmbed(index, "customVideo", blobUrl)
           quill.setSelection(index + 1, 0)
           try {
             quill.focus()
-          } catch {}
+          } catch { }
 
           const html = quill.root.innerHTML || ""
           if (!html.includes("video") && !html.includes("iframe")) {
@@ -198,6 +200,32 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
     },
     [value, onChange]
   )
+
+  // helper: convert common YouTube URLs to embed URL
+  const toEmbedUrl = (raw: string) => {
+    try {
+      const u = new URL(raw)
+      const host = u.hostname.replace("www.", "")
+      // youtube watch?v=ID
+      if (host === "youtube.com" || host === "youtube-nocookie.com") {
+        if (u.pathname === "/watch") {
+          const id = u.searchParams.get("v")
+          if (id) return `https://www.youtube.com/embed/${id}`
+        }
+        if (u.pathname.startsWith("/embed/")) {
+          return raw
+        }
+      }
+      // youtu.be short link
+      if (host === "youtu.be") {
+        const id = u.pathname.replace("/", "")
+        if (id) return `https://www.youtube.com/embed/${id}`
+      }
+    } catch {
+      // ignore
+    }
+    return raw
+  }
 
   // Handle URL-based video (from ql-video toolbar or URL bar Save)
   const handleSaveVideoUrl = () => {
@@ -223,7 +251,8 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
     setVideoUrlError(null)
 
     const quill = editorRef.current?.getQuill()
-    const url = raw
+    // convert YouTube shortcuts to embed path so Quill's default video (iframe) works
+    const url = toEmbedUrl(raw)
 
     if (!quill) {
       // fallback: plain <video> tag
@@ -236,11 +265,22 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
 
     try {
       quill.focus()
-    } catch {}
+    } catch { }
     const range = quill.getSelection()
     const index = range ? range.index : quill.getLength()
 
-    quill.insertEmbed(index, "video", url)
+    // Use Quill's default 'video' embed for external URLs (YouTube/iframe)
+    quill.insertEmbed(index, "video", url, "user")
+
+    const iframe = quill.root.querySelector(`iframe[src="${url}"]`) as HTMLIFrameElement | null
+
+    if (iframe) {
+      iframe.setAttribute(
+        "style",
+        "width:100%;aspect-ratio:16/9;display:block;margin:0 auto;"
+      )
+    }
+
     quill.setSelection(index + 1, 0)
     onChange(quill.root.innerHTML)
 
@@ -267,7 +307,7 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
           onClick={() => {
             try {
               editorRef.current?.getQuill()?.focus()
-            } catch {}
+            } catch { }
             imgInputRef.current?.click()
           }}
         >
@@ -279,7 +319,7 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
           onClick={() => {
             try {
               editorRef.current?.getQuill()?.focus()
-            } catch {}
+            } catch { }
             videoInputRef.current?.click()
           }}
         >
@@ -307,9 +347,8 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 rounded-lg border border-[#E8DCC8] bg-white px-3 py-2 text-xs sm:text-sm">
             <span className="whitespace-nowrap">Enter video:</span>
             <input
-              className={`h-8 flex-1 min-w-0 rounded border px-2 text-xs sm:text-sm ${
-                videoUrlError ? "border-red-500" : ""
-              }`}
+              className={`h-8 flex-1 min-w-0 rounded border px-2 text-xs sm:text-sm ${videoUrlError ? "border-red-500" : ""
+                }`}
               placeholder="Embed URL"
               value={videoUrl}
               onChange={(e) => {

@@ -65,7 +65,7 @@ export function SiteFooter() {
           <div className="lg:col-span-2">
             {/* Logo and brand name */}
             <Link href="/" className="flex items-center gap-2 mb-4 cursor-pointer">
-               <img src="./logo.png" alt="logo" className=" w-[180px]"/>
+               <img src="/logo.png" alt="logo" className=" w-[180px]"/>
             </Link>
 
             {/* Brand description */}

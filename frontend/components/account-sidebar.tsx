@@ -61,7 +61,7 @@ export function AccountSidebar() {
 
 				<Button
 					variant="ghost"
-					className="w-full justify-start gap-3 text-destructive hover:text-destructive"
+					className="w-full justify-start gap-3 text-destructive hover:text-white"
 				>
 					<LogOut className="h-5 w-5 max-[370px]:h-4 max-[370px]:w-4" />
 					<span className="text-sm max-[370px]:text-sm font-medium truncate">Sign Out</span>

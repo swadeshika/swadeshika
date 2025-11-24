@@ -256,7 +256,7 @@ export function AddressesList() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]" onClick={() => setOpen(false)}>
+            <Button variant="outline" className="bg-transparent border-2 border-[#E8DCC8] hover:bg-accent" onClick={() => setOpen(false)}>
               Cancel
             </Button>
             <Button className="bg-[#2D5F3F] hover:bg-[#234A32] text-white" onClick={handleSubmit}>

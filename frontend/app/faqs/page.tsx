@@ -268,7 +268,7 @@ export default function FaqsPage() {
                 <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
                   Contact Support
                 </Button>
-                <Button variant="outline" className="bg-white text-[#2D5F3F] hover:bg-white/90">
+                <Button variant="outline" className="bg-white text-[#2D5F3F] hover:bg-white/90 hover:bg-accent">
                   Call Us: +91 98765 43210
                 </Button>
               </div>

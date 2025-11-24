@@ -173,39 +173,39 @@ export function SiteHeader() {
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuItem asChild>
                       <Link href="/login" className="w-full cursor-pointer">
-                        <LogIn className="mr-2 h-4 w-4" />
+                        <LogIn className="mr-2 h-4 w-4 hover:text-white" />
                         <span>Sign In</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/signup" className="w-full cursor-pointer">
-                        <UserPlus className="mr-2 h-4 w-4" />
+                        <UserPlus className="mr-2 h-4 w-4 hover:text-white" />
                         <span>Create Account</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link href="/account" className="w-full cursor-pointer">
-                        <User className="mr-2 h-4 w-4" />
+                        <User className="mr-2 h-4 w-4 hover:text-white" />
                         <span>My Account</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/account/orders" className="w-full cursor-pointer">
-                        <Package2 className="mr-2 h-4 w-4" />
+                        <Package2 className="mr-2 h-4 w-4 hover:text-white" />
                         <span>My Orders</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link href="/account/wishlist" className="w-full cursor-pointer">
-                        <Heart className="mr-2 h-4 w-4" />
+                        <Heart className="mr-2 h-4 w-4 hover:text-white" />
                         <span>Wishlist</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600">
-                      <LogOut className="mr-2 h-4 w-4" />
+                    <DropdownMenuItem className="cursor-pointer text-red-600 hover:bg-red-600">
+                      <LogOut className="mr-2 h-4 w-4 hover:text-white" />
                       <span>Logout</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>

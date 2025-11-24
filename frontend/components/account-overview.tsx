@@ -88,7 +88,7 @@ export function AccountOverview() {
 							variant="outline"
 							size="sm"
 							asChild
-							className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8] px-2 py-1 text-sm"
+							className="bg-transparent border-2 border-[#E8DCC8] hover:bg-accent px-2 py-1 text-sm"
 						>
 							<Link href="/account/orders">View All</Link>
 						</Button>
@@ -136,7 +136,7 @@ export function AccountOverview() {
 											variant="outline"
 											size="sm"
 											asChild
-											className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8] whitespace-nowrap text-sm px-3 py-1"
+											className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8] whitespace-nowrap text-sm px-3 py-1 hover:bg-accent"
 										>
 											<Link href={`/account/orders/${order.id}`}>View</Link>
 										</Button>
@@ -168,7 +168,7 @@ export function AccountOverview() {
 						variant="outline"
 						size="sm"
 						asChild
-						className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8] text-sm px-3 py-1"
+						className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8] text-sm px-3 py-1 hover:bg-accent"
 					>
 						<Link href="/account/settings">Edit</Link>
 					</Button>

@@ -91,7 +91,7 @@ export function OrdersList() {
 									variant="outline"
 									size="sm"
 									asChild
-									className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]"
+									className="bg-transparent border-2 border-[#E8DCC8] hover:bg-accent"
 								>
 									<Link href={`/account/orders/${order.id}`}>View Details</Link>
 								</Button>

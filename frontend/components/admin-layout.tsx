@@ -36,6 +36,7 @@ import {
   LogOut,
   FileText,
   PlusCircle,
+  Ghost,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -204,7 +205,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
       <Button
         variant="outline"
-        className="w-full justify-start gap-3 bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]"
+        className="w-full text-red-500  justify-start gap-3 bg-transparent border-2 border-[#E8DCC8]"
         onClick={() => {
           try {
             // 1) Clear auth state
@@ -289,12 +290,12 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <DropdownMenu>
+              <DropdownMenu >
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="p-0 h-8 w-8 rounded-full">
-                    <Avatar>
-                      <AvatarFallback>{user?.name?.substring(0, 2).toUpperCase() || "AD"}</AvatarFallback>
-                    </Avatar>
+                  <Button variant={Ghost} className="p-0 h-8 w-8 rounded-full">
+                    <Avatar >
+                      <AvatarFallback >{user?.name?.substring(0, 2).toUpperCase() || "AD"}</AvatarFallback>
+                    </Avatar> 
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">

@@ -143,7 +143,7 @@ export function AdminReports() {
               <SelectItem value="365">Last 12 months</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={exportOverview} variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]">
+          <Button onClick={exportOverview} variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-accent">
             <Download className="h-4 w-4" />
             Export CSV
           </Button>
@@ -213,7 +213,7 @@ export function AdminReports() {
       <Card className="rounded-2xl py-5 border-2 border-[#E8DCC8]">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-[#6B4423]">Sales by Category</CardTitle>
-          <Button onClick={exportCategories} variant="outline" size="sm" className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]">
+          <Button onClick={exportCategories} variant="outline" size="sm" className="bg-transparent border-2 border-[#E8DCC8] hover:bg-[#FF7E00] ">
             Export
           </Button>
         </CardHeader>

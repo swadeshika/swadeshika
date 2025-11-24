@@ -218,22 +218,22 @@ export function AdminCategoriesList() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                filtered.map((category) => (
-                  <TableRow key={category.id}>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" className="cursor-move">
-                        <GripVertical className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    </TableCell>
-                    <TableCell className="font-medium text-[#6B4423]">{category.name}</TableCell>
-                    <TableCell className="text-[#8B6F47]">{category.slug}</TableCell>
-                    <TableCell>
-                      {category.parent ? (
-                        <Badge variant="outline" className="bg-[#F5F1E8] border-2 border-[#E8DCC8] text-[#6B4423]">{category.parent}</Badge>
-                      ) : (
-                        <span className="text-[#8B6F47] text-sm">Top Level</span>
-                      )}
-                    </TableCell>
+                  filtered.map((category) => (
+                    <TableRow key={category.id}>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" className="cursor-move group">
+                          <GripVertical className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground transition-colors" />
+                        </Button>
+                      </TableCell>
+                      <TableCell className="font-medium">{category.name}</TableCell>
+                      <TableCell>{category.slug}</TableCell>
+                      <TableCell>
+                        {category.parent ? (
+                          <span className="text-[#6B4423]">{category.parent}</span>
+                        ) : (
+                          <span className="text-[#8B6F47] text-sm">Top Level</span>
+                        )}
+                      </TableCell>
                     <TableCell>{category.productCount}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

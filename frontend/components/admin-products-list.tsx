@@ -162,14 +162,14 @@ export function AdminProductsList() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
                               <Link href={`/admin/products/edit?=${slugify(product.name)}`}>
-                                <span className="flex items-center"><Edit className="h-4 w-4 mr-2" />Edit</span>
+                                <span className="flex items-center"><Edit className="h-4 w-4 mr-2 hover:text-white" />Edit</span>
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-destructive"
                               onClick={() => setPendingDelete({ id: product.id, name: product.name })}
                             >
-                              <Trash2 className="h-4 w-4 mr-2" />
+                              <Trash2 className="h-4 w-4 mr-2 hover:text-white" />
                               Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>

@@ -132,6 +132,7 @@ CREATE TABLE products (
 
 -- ============================================================
 -- 4. PRODUCT IMAGES TABLE
+-- ✅ FIXED: Added INDEX idx_primary for faster primary image lookup
 -- ============================================================
 CREATE TABLE product_images (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -142,14 +143,16 @@ CREATE TABLE product_images (
   is_primary BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-  INDEX idx_product (product_id)
+  INDEX idx_product (product_id),
+  INDEX idx_primary (product_id, is_primary)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
 -- 5. PRODUCT VARIANTS TABLE
+-- ✅ FIXED: Changed from VARCHAR(36) to INT AUTO_INCREMENT
 -- ============================================================
 CREATE TABLE product_variants (
-  id VARCHAR(36) PRIMARY KEY,
+  id INT AUTO_INCREMENT PRIMARY KEY,
   product_id INT NOT NULL,
   name VARCHAR(100) NOT NULL,
   sku VARCHAR(100) UNIQUE NOT NULL,
@@ -206,12 +209,13 @@ CREATE TABLE product_tags (
 
 -- ============================================================
 -- 9. CART ITEMS TABLE
+-- ✅ FIXED: variant_id now INT to match product_variants.id
 -- ============================================================
 CREATE TABLE cart_items (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id VARCHAR(36) NOT NULL,
   product_id INT NOT NULL,
-  variant_id VARCHAR(36),
+  variant_id INT,
   quantity INT NOT NULL DEFAULT 1,
   price DECIMAL(10, 2) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -282,12 +286,13 @@ CREATE TABLE orders (
 
 -- ============================================================
 -- 12. ORDER ITEMS TABLE
+-- ✅ FIXED: variant_id now INT to match product_variants.id
 -- ============================================================
 CREATE TABLE order_items (
   id INT AUTO_INCREMENT PRIMARY KEY,
   order_id VARCHAR(36) NOT NULL,
   product_id INT NOT NULL,
-  variant_id VARCHAR(36),
+  variant_id INT,
   product_name VARCHAR(255) NOT NULL,
   variant_name VARCHAR(100),
   sku VARCHAR(100) NOT NULL,
@@ -381,7 +386,57 @@ CREATE TABLE coupon_usage (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
--- 17. BLOG POSTS TABLE
+-- 17. COUPON PRODUCTS TABLE (Product-specific coupons)
+-- ✅ ADDED: For product-specific discount coupons
+-- ============================================================
+CREATE TABLE coupon_products (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  coupon_id INT NOT NULL,
+  product_id INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE CASCADE,
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_coupon_product (coupon_id, product_id),
+  INDEX idx_coupon (coupon_id),
+  INDEX idx_product (product_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 18. COUPON CATEGORIES TABLE (Category-specific coupons)
+-- ✅ ADDED: For category-specific discount coupons
+-- ============================================================
+CREATE TABLE coupon_categories (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  coupon_id INT NOT NULL,
+  category_id INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE CASCADE,
+  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_coupon_category (coupon_id, category_id),
+  INDEX idx_coupon (coupon_id),
+  INDEX idx_category (category_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 19. BLOG CATEGORIES TABLE
+-- ✅ ADDED: Proper blog category management
+-- ============================================================
+CREATE TABLE blog_categories (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) UNIQUE NOT NULL,
+  slug VARCHAR(100) UNIQUE NOT NULL,
+  description TEXT,
+  display_order INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_slug (slug),
+  INDEX idx_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 20. BLOG POSTS TABLE
+-- ✅ FIXED: Now uses category_id foreign key instead of plain VARCHAR
 -- ============================================================
 CREATE TABLE blog_posts (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -391,14 +446,16 @@ CREATE TABLE blog_posts (
   content TEXT NOT NULL,
   featured_image VARCHAR(500),
   author_id VARCHAR(36) NOT NULL,
-  category VARCHAR(100),
+  category_id INT,
   tags TEXT,
   status ENUM('draft', 'published', 'archived') DEFAULT 'draft',
   published_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (author_id) REFERENCES users(id),
+  FOREIGN KEY (category_id) REFERENCES blog_categories(id) ON DELETE SET NULL,
   INDEX idx_slug (slug),
+  INDEX idx_category (category_id),
   INDEX idx_status (status),
   INDEX idx_published (published_at),
   FULLTEXT idx_search (title, excerpt, content)

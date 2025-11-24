@@ -177,7 +177,7 @@ export function AddressesList() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-[#F5F1E8]"
+                    className="flex-1 gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-accent"
                     onClick={() => startEdit(address)}
                   >
                     <Edit className="h-4 w-4" />
@@ -186,7 +186,7 @@ export function AddressesList() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 gap-2 text-destructive hover:text-destructive bg-transparent border-2 border-[#E8DCC8]"
+                    className="flex-1 gap-2 text-destructive hover:text-white bg-transparent border-2 border-[#E8DCC8]"
                     onClick={() => handleDelete(address.id)}
                   >
                     <Trash2 className="h-4 w-4" />

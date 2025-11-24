@@ -208,7 +208,7 @@ export function AddressesList() {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-[#6B4423]">{editing ? "Edit Address" : "Add New Address"}</DialogTitle>
           </DialogHeader>

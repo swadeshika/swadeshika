@@ -2,6 +2,19 @@
 
 import { Editor } from "primereact/editor"
 import { useRef, useCallback, memo, useEffect, useState } from "react"
+
+// RichTextEditor wraps PrimeReact's Quill-based Editor to provide a controlled
+// WYSIWYG input for the product long description.
+// Features configured:
+// - Headings (H2/H3/H4), Paragraph
+// - Bold, Italic
+// - Ordered & Bullet lists
+// - Alignment (left/center/right)
+// - Links
+// - Image & Video buttons (default Quill handlers by URL)
+// Additionally, we expose client-side "Insert Image/Video" buttons that allow
+// selecting local files and inserting as data URLs (no backend required).
+
 import Quill from "quill"
 
 interface RichTextEditorProps {

@@ -20,6 +20,7 @@ const AUTH_MESSAGES = {
   INVALID_TOKEN: 'Invalid or expired token',
   INVALID_REFRESH_TOKEN: 'Refresh token is invalid or expired',
   REFRESH_TOKEN_EXPIRED: 'Refresh token has expired',
+  ACCESS_TOKEN_EXPIRED: 'Access token has expired',
 
   USER_NOT_FOUND: 'User not found',
 };

@@ -70,7 +70,7 @@ const authenticate = async (req, res, next) => {
     if (err.code === 'token_expired' || err.message === 'Token has expired') {
       return res.status(401).json({
         success: false,
-        message: getMessage('REFRESH_TOKEN_EXPIRED'),
+        message: getMessage('ACCESS_TOKEN_EXPIRED'),
       });
     }
 

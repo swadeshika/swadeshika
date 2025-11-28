@@ -1,6 +1,6 @@
 // src/controllers/productController.js
 
-const ProductModel = require('../models/productModel');
+const ProductService = require('../services/productService');
 
 /**
  * Get all products
@@ -8,7 +8,7 @@ const ProductModel = require('../models/productModel');
  */
 exports.getAllProducts = async (req, res, next) => {
     try {
-        const result = await ProductModel.findAll(req.query);
+        const result = await ProductService.getAllProducts(req.query);
         res.status(200).json({
             success: true,
             data: result
@@ -24,7 +24,7 @@ exports.getAllProducts = async (req, res, next) => {
  */
 exports.getProduct = async (req, res, next) => {
     try {
-        const product = await ProductModel.findByIdOrSlug(req.params.id);
+        const product = await ProductService.getProductById(req.params.id);
 
         if (!product) {
             return res.status(404).json({
@@ -57,10 +57,10 @@ exports.createProduct = async (req, res, next) => {
             req.body.slug = slugify(req.body.name);
         }
 
-        const productId = await ProductModel.create(req.body);
+        const productId = await ProductService.createProduct(req.body);
 
         // Fetch the created product to return
-        const newProduct = await ProductModel.findByIdOrSlug(productId);
+        const newProduct = await ProductService.getProductById(productId);
 
         res.status(201).json({
             success: true,
@@ -81,7 +81,7 @@ exports.updateProduct = async (req, res, next) => {
         const { id } = req.params;
 
         // Check if product exists
-        const existing = await ProductModel.findByIdOrSlug(id);
+        const existing = await ProductService.getProductById(id);
         if (!existing) {
             return res.status(404).json({
                 success: false,
@@ -89,10 +89,10 @@ exports.updateProduct = async (req, res, next) => {
             });
         }
 
-        await ProductModel.update(id, req.body);
+        await ProductService.updateProduct(id, req.body);
 
         // Fetch updated product
-        const updatedProduct = await ProductModel.findByIdOrSlug(id);
+        const updatedProduct = await ProductService.getProductById(id);
 
         res.status(200).json({
             success: true,
@@ -112,7 +112,7 @@ exports.deleteProduct = async (req, res, next) => {
     try {
         const { id } = req.params;
 
-        const existing = await ProductModel.findByIdOrSlug(id);
+        const existing = await ProductService.getProductById(id);
         if (!existing) {
             return res.status(404).json({
                 success: false,
@@ -120,7 +120,7 @@ exports.deleteProduct = async (req, res, next) => {
             });
         }
 
-        await ProductModel.delete(id);
+        await ProductService.deleteProduct(id);
 
         res.status(200).json({
             success: true,

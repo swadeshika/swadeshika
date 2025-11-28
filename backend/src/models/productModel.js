@@ -7,12 +7,36 @@ class ProductModel {
   /**
    * Find all products with pagination and filters
    */
-  static async findAll({ page = 1, limit = 20, category, search, minPrice, maxPrice, sort, inStock, featured }) {
+  static async findAll({ page = 1, limit = 20, category, search, minPrice, maxPrice, sort, inStock, featured, fields }) {
     const offset = (page - 1) * limit;
     const params = [];
-    
+
+    // Whitelist of allowed columns to prevent SQL injection
+    const allowedColumns = [
+      'id', 'name', 'slug', 'description', 'short_description', 'sku',
+      'price', 'compare_price', 'cost_price', 'weight', 'weight_unit',
+      'stock_quantity', 'is_featured', 'review_count', 'average_rating',
+      'created_at', 'updated_at'
+    ];
+
+    // Default selection
+    let selectClause = 'p.*';
+
+    // If specific fields are requested
+    if (fields) {
+      const requestedFields = fields.split(',').map(f => f.trim());
+      const validFields = requestedFields.filter(f => allowedColumns.includes(f));
+
+      if (validFields.length > 0) {
+        // Always include ID and ensure fields are prefixed with table alias 'p'
+        const dbFields = validFields.map(f => `p.${f}`);
+        if (!validFields.includes('id')) dbFields.unshift('p.id');
+        selectClause = dbFields.join(', ');
+      }
+    }
+
     let sql = `
-      SELECT p.*, c.name as category_name, c.slug as category_slug,
+      SELECT ${selectClause}, c.name as category_name, c.slug as category_slug,
              (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
@@ -69,7 +93,7 @@ class ProductModel {
       LEFT JOIN categories c ON p.category_id = c.id 
       WHERE 1=1
     `;
-    
+
     // Re-use filter logic for count (excluding limit/offset/sort)
     const countParams = [];
     if (category) { countSql += ` AND c.slug = ?`; countParams.push(category); }
@@ -132,8 +156,8 @@ class ProductModel {
         `INSERT INTO products (name, slug, description, short_description, category_id, sku, price, compare_price, cost_price, weight, weight_unit, stock_quantity, is_featured, meta_title, meta_description) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          data.name, data.slug, data.description, data.short_description, data.category_id, data.sku, 
-          data.price, data.compare_price, data.cost_price, data.weight, data.weight_unit || 'kg', 
+          data.name, data.slug, data.description, data.short_description, data.category_id, data.sku,
+          data.price, data.compare_price, data.cost_price, data.weight, data.weight_unit || 'kg',
           data.stock_quantity || 0, data.is_featured || false, data.meta_title, data.meta_description
         ]
       );
@@ -212,15 +236,15 @@ class ProductModel {
          weight=?, weight_unit=?, stock_quantity=?, is_featured=?, meta_title=?, meta_description=?, updated_at=NOW()
          WHERE id=?`,
         [
-          data.name, data.slug, data.description, data.short_description, data.category_id, data.sku, 
-          data.price, data.compare_price, data.weight, data.weight_unit, 
+          data.name, data.slug, data.description, data.short_description, data.category_id, data.sku,
+          data.price, data.compare_price, data.weight, data.weight_unit,
           data.stock_quantity, data.is_featured, data.meta_title, data.meta_description, id
         ]
       );
 
       // 2. Update Related Data (Strategy: Delete all and Re-insert for simplicity, or smart update)
       // For simplicity in this iteration, we will clear and re-insert lists if provided.
-      
+
       if (data.images) {
         await conn.query(`DELETE FROM product_images WHERE product_id = ?`, [id]);
         if (data.images.length) {
@@ -230,15 +254,15 @@ class ProductModel {
       }
 
       if (data.variants) {
-         // Note: Deleting variants might be risky if they are referenced in orders/cart. 
-         // Ideally we should update existing ones and insert new ones.
-         // For now, assuming full replacement is requested.
-         // TODO: Handle referential integrity if variants are used.
-         await conn.query(`DELETE FROM product_variants WHERE product_id = ?`, [id]);
-         if (data.variants.length) {
-           const variantValues = data.variants.map(v => [id, v.name, v.sku, v.price, v.stock_quantity || 0]);
-           await conn.query(`INSERT INTO product_variants (product_id, name, sku, price, stock_quantity) VALUES ?`, [variantValues]);
-         }
+        // Note: Deleting variants might be risky if they are referenced in orders/cart. 
+        // Ideally we should update existing ones and insert new ones.
+        // For now, assuming full replacement is requested.
+        // TODO: Handle referential integrity if variants are used.
+        await conn.query(`DELETE FROM product_variants WHERE product_id = ?`, [id]);
+        if (data.variants.length) {
+          const variantValues = data.variants.map(v => [id, v.name, v.sku, v.price, v.stock_quantity || 0]);
+          await conn.query(`INSERT INTO product_variants (product_id, name, sku, price, stock_quantity) VALUES ?`, [variantValues]);
+        }
       }
 
       if (data.features) {

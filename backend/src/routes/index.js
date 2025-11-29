@@ -42,15 +42,8 @@ try {
   );
 }
 
-// Try loading "productRoutes"
-let productRoutes;
-try {
-  productRoutes = require('./productRoutes');
-} catch (e) {
-  productRoutes = express.Router().get('/', (req, res) =>
-    res.json({ msg: 'products route placeholder' })
-  );
-}
+// Load "productRoutes"
+const productRoutes = require('./productRoutes');
 
 // Try loading "orderRoutes"
 let orderRoutes;
@@ -75,7 +68,7 @@ router.use('/auth', authRoutes);
 
 // These stay commented until you create related modules
 // router.use('/users', userRoutes);
-// router.use('/products', productRoutes);
+router.use('/products', productRoutes);
 // router.use('/orders', orderRoutes);
 
 /**

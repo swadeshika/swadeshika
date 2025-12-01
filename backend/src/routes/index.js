@@ -69,7 +69,8 @@ router.use('/auth', authRoutes);
 // These stay commented until you create related modules
 // router.use('/users', userRoutes);
 router.use('/products', productRoutes);
-// router.use('/orders', orderRoutes);
+router.use('/orders', orderRoutes);
+router.use('/admin/orders', require('./adminOrderRoutes'));
 
 /**
  * Health Check Route

@@ -7,21 +7,27 @@ import { Phone, Mail, Clock, MapPin, MessageCircle, Instagram, Twitter, Facebook
 
 export const metadata = {
   title: "Contact Us - Swadeshika",
-  description: "Get in touch with Swadeshika's support team. We're here to help with orders, products, and any questions.",
+  description: "Get in touch with Swadeshika in Jodhpur. We're here to help with orders, products, and any questions.",
 }
 
 const contactInfo = [
   {
     icon: <Phone className="h-6 w-6 text-[#2D5F3F]" />,
     title: "Phone",
-    description: "+91 98765 43210",
-    link: "tel:+919876543210"
+    description: "+91 73000 39429",
+    link: "tel:+917300039429"
+  },
+  {
+    icon: <Phone className="h-6 w-6 text-[#2D5F3F]" />,
+    title: "Phone (Alternate)",
+    description: "+91 81509 76411",
+    link: "tel:+918150976411"
   },
   {
     icon: <Mail className="h-6 w-6 text-[#2D5F3F]" />,
     title: "Email",
-    description: "support@swadeshika.com",
-    link: "mailto:support@swadeshika.com"
+    description: "official.swadeshika@gmail.com",
+    link: "mailto:official.swadeshika@gmail.com"
   },
   {
     icon: <Clock className="h-6 w-6 text-[#2D5F3F]" />,
@@ -32,9 +38,9 @@ const contactInfo = [
   {
     icon: <MapPin className="h-6 w-6 text-[#2D5F3F]" />,
     title: "Visit Us",
-    description: "123, MG Road, Bengaluru",
-    extra: "Karnataka 560001, India",
-    link: "https://maps.google.com?q=Swadeshika+Bangalore"
+    description: "98, 99 Swavalamban Kendra, Karni Nagar",
+    extra: "Kudi - Madhuban Main Link Road, Jodhpur, Rajasthan",
+    link: "https://maps.google.com?q=Swadeshika+Jodhpur"
   }
 ]
 
@@ -44,7 +50,7 @@ export default function ContactPage() {
       <SiteHeader />
       <main className="flex-1 bg-muted/30">
         <div className="container mx-auto px-4 py-12">
-          <ShopHeader title="Contact Us" description="Have questions or feedback? We'd love to hear from you. Our team is here to help with any inquiries." />
+          <ShopHeader title="Contact Us" description="Visit us in Jodhpur! Have questions or feedback? We'd love to hear from you. Our team is here to help with any inquiries." />
           {/* Contact Grid */}
           <div className="grid lg:grid-cols-3 mt-8 gap-8">
             {/* Contact Form */}

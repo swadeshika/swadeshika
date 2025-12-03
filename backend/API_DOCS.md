@@ -1060,6 +1060,14 @@ Auth: Required
 **Request Body:**
 ```json
 {
+  "items": [
+    {
+      "product_id": 1,
+      "quantity": 2,
+      "price": 500,
+      "sku": "PROD-001"
+    }
+  ],
   "addressId": "addr-uuid",
   "paymentMethod": "cod",
   "couponCode": "WELCOME10",

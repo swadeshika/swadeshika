@@ -44,6 +44,7 @@ try {
 
 // Load "productRoutes"
 const productRoutes = require('./productRoutes');
+const categoryRoutes = require('./categoryRoutes');
 
 // Try loading "orderRoutes"
 let orderRoutes;
@@ -69,6 +70,7 @@ router.use('/auth', authRoutes);
 // These stay commented until you create related modules
 // router.use('/users', userRoutes);
 router.use('/products', productRoutes);
+router.use('/categories', categoryRoutes);
 // router.use('/orders', orderRoutes);
 
 /**

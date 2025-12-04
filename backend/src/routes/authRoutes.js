@@ -162,8 +162,8 @@ router.post('/logout', authController.logout);
 router.put(
   '/change-password',
   [
-    body('currentPassword').notEmpty().withMessage('Current password required'),
-    body('newPassword')
+    body('old_password').notEmpty().withMessage('Old password required'),
+    body('new_password')
       .notEmpty().withMessage('New password required')
       .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
       .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/)

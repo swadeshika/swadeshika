@@ -71,51 +71,33 @@ class AdminSettingsModel {
       'two_factor_enabled'
     ];
 
-    // 1. Check if settings exist
-    const existing = await this.getSettings();
-
-    const fields = [];
+    const updates = [];
     const values = [];
 
-    if (existing) {
-      // --- UPDATE PATH ---
-      for (const field of allowedFields) {
-        if (data[field] !== undefined) {
-          fields.push(`${field} = ?`);
-          values.push(data[field]);
-        }
+    // Build dynamic query
+    for (const field of allowedFields) {
+      if (data[field] !== undefined) {
+        updates.push(`${field} = ?`);
+        values.push(data[field]);
       }
-
-      if (fields.length === 0) return existing;
-
-      fields.push('updated_at = NOW()');
-
-      const query = `UPDATE admin_settings SET ${fields.join(', ')} WHERE id = 1`;
-      await db.query(query, values);
-
-    } else {
-      // --- INSERT PATH ---
-      // Force ID = 1
-      const insertFields = ['id'];
-      const insertValues = [1];
-      const placeholders = ['?'];
-
-      for (const field of allowedFields) {
-        if (data[field] !== undefined) {
-          insertFields.push(field);
-          insertValues.push(data[field]);
-          placeholders.push('?');
-        }
-      }
-
-      const query = `
-        INSERT INTO admin_settings (${insertFields.join(', ')}, updated_at)
-        VALUES (${placeholders.join(', ')}, NOW())
-      `;
-      await db.query(query, insertValues);
     }
 
-    return this.getSettings();
+    // If no valid fields to update, return current settings
+    if (updates.length === 0) {
+      return this.getSettings();
+    }
+
+    // Always update timestamp
+    updates.push('updated_at = NOW()');
+
+    const query = `
+      UPDATE admin_settings
+      SET ${updates.join(', ')}
+      WHERE id = 1
+    `;
+
+    await db.query(query, values);
+    return this.getSettings(); // Return updated settings
   }
 }
 

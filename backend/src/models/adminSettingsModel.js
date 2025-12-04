@@ -71,10 +71,36 @@ class AdminSettingsModel {
       'two_factor_enabled'
     ];
 
+    // 1. Get existing settings to find the correct ID
+    // WHY? We cannot assume ID=1 because auto-increment might have skipped it or user might have deleted/re-created rows.
+    const existing = await this.getSettings();
+    
+    // If no settings exist, create them with ID 1
+    if (!existing) {
+      const insertFields = ['id'];
+      const insertValues = [1];
+      const placeholders = ['?'];
+
+      for (const field of allowedFields) {
+        if (data[field] !== undefined) {
+          insertFields.push(field);
+          insertValues.push(data[field]);
+          placeholders.push('?');
+        }
+      }
+
+      const query = `
+        INSERT INTO admin_settings (${insertFields.join(', ')}, updated_at)
+        VALUES (${placeholders.join(', ')}, NOW())
+      `;
+      await db.query(query, insertValues);
+      return this.getSettings();
+    }
+
+    // 2. Update the EXISTING row (whatever its ID is)
     const updates = [];
     const values = [];
 
-    // Build dynamic query
     for (const field of allowedFields) {
       if (data[field] !== undefined) {
         updates.push(`${field} = ?`);
@@ -82,18 +108,20 @@ class AdminSettingsModel {
       }
     }
 
-    // If no valid fields to update, return current settings
     if (updates.length === 0) {
-      return this.getSettings();
+      return existing;
     }
 
-    // Always update timestamp
     updates.push('updated_at = NOW()');
+    
+    // Add ID to values array for WHERE clause
+    // This ensures we update the ACTUAL row found in step 1, not just "ID=1"
+    values.push(existing.id);
 
     const query = `
       UPDATE admin_settings
       SET ${updates.join(', ')}
-      WHERE id = 1
+      WHERE id = ?
     `;
 
     await db.query(query, values);

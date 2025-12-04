@@ -25,6 +25,7 @@ This document provides comprehensive details about the database schema, API endp
    - [Customers](#10-customers-endpoints-admin)
    - [Blog](#11-blog-endpoints)
    - [Reports](#12-reports-endpoints-admin)
+   - [Admin Settings](#13-admin-settings-endpoints)
 6. [Implementation Guidelines](#implementation-guidelines)
 7. [Error Handling](#error-handling)
 8. [Testing](#testing)
@@ -460,6 +461,34 @@ CREATE TABLE blog_posts (
   INDEX idx_published (published_at),
   FULLTEXT idx_search (title, excerpt, content)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 21. ADMIN SETTINGS TABLE
+-- ============================================================
+CREATE TABLE admin_settings (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  store_name VARCHAR(255) DEFAULT 'Swadeshika',
+  support_email VARCHAR(255) DEFAULT 'support@swadeshika.com',
+  support_phone VARCHAR(50) DEFAULT '+91 98765 43210',
+  store_address TEXT,
+  logo_data_url LONGTEXT,
+  guest_checkout BOOLEAN DEFAULT TRUE,
+  default_order_status ENUM('pending', 'confirmed', 'processing') DEFAULT 'pending',
+  currency ENUM('inr', 'usd') DEFAULT 'inr',
+  shipping_method ENUM('standard', 'express', 'pickup') DEFAULT 'standard',
+  free_shipping_threshold DECIMAL(10, 2),
+  flat_rate DECIMAL(10, 2),
+  gst_percent DECIMAL(5, 2),
+  prices_include_tax BOOLEAN DEFAULT FALSE,
+  ga_id VARCHAR(50),
+  search_console_id VARCHAR(50),
+  timezone ENUM('asia-kolkata', 'utc') DEFAULT 'asia-kolkata',
+  units ENUM('metric', 'imperial') DEFAULT 'metric',
+  low_stock_threshold INT DEFAULT 10,
+  allow_backorders BOOLEAN DEFAULT FALSE,
+  two_factor_enabled BOOLEAN DEFAULT FALSE,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
 ---
@@ -617,7 +646,29 @@ Auth: Required
 }
 ```
 
-#### 1.4 Refresh Token
+#### 1.4 Change Password
+```http
+POST /api/v1/auth/change-password
+Auth: Required
+```
+
+**Request Body:**
+```json
+{
+  "currentPassword": "OldPassword123!",
+  "newPassword": "NewPassword456!"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Password updated successfully"
+}
+```
+
+#### 1.5 Refresh Token
 ```http
 POST /api/v1/auth/refresh-token
 Cookie: refreshToken=<token>
@@ -633,7 +684,7 @@ Cookie: refreshToken=<token>
 }
 ```
 
-#### 1.5 Logout
+#### 1.6 Logout
 ```http
 POST /api/v1/auth/logout
 Auth: Required
@@ -1588,6 +1639,107 @@ Auth: Required (Admin)
 
 ---
 
+### 13. Admin Settings Endpoints
+
+#### 13.1 Get Settings
+```http
+GET /api/v1/admin/settings
+Auth: Required (Admin)
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "storeName": "Swadeshika",
+    "storeEmail": "support@swadeshika.com",
+    "storePhone": "+91 98765 43210",
+    "storeAddress": "Street, City, State, PIN",
+    "logoDataUrl": "data:image/png;base64,...",
+    "guestCheckout": true,
+    "defaultOrderStatus": "pending",
+    "currency": "inr",
+    "shippingMethod": "standard",
+    "freeShippingThreshold": 999,
+    "flatRate": 49,
+    "gstPercent": 18,
+    "pricesIncludeTax": false,
+    "gaId": "G-XXXXXXXXXX",
+    "searchConsoleId": "XXXXXXXXXXXX",
+    "timezone": "asia-kolkata",
+    "units": "metric",
+    "lowStockThreshold": 10,
+    "allowBackorders": false,
+    "twoFactorEnabled": false
+  }
+}
+```
+
+#### 13.2 Update Settings
+```http
+PUT /api/v1/admin/settings
+Auth: Required (Admin)
+```
+
+**Request Body:**
+```json
+{
+  "storeName": "Swadeshika Store",
+  "storeEmail": "admin@swadeshika.com",
+  "storePhone": "+91 98765 43210",
+  "storeAddress": "New Address...",
+  "logoDataUrl": "data:image/png;base64,...",
+  "guestCheckout": false,
+  "defaultOrderStatus": "confirmed",
+  "currency": "usd",
+  "shippingMethod": "express",
+  "freeShippingThreshold": 500,
+  "flatRate": 100,
+  "gstPercent": 12,
+  "pricesIncludeTax": true,
+  "gaId": "G-NEWID",
+  "searchConsoleId": "NEWID",
+  "timezone": "utc",
+  "units": "imperial",
+  "lowStockThreshold": 5,
+  "allowBackorders": true,
+  "twoFactorEnabled": true
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Settings updated successfully",
+  "data": {
+    "storeName": "Swadeshika Store",
+    "storeEmail": "admin@swadeshika.com",
+    "storePhone": "+91 98765 43210",
+    "storeAddress": "New Address...",
+    "logoDataUrl": "data:image/png;base64,...",
+    "guestCheckout": false,
+    "defaultOrderStatus": "confirmed",
+    "currency": "usd",
+    "shippingMethod": "express",
+    "freeShippingThreshold": 500,
+    "flatRate": 100,
+    "gstPercent": 12,
+    "pricesIncludeTax": true,
+    "gaId": "G-NEWID",
+    "searchConsoleId": "NEWID",
+    "timezone": "utc",
+    "units": "imperial",
+    "lowStockThreshold": 5,
+    "allowBackorders": true,
+    "twoFactorEnabled": true
+  }
+}
+```
+
+---
+
 ## Implementation Guidelines
 
 ### File Structure
@@ -1681,7 +1833,8 @@ class ProductModel {
     const offset = (page - 1) * limit;
     
     let query = `
-      SELECT p.*, c.name as category_name, c.slug as category_slug,
+      SELECT p.id, p.name, p.slug, p.price, p.compare_price, p.rating, p.review_count, p.in_stock,
+             c.name as category_name, c.slug as category_slug,
              (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = TRUE LIMIT 1) as primary_image
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
@@ -1749,7 +1902,9 @@ class ProductModel {
   
   static async findById(id) {
     const [products] = await db.query(
-      `SELECT p.*, c.name as category_name, c.slug as category_slug
+      `SELECT p.id, p.name, p.slug, p.description, p.short_description, p.price, 
+              p.compare_price, p.stock_quantity, p.rating, p.review_count, p.in_stock,
+              c.name as category_name, c.slug as category_slug
        FROM products p
        LEFT JOIN categories c ON p.category_id = c.id
        WHERE p.id = ?`,
@@ -1762,14 +1917,19 @@ class ProductModel {
     
     // Get images
     const [images] = await db.query(
-      `SELECT * FROM product_images WHERE product_id = ? ORDER BY display_order`,
+      `SELECT id, image_url, alt_text, is_primary, display_order 
+       FROM product_images 
+       WHERE product_id = ? 
+       ORDER BY display_order`,
       [id]
     );
     product.images = images;
     
     // Get variants
     const [variants] = await db.query(
-      `SELECT * FROM product_variants WHERE product_id = ? AND is_active = TRUE`,
+      `SELECT id, name, sku, price, compare_price, stock_quantity, weight, weight_unit 
+       FROM product_variants 
+       WHERE product_id = ? AND is_active = TRUE`,
       [id]
     );
     product.variants = variants;

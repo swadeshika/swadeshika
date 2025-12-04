@@ -155,4 +155,22 @@ router.get('/me', authController.getMe);
  */
 router.post('/logout', authController.logout);
 
+/**
+ * /change-password
+ * Requires old_password and new_password
+ */
+router.put(
+  '/change-password',
+  [
+    body('old_password').notEmpty().withMessage('Old password required'),
+    body('new_password')
+      .notEmpty().withMessage('New password required')
+      .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/)
+      .withMessage('Password must contain uppercase, lowercase, number and special char'),
+  ],
+  validate,
+  authController.changePassword
+);
+
 module.exports = router;

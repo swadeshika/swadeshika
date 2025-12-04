@@ -438,6 +438,34 @@ CREATE TABLE blog_posts (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
+-- 20. ADMIN SETTINGS TABLE
+-- ============================================================
+CREATE TABLE admin_settings (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  store_name VARCHAR(255) DEFAULT 'Swadeshika',
+  support_email VARCHAR(255) DEFAULT 'support@swadeshika.com',
+  support_phone VARCHAR(50) DEFAULT '+91 98765 43210',
+  store_address TEXT,
+  logo_data_url LONGTEXT,
+  guest_checkout BOOLEAN DEFAULT TRUE,
+  default_order_status ENUM('pending', 'confirmed', 'processing') DEFAULT 'pending',
+  currency ENUM('inr', 'usd') DEFAULT 'inr',
+  shipping_method ENUM('standard', 'express', 'pickup') DEFAULT 'standard',
+  free_shipping_threshold DECIMAL(10, 2),
+  flat_rate DECIMAL(10, 2),
+  gst_percent DECIMAL(5, 2),
+  prices_include_tax BOOLEAN DEFAULT FALSE,
+  ga_id VARCHAR(50),
+  search_console_id VARCHAR(50),
+  timezone ENUM('asia-kolkata', 'utc') DEFAULT 'asia-kolkata',
+  units ENUM('metric', 'imperial') DEFAULT 'metric',
+  low_stock_threshold INT DEFAULT 10,
+  allow_backorders BOOLEAN DEFAULT FALSE,
+  two_factor_enabled BOOLEAN DEFAULT FALSE,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
 -- SAMPLE DATA (Optional - for testing)
 -- ============================================================
 
@@ -460,6 +488,10 @@ INSERT INTO blog_categories (name, slug, description, display_order) VALUES
 ('Recipes', 'recipes', 'Traditional and modern recipes', 2),
 ('Farming', 'farming', 'Stories from our farmers', 3),
 ('Product News', 'product-news', 'New product launches and updates', 4);
+
+-- Insert default admin settings
+INSERT INTO admin_settings (store_name, support_email, support_phone, currency, timezone) VALUES
+('Swadeshika Store', 'admin@swadeshika.com', '+91 98765 43210', 'inr', 'asia-kolkata');
 
 -- ============================================================
 -- VERIFICATION QUERIES

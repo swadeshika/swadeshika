@@ -18,6 +18,7 @@ const router = express.Router();
 
 // Import authentication routes
 const authRoutes = require('./authRoutes');
+const settingsRoutes = require('./adminSettingsRoutes');
 
 /**
  * Dynamic Module Loading (Temporary Placeholders)
@@ -66,6 +67,7 @@ try {
  */
 
 router.use('/auth', authRoutes);
+router.use('/admin/settings', settingsRoutes);
 
 // These stay commented until you create related modules
 // router.use('/users', userRoutes);

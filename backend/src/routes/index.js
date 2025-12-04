@@ -74,6 +74,7 @@ router.use('/admin/settings', settingsRoutes);
 router.use('/products', productRoutes);
 router.use('/categories', categoryRoutes);
 // router.use('/orders', orderRoutes);
+router.use('/wishlist', require('./wishlistRoutes'));
 
 /**
  * Health Check Route

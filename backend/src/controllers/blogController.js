@@ -62,18 +62,17 @@ const createPost = async (req, res) => {
         // Generate slug from title if not provided
         const slug = req.body.slug || slugify(title);
 
+        // Default category to 'swadeshika' if not provided
+        const categoryInput = category || 'swadeshika';
+
         // Handle category: if string, try to find ID, otherwise assume ID
-        let categoryId = category;
-        if (typeof category === 'string' && isNaN(category)) {
-            categoryId = await BlogModel.getCategoryIdByName(category);
+        let categoryId = categoryInput;
+        if (typeof categoryInput === 'string' && isNaN(categoryInput)) {
+            categoryId = await BlogModel.getCategoryIdByName(categoryInput);
+
+            // If category not found, create it
             if (!categoryId) {
-                // If category not found, maybe create it? Or return error?
-                // For now, let's return error or null (which sets category_id to NULL)
-                // Or just proceed with NULL if not found.
-                // Better to return error if category was provided but not found.
-                // But for simplicity, I'll set it to null if not found.
-                // Actually, let's try to be strict if category is provided.
-                // But the docs example shows "Health", so it should exist.
+                categoryId = await BlogModel.createCategory(categoryInput);
             }
         }
 

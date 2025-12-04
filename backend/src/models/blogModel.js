@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { slugify } = require('../utils/stringUtils');
 
 class BlogModel {
 
@@ -10,7 +11,7 @@ class BlogModel {
         const params = [];
 
         let sql = `
-      SELECT b.*, c.name as category_name, c.slug as category_slug, u.name as author_name
+      SELECT b.id, b.title, b.slug, b.excerpt, b.featured_image, b.author_id, b.category_id, b.tags, b.status, b.published_at, b.created_at, b.updated_at, c.name as category_name, c.slug as category_slug, u.name as author_name
       FROM blog_posts b
       LEFT JOIN blog_categories c ON b.category_id = c.id
       LEFT JOIN users u ON b.author_id = u.id
@@ -150,6 +151,16 @@ class BlogModel {
         const sql = `SELECT id FROM blog_categories WHERE name = ? OR slug = ?`;
         const [rows] = await db.query(sql, [nameOrSlug, nameOrSlug]);
         return rows[0] ? rows[0].id : null;
+    }
+
+    /**
+     * Create a new category
+     */
+    static async createCategory(name) {
+        const slug = slugify(name);
+        const sql = `INSERT INTO blog_categories (name, slug) VALUES (?, ?)`;
+        const [result] = await db.query(sql, [name, slug]);
+        return result.insertId;
     }
 }
 

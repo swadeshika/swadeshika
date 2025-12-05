@@ -72,6 +72,11 @@ router.use('/admin/settings', settingsRoutes);
 // These stay commented until you create related modules
 // router.use('/users', userRoutes);
 router.use('/products', productRoutes);
+router.use('/orders', orderRoutes);
+router.use('/admin/orders', require('./adminOrderRoutes'));
+router.use('/blog', require('./blogRoutes'));
+router.use('/admin/blog', require('./adminBlogRoutes'));
+
 router.use('/categories', categoryRoutes);
 // router.use('/orders', orderRoutes);
 router.use('/wishlist', require('./wishlistRoutes'));

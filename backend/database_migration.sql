@@ -3,6 +3,38 @@
 -- Migration Script - Complete Database Setup (FIXED VERSION)
 -- ============================================================
 -- 
+-- SCHEMA OVERVIEW:
+-- ----------------
+-- Total Tables: 25
+-- - Users & Auth: users, addresses (2)
+-- - Products: products, categories, product_images, product_variants, 
+--   product_features, product_specifications, product_tags (7)
+-- - Shopping: cart_items, orders, order_items, wishlist (4)
+-- - Discounts: coupons, coupon_usage, coupon_products, coupon_categories (4)
+-- - Content: blog_posts, blog_categories, contact_submissions, 
+--   newsletter_subscribers (4)
+-- - Reviews: reviews (1)
+-- - Admin: admin_settings (1)
+-- - Analytics: site_analytics, visitor_logs (2)
+--
+-- ID CONVENTIONS:
+-- ---------------
+-- VARCHAR(36) - UUIDs for user-related: users, addresses, orders
+-- INT AUTO_INCREMENT - For products, categories, variants, etc.
+--
+-- NAMING CONVENTIONS:
+-- -------------------
+-- All columns use snake_case
+-- Exception: users.name (single field, not first_name/last_name)
+--
+-- IMPORTANT NOTES:
+-- ----------------
+-- 1. Users table has single 'name' column (NOT first_name/last_name)
+-- 2. Addresses use: full_name, address_line1, address_line2
+-- 3. All timestamps auto-managed (created_at, updated_at)
+-- 4. Enum fields enforce strict validation
+-- 5. Foreign keys with proper CASCADE/SET NULL
+--
 -- FIXES APPLIED:
 -- ✅ Issue 1: Changed product_variants.id from VARCHAR(36) to INT AUTO_INCREMENT
 -- ✅ Issue 2: Consistent ID types (INT for products/categories, VARCHAR for user-related)
@@ -12,6 +44,7 @@
 -- ✅ Issue 6: Added coupon_products and coupon_categories tables
 -- ✅ Issue 7: Added blog_categories table with proper foreign key
 -- ============================================================
+
 
 -- Drop existing tables if they exist (in reverse order of dependencies)
 DROP TABLE IF EXISTS blog_posts;
@@ -396,6 +429,9 @@ CREATE TABLE coupon_categories (
 -- ============================================================
 -- 18. BLOG CATEGORIES TABLE
 -- ✅ ADDED: Proper blog category management
+-- ✅ APIs AVAILABLE: Full CRUD via /api/v1/blog/categories
+--    - GET /api/v1/blog/categories/active (public)
+--    - GET/POST/PUT/DELETE /api/v1/blog/categories (admin)
 -- ============================================================
 CREATE TABLE blog_categories (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -466,6 +502,59 @@ CREATE TABLE admin_settings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
+-- 21. CONTACT SUBMISSIONS TABLE
+-- ============================================================
+CREATE TABLE contact_submissions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  phone VARCHAR(50),
+  subject VARCHAR(255) NOT NULL,
+  order_number VARCHAR(50),
+  message TEXT NOT NULL,
+  status ENUM('new', 'read', 'replied', 'archived') DEFAULT 'new',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_email (email),
+  INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 22. NEWSLETTER SUBSCRIBERS TABLE
+-- ============================================================
+CREATE TABLE newsletter_subscribers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+  subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  unsubscribed_at TIMESTAMP NULL,
+  INDEX idx_email (email),
+  INDEX idx_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 23. SITE ANALYTICS TABLE (Simple Counters)
+-- ============================================================
+CREATE TABLE site_analytics (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  metric_key VARCHAR(100) UNIQUE NOT NULL,
+  metric_value BIGINT DEFAULT 0,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 24. VISITOR LOGS TABLE (Detailed Tracking)
+-- ============================================================
+CREATE TABLE visitor_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ip_address VARCHAR(45),
+  user_agent VARCHAR(500),
+  page_url VARCHAR(500),
+  visited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_ip (ip_address),
+  INDEX idx_date (visited_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
 -- SAMPLE DATA (Optional - for testing)
 -- ============================================================
 
@@ -492,6 +581,9 @@ INSERT INTO blog_categories (name, slug, description, display_order) VALUES
 -- Insert default admin settings
 INSERT INTO admin_settings (store_name, support_email, support_phone, currency, timezone) VALUES
 ('Swadeshika Store', 'admin@swadeshika.com', '+91 98765 43210', 'inr', 'asia-kolkata');
+
+-- Initialize Visitor Count
+INSERT INTO site_analytics (metric_key, metric_value) VALUES ('visitor_count', 1000);
 
 -- ============================================================
 -- VERIFICATION QUERIES

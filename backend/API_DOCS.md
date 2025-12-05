@@ -26,6 +26,10 @@ This document provides comprehensive details about the database schema, API endp
    - [Blog](#11-blog-endpoints)
    - [Reports](#12-reports-endpoints-admin)
    - [Admin Settings](#13-admin-settings-endpoints)
+   - [Contact](#14-contact-endpoints)
+   - [Newsletter](#15-newsletter-endpoints)
+   - [Analytics](#16-analytics-endpoints)
+   - [Order Tracking](#17-order-tracking-endpoint)
 6. [Implementation Guidelines](#implementation-guidelines)
 7. [Error Handling](#error-handling)
 8. [Testing](#testing)
@@ -2053,7 +2057,671 @@ module.exports = ProductModel;
 
 ---
 
-## Error Handling
+### 11. Blog Endpoints
+
+#### 11.1 Get All Blog Posts
+```http
+GET /api/v1/blog
+```
+
+**Query Parameters:**
+- `page` (number): Page number (default: 1)
+- `limit` (number): Items per page (default: 10)
+- `status` (string): Filter by status (published)
+- `category` (string): Filter by category slug
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "posts": [
+      {
+        "id": 1,
+        "title": "Health Benefits of A2 Ghee",
+        "slug": "health-benefits-a2-ghee",
+        "excerpt": "Discover the amazing health benefits...",
+        "featuredImage": "/blog/ghee-benefits.jpg",
+        "author": {
+          "id": "uuid",
+          "name": "Admin"
+        },
+        "category": {
+          "id": 1,
+          "name": "Health & Wellness",
+          "slug": "health-wellness"
+        },
+        "publishedAt": "2025-01-15T10:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 25,
+      "pages": 3
+    }
+  }
+}
+```
+
+#### 11.2 Get Blog Post by Slug
+```http
+GET /api/v1/blog/:slug
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "title": "Health Benefits of A2 Ghee",
+    "slug": "health-benefits-a2-ghee",
+    "excerpt": "Discover the amazing health benefits...",
+    "content": "Full article content...",
+    "featuredImage": "/blog/ghee-benefits.jpg",
+    "author": {
+      "id": "uuid",
+      "name": "Admin"
+    },
+    "category": {
+      "id": 1,
+      "name": "Health & Wellness"
+    },
+    "tags": ["ghee", "health", "ayurveda"],
+    "publishedAt": "2025-01-15T10:00:00.000Z"
+  }
+}
+```
+
+#### 11.3 Create Blog Post (Admin)
+```http
+POST /api/v1/admin/blog
+Auth: Required (Admin)
+```
+
+**Request Body:**
+```json
+{
+  "title": "New Blog Post",
+  "excerpt": "Short description",
+  "content": "Full content...",
+  "featuredImage": "/blog/image.jpg",
+  "categoryId": 1,
+  "tags": ["tag1", "tag2"],
+  "status": "published"
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Blog post created successfully",
+  "data": {
+    "id": 2,
+    "slug": "new-blog-post"
+  }
+}
+```
+
+#### 11.4 Update Blog Post (Admin)
+```http
+PUT /api/v1/admin/blog/:id
+Auth: Required (Admin)
+```
+
+**Request Body:** (Same as create)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Blog post updated successfully"
+}
+```
+
+#### 11.5 Delete Blog Post (Admin)
+```http
+DELETE /api/v1/admin/blog/:id
+Auth: Required (Admin)
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Blog post deleted successfully"
+}
+```
+
+---
+
+### 11.6 Blog Categories Endpoints
+
+#### 11.6.1 Get Active Categories (Public)
+```http
+GET /api/v1/blog/categories/active
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Health & Wellness",
+      "slug": "health-wellness",
+      "description": "Articles about health benefits",
+      "display_order": 1,
+      "is_active": true,
+      "created_at": "2025-01-15T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+#### 11.6.2 Get All Categories (Admin)
+```http
+GET /api/v1/blog/categories
+Auth: Required (Admin)
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Health & Wellness",
+      "slug": "health-wellness",
+      "description": "Articles about health benefits",
+      "display_order": 1,
+      "is_active": true,
+      "created_at": "2025-01-15T10:00:00.000Z",
+      "updated_at": "2025-01-15T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+#### 11.6.3 Get Single Category (Admin)
+```http
+GET /api/v1/blog/categories/:id
+Auth: Required (Admin)
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "Health & Wellness",
+    "slug": "health-wellness",
+    "description": "Articles about health benefits",
+    "display_order": 1,
+    "is_active": true,
+    "created_at": "2025-01-15T10:00:00.000Z",
+    "updated_at": "2025-01-15T10:00:00.000Z"
+  }
+}
+```
+
+#### 11.6.4 Create Category (Admin)
+```http
+POST /api/v1/blog/categories
+Auth: Required (Admin)
+```
+
+**Request Body:**
+```json
+{
+  "name": "Recipes",
+  "slug": "recipes",
+  "description": "Traditional and modern recipes",
+  "display_order": 2,
+  "is_active": true
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Blog category created successfully",
+  "data": {
+    "id": 2,
+    "name": "Recipes",
+    "slug": "recipes",
+    "description": "Traditional and modern recipes",
+    "display_order": 2,
+    "is_active": true,
+    "created_at": "2025-01-16T10:00:00.000Z",
+    "updated_at": "2025-01-16T10:00:00.000Z"
+  }
+}
+```
+
+#### 11.6.5 Update Category (Admin)
+```http
+PUT /api/v1/blog/categories/:id
+Auth: Required (Admin)
+```
+
+**Request Body:**
+```json
+{
+  "name": "Healthy Recipes",
+  "description": "Updated description",
+  "is_active": false
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Blog category updated successfully",
+  "data": {
+    "id": 2,
+    "name": "Healthy Recipes",
+    "slug": "recipes",
+    "description": "Updated description",
+    "display_order": 2,
+    "is_active": false,
+    "created_at": "2025-01-16T10:00:00.000Z",
+    "updated_at": "2025-01-16T11:00:00.000Z"
+  }
+}
+```
+
+#### 11.6.6 Delete Category (Admin)
+```http
+DELETE /api/v1/blog/categories/:id
+Auth: Required (Admin)
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Blog category deleted successfully"
+}
+```
+
+---
+
+### 12. Reports Endpoints (Admin)
+
+#### 12.1 Get Dashboard Overview
+```http
+GET /api/v1/admin/dashboard/overview
+Auth: Required (Admin)
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "totalRevenue": 125000,
+    "totalOrders": 456,
+    "totalUsers": 1234,
+    "totalProducts": 89,
+    "revenueGrowth": 15.5,
+    "ordersGrowth": 12.3,
+    "lowStockProducts": 5,
+    "pendingOrders": 12,
+    "recentOrders": [
+      {
+        "id": "uuid",
+        "orderNumber": "ORD-2025-001",
+        "customer": "John Doe",
+        "total": 1500,
+        "status": "processing",
+        "createdAt": "2025-01-16T10:00:00.000Z"
+      }
+    ],
+    "topProducts": [
+      {
+        "id": 1,
+        "name": "Pure Desi Cow Ghee",
+        "soldQuantity": 234,
+        "revenue": 45000
+      }
+    ]
+  }
+}
+```
+
+#### 12.2 Get Detailed Reports
+```http
+GET /api/v1/admin/dashboard/reports
+Auth: Required (Admin)
+```
+
+**Query Parameters:**
+- `startDate` (string): Start date (ISO format)
+- `endDate` (string): End date (ISO format)
+- `type` (string): Report type (sales, products, customers)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "period": {
+      "start": "2025-01-01",
+      "end": "2025-01-31"
+    },
+    "totalRevenue": 250000,
+    "totalOrders": 890,
+    "averageOrderValue": 280.89,
+    "dailyRevenue": [
+      {
+        "date": "2025-01-01",
+        "revenue": 8500,
+        "orders": 32
+      }
+    ],
+    "topCategories": [
+      {
+        "category": "Ghee",
+        "revenue": 125000,
+        "orders": 450
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 13. Admin Settings Endpoints
+
+#### 13.1 Get Admin Settings
+```http
+GET /api/v1/admin/settings
+Auth: Required (Admin)
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "storeName": "Swadeshika",
+    "supportEmail": "support@swadeshika.com",
+    "supportPhone": "+91 98765 43210",
+    "storeAddress": "123 Main Street, City",
+    "logoDataUrl": "data:image/png;base64,...",
+    "guestCheckout": true,
+    "defaultOrderStatus": "pending",
+    "currency": "inr",
+    "enabledGateways": ["razorpay", "cod"],
+    "gatewayConfigs": {
+      "razorpay": {
+        "keyId": "rzp_test_xxx"
+      }
+    },
+    "shippingMethod": "standard",
+    "freeShippingThreshold": 499,
+    "flatRate": 50,
+    "gstPercent": 18,
+    "pricesIncludeTax": false,
+    "gaId": "UA-XXXXXXX-X",
+    "searchConsoleId": "XXX",
+    "timezone": "asia-kolkata",
+    "units": "metric",
+    "lowStockThreshold": 10,
+    "allowBackorders": false,
+    "twoFactorEnabled": false
+  }
+}
+```
+
+#### 13.2 Update Admin Settings
+```http
+PUT /api/v1/admin/settings
+Auth: Required (Admin)
+```
+
+**Request Body:**
+```json
+{
+  "storeName": "Swadeshika Store",
+  "supportEmail": "support@swadeshika.com",
+  "supportPhone": "+91 98765 43210",
+  "freeShippingThreshold": 599,
+  "flatRate": 60,
+  "gstPercent": 18
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Settings updated successfully",
+  "data": {
+    "storeName": "Swadeshika Store",
+    "freeShippingThreshold": 599
+  }
+}
+```
+
+---
+
+### 14. Contact Endpoints
+
+#### 14.1 Submit Contact Form
+```http
+POST /api/v1/contact
+```
+
+**Request Body:**
+```json
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+919876543210",
+  "subject": "Product Inquiry",
+  "orderNumber": "ORD-2025-001",
+  "message": "I have a question about..."
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Your message has been received. We'll get back to you soon."
+}
+```
+
+#### 14.2 Get All Contact Submissions (Admin)
+```http
+GET /api/v1/contact
+Auth: Required (Admin)
+```
+
+**Query Parameters:**
+- `page` (number): Page number (default: 1)
+- `limit` (number): Items per page (default: 20)
+- `status` (string): Filter by status (new, read, replied, archived)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "submissions": [
+      {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john@example.com",
+        "phone": "+919876543210",
+        "subject": "Product Inquiry",
+        "orderNumber": "ORD-2025-001",
+        "message": "I have a question...",
+        "status": "new",
+        "createdAt": "2025-01-16T10:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 45,
+      "pages": 3
+    }
+  }
+}
+```
+
+---
+
+### 15. Newsletter Endpoints
+
+#### 15.1 Subscribe to Newsletter
+```http
+POST /api/v1/newsletter/subscribe
+```
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Successfully subscribed to newsletter"
+}
+```
+
+#### 15.2 Get All Subscribers (Admin)
+```http
+GET /api/v1/newsletter
+Auth: Required (Admin)
+```
+
+**Query Parameters:**
+- `page` (number): Page number (default: 1)
+- `limit` (number): Items per page (default: 50)
+- `isActive` (boolean): Filter active/inactive
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "subscribers": [
+      {
+        "id": 1,
+        "email": "user@example.com",
+        "isActive": true,
+        "subscribedAt": "2025-01-16T10:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 50,
+      "total": 1234,
+      "pages": 25
+    }
+  }
+}
+```
+
+---
+
+### 16. Analytics Endpoints
+
+#### 16.1 Track Visitor
+```http
+POST /api/v1/analytics/visitors/track
+```
+
+**Request Body:**
+```json
+{
+  "path": "/products/pure-desi-cow-ghee",
+  "userAgent": "Mozilla/5.0..."
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Visitor tracked successfully"
+}
+```
+
+#### 16.2 Get Visitor Count
+```http
+GET /api/v1/analytics/visitors/count
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "count": 15234,
+    "lastUpdated": "2025-01-16T10:00:00.000Z"
+  }
+}
+```
+
+---
+
+### 17. Order Tracking Endpoint
+
+#### 17.1 Track Order by Tracking Number
+```http
+POST /api/v1/orders/track
+```
+
+**Request Body:**
+```json
+{
+  "trackingNumber": "TRK123456789"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "orderNumber": "ORD-2025-001",
+    "status": "shipped",
+    "trackingNumber": "TRK123456789",
+    "items": [
+      {
+        "productName": "Pure Desi Cow Ghee",
+        "quantity": 2,
+        "price": 850
+      }
+    ],
+    "total": 1700,
+    "shippedAt": "2025-01-15T10:00:00.000Z",
+    "estimatedDelivery": "2025-01-20T10:00:00.000Z"
+  }
+}
+```
+
+---
+
+## Implementation Guidelines
 
 ### Standard Error Response Format
 

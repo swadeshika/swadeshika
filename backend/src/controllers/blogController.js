@@ -3,9 +3,24 @@ const { slugify } = require('../utils/stringUtils');
 const { getMessage } = require('../constants/messages');
 
 /**
- * Get all blog posts
+ * blogController.js
+ * -----------------
+ * Handles all blog-related operations:
+ * 1. Get All Posts (Public)
+ * 2. Get Post By Slug (Public)
+ * 3. Create Post (Admin)
+ * 4. Update Post (Admin)
+ * 5. Delete Post (Admin)
  */
-const getAllPosts = async (req, res) => {
+
+/**
+ * Get all blog posts
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
+const getAllPosts = async (req, res, next) => {
     try {
         const { page, limit, category, search, status } = req.query;
         const result = await BlogModel.findAll({ page, limit, category, search, status });
@@ -15,18 +30,18 @@ const getAllPosts = async (req, res) => {
             data: result
         });
     } catch (err) {
-        console.error('Get all posts error:', err);
-        return res.status(500).json({
-            success: false,
-            message: getMessage('INTERNAL_SERVER_ERROR')
-        });
+        next(err);
     }
 };
 
 /**
  * Get blog post by slug
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
-const getPostBySlug = async (req, res) => {
+const getPostBySlug = async (req, res, next) => {
     try {
         const { slug } = req.params;
         const post = await BlogModel.findBySlug(slug);
@@ -43,18 +58,18 @@ const getPostBySlug = async (req, res) => {
             data: post
         });
     } catch (err) {
-        console.error('Get post by slug error:', err);
-        return res.status(500).json({
-            success: false,
-            message: getMessage('INTERNAL_SERVER_ERROR')
-        });
+        next(err);
     }
 };
 
 /**
  * Create blog post (Admin)
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
-const createPost = async (req, res) => {
+const createPost = async (req, res, next) => {
     try {
         const { title, content, excerpt, featuredImage, category, tags, status } = req.body;
         const authorId = req.user.id; // From auth middleware
@@ -97,24 +112,24 @@ const createPost = async (req, res) => {
             }
         });
     } catch (err) {
-        console.error('Create post error:', err);
         if (err.code === 'ER_DUP_ENTRY') {
             return res.status(400).json({
                 success: false,
                 message: 'Slug already exists'
             });
         }
-        return res.status(500).json({
-            success: false,
-            message: getMessage('INTERNAL_SERVER_ERROR')
-        });
+        next(err);
     }
 };
 
 /**
  * Update blog post (Admin)
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
-const updatePost = async (req, res) => {
+const updatePost = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { title, content, excerpt, featuredImage, category, tags, status, slug } = req.body;
@@ -148,18 +163,18 @@ const updatePost = async (req, res) => {
             message: 'Blog post updated successfully'
         });
     } catch (err) {
-        console.error('Update post error:', err);
-        return res.status(500).json({
-            success: false,
-            message: getMessage('INTERNAL_SERVER_ERROR')
-        });
+        next(err);
     }
 };
 
 /**
  * Delete blog post (Admin)
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
-const deletePost = async (req, res) => {
+const deletePost = async (req, res, next) => {
     try {
         const { id } = req.params;
         const deleted = await BlogModel.delete(id);
@@ -176,11 +191,7 @@ const deletePost = async (req, res) => {
             message: 'Blog post deleted successfully'
         });
     } catch (err) {
-        console.error('Delete post error:', err);
-        return res.status(500).json({
-            success: false,
-            message: getMessage('INTERNAL_SERVER_ERROR')
-        });
+        next(err);
     }
 };
 
@@ -191,3 +202,4 @@ module.exports = {
     updatePost,
     deletePost
 };
+

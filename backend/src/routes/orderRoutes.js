@@ -5,11 +5,17 @@ const {
     getAllOrders,
     getMyOrders,
     getOrderById,
-    cancelOrder
+    getOrderById,
+    cancelOrder,
+    trackOrder
 } = require('../controllers/orderController');
 const { authenticate, authorize } = require('../middlewares/authMiddleware');
 
 // Routes
+// Public Routes
+router.post('/track', trackOrder);
+
+// Protected Routes
 router.post('/', authenticate, createOrder);
 router.get('/', authenticate, getMyOrders);
 router.get('/:id', authenticate, getOrderById);

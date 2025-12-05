@@ -1,9 +1,18 @@
 const db = require('../config/db');
 
+/**
+ * categoryModel.js
+ * ----------------
+ * Database interactions for Categories.
+ * Uses raw SQL queries via mysql2 pool.
+ */
 class CategoryModel {
     /**
      * Find all categories
-     * @param {Object} options - { includeSubcategories: boolean }
+     * 
+     * @param {Object} options - Options object
+     * @param {boolean} options.includeSubcategories - Whether to build a nested tree
+     * @returns {Promise<Array>} List of categories (flat or nested)
      */
     static async findAll({ includeSubcategories = false } = {}) {
         let sql = `
@@ -27,6 +36,10 @@ class CategoryModel {
 
     /**
      * Helper to build category tree
+     * 
+     * @param {Array} categories - Flat list of categories
+     * @param {number|null} parentId - Parent ID to filter by
+     * @returns {Array} Nested category tree
      */
     static buildCategoryTree(categories, parentId = null) {
         const categoryList = [];
@@ -49,6 +62,9 @@ class CategoryModel {
 
     /**
      * Find category by ID
+     * 
+     * @param {number|string} id - Category ID
+     * @returns {Promise<Object|undefined>} Category object or undefined
      */
     static async findById(id) {
         const sql = `
@@ -66,6 +82,9 @@ class CategoryModel {
 
     /**
      * Find category by Slug
+     * 
+     * @param {string} slug - Category slug
+     * @returns {Promise<Object|undefined>} Category object or undefined
      */
     static async findBySlug(slug) {
         const sql = `SELECT id, name, slug, parent_id, description, display_order, is_active, created_at, updated_at FROM categories WHERE slug = ?`;
@@ -75,6 +94,9 @@ class CategoryModel {
 
     /**
      * Create new category
+     * 
+     * @param {Object} data - Category data
+     * @returns {Promise<number>} Inserted ID
      */
     static async create(data) {
         const sql = `
@@ -94,6 +116,10 @@ class CategoryModel {
 
     /**
      * Update category
+     * 
+     * @param {number|string} id - Category ID
+     * @param {Object} data - Update data
+     * @returns {Promise<boolean>} True if updated
      */
     static async update(id, data) {
         const sql = `
@@ -115,6 +141,9 @@ class CategoryModel {
 
     /**
      * Delete category
+     * 
+     * @param {number|string} id - Category ID
+     * @returns {Promise<boolean>} True if deleted
      */
     static async delete(id) {
         const sql = `DELETE FROM categories WHERE id = ?`;

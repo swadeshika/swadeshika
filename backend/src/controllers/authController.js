@@ -12,6 +12,7 @@
  * 5. Refresh Access Token using Refresh Token
  * 6. Forgot Password (generate password reset token)
  * 7. Reset Password (set new password)
+ * 8. Change Password
  *
  * This controller is the heart of the authentication system.
  */
@@ -65,8 +66,12 @@ const COOKIE_OPTIONS = {
  * 2. Create user in DB (password auto-hashed in model)
  * 3. Generate Access + Refresh tokens
  * 4. Store refresh token in cookie
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
-const register = async (req, res) => {
+const register = async (req, res, next) => {
   try {
     const { name, email, password, phone } = req.body;
 
@@ -98,11 +103,7 @@ const register = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('Registration error:', err);
-    return res.status(500).json({
-      success: false,
-      message: getMessage('INTERNAL_SERVER_ERROR'),
-    });
+    next(err);
   }
 };
 
@@ -121,8 +122,12 @@ const register = async (req, res) => {
  * 3. Verify password using bcrypt
  * 4. Generate new tokens
  * 5. Set refresh token cookie
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -160,11 +165,7 @@ const login = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('Login error:', err);
-    return res.status(500).json({
-      success: false,
-      message: getMessage('INTERNAL_SERVER_ERROR'),
-    });
+    next(err);
   }
 };
 
@@ -178,8 +179,12 @@ const login = async (req, res) => {
  * logout()
  * --------
  * Simply clears refresh token cookie.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
-const logout = (req, res) => {
+const logout = (req, res, next) => {
   try {
     res.clearCookie('refreshToken', COOKIE_OPTIONS);
 
@@ -188,11 +193,7 @@ const logout = (req, res) => {
       message: getMessage('LOGOUT_SUCCESS'),
     });
   } catch (err) {
-    console.error('Logout error:', err);
-    return res.status(500).json({
-      success: false,
-      message: getMessage('INTERNAL_SERVER_ERROR'),
-    });
+    next(err);
   }
 };
 
@@ -207,19 +208,19 @@ const logout = (req, res) => {
  * -------
  * Returns currently logged-in user.
  * authenticate() middleware puts user in req.user
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
-const getMe = async (req, res) => {
+const getMe = async (req, res, next) => {
   try {
     return res.status(200).json({
       success: true,
       data: req.user,
     });
   } catch (err) {
-    console.error('GetMe error:', err);
-    return res.status(500).json({
-      success: false,
-      message: getMessage('INTERNAL_SERVER_ERROR'),
-    });
+    next(err);
   }
 };
 
@@ -238,8 +239,12 @@ const getMe = async (req, res) => {
  * 3. Load user using decoded.id
  * 4. Generate new Access + Refresh tokens
  * 5. Return new access token
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
-const refreshToken = async (req, res) => {
+const refreshToken = async (req, res, next) => {
   try {
     const refresh = req.cookies.refreshToken || req.body.refreshToken;
 
@@ -270,11 +275,15 @@ const refreshToken = async (req, res) => {
       data: { accessToken: tokens.access.token },
     });
   } catch (err) {
-    console.error('Refresh token error:', err);
-    return res.status(401).json({
-      success: false,
-      message: getMessage('INVALID_REFRESH_TOKEN'),
-    });
+    // If token verification fails, it throws an error
+    // We catch it here and return 401
+    if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
+        return res.status(401).json({
+            success: false,
+            message: getMessage('INVALID_REFRESH_TOKEN'),
+        });
+    }
+    next(err);
   }
 };
 
@@ -293,8 +302,12 @@ const refreshToken = async (req, res) => {
  * ---------
  * - If user does NOT exist → still send success (do not reveal email existence)
  * - In production, this token would be emailed.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
-const forgotPassword = async (req, res) => {
+const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
 
@@ -327,11 +340,7 @@ const forgotPassword = async (req, res) => {
       message: 'If the email exists, a new password has been sent.',
     });
   } catch (err) {
-    console.error('Forgot password error:', err);
-    return res.status(500).json({
-      success: false,
-      message: getMessage('INTERNAL_SERVER_ERROR'),
-    });
+    next(err);
   }
 };
 
@@ -348,8 +357,12 @@ const forgotPassword = async (req, res) => {
  * 1. Decode RESET token
  * 2. Find user from token
  * 3. Save new password
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
-const resetPassword = async (req, res) => {
+const resetPassword = async (req, res, next) => {
   try {
     const { token } = req.params;
     const { password } = req.body;
@@ -372,11 +385,13 @@ const resetPassword = async (req, res) => {
       message: getMessage('PASSWORD_RESET_SUCCESS'),
     });
   } catch (err) {
-    console.error('Reset password error:', err);
-    return res.status(400).json({
-      success: false,
-      message: getMessage('INVALID_TOKEN'),
-    });
+    if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
+        return res.status(400).json({
+            success: false,
+            message: getMessage('INVALID_TOKEN'),
+        });
+    }
+    next(err);
   }
 };
 
@@ -388,8 +403,12 @@ const resetPassword = async (req, res) => {
  * changePassword()
  * ----------------
  * Updates password for authenticated user.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
-const changePassword = async (req, res) => {
+const changePassword = async (req, res, next) => {
   try {
     const { old_password, new_password } = req.body;
     const { id, role } = req.user;
@@ -401,19 +420,13 @@ const changePassword = async (req, res) => {
       message: 'Password updated successfully',
     });
   } catch (err) {
-    console.error('Change password error:', err);
-
     if (err.message === 'Incorrect current password' || err.message.includes('Invalid current password')) {
       return res.status(400).json({
         success: false,
         message: 'Incorrect current password',
       });
     }
-
-    return res.status(500).json({
-      success: false,
-      message: getMessage('INTERNAL_SERVER_ERROR'),
-    });
+    next(err);
   }
 };
 

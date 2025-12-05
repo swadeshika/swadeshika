@@ -1,7 +1,12 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from "lucide-react"
+import { Facebook, Instagram, Twitter, Mail, Phone, MapPin, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { api } from "@/lib/api"
+import { useToast } from "@/hooks/use-toast"
 
 /**
  * Footer Navigation Links Configuration
@@ -56,6 +61,59 @@ const footerLinks = {
  * - Clear visual hierarchy with borders and spacing
  */
 export function SiteFooter() {
+  const [email, setEmail] = useState("")
+  const [subscribing, setSubscribing] = useState(false)
+  const [visitorCount, setVisitorCount] = useState<number | null>(null)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    // Track visitor and get count on mount
+    const trackAndFetchVisitors = async () => {
+      try {
+        // Track visit
+        const response = await api.post('/analytics/visitors/track', { path: window.location.pathname })
+        if (response.data.success) {
+          setVisitorCount(response.data.data.count)
+        }
+      } catch (error) {
+        console.error("Failed to track visitor", error)
+        // Fallback to just getting count if tracking fails
+        try {
+          const countRes = await api.get('/analytics/visitors/count')
+          if (countRes.data.success) {
+            setVisitorCount(countRes.data.data.count)
+          }
+        } catch (e) {}
+      }
+    }
+
+    trackAndFetchVisitors()
+  }, [])
+
+  const handleSubscribe = async () => {
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+      toast({ title: "Invalid email", description: "Please enter a valid email address.", variant: "destructive" })
+      return
+    }
+
+    setSubscribing(true)
+    try {
+      const response = await api.post('/newsletter/subscribe', { email })
+      if (response.data.success) {
+        toast({ title: "Subscribed!", description: response.data.message })
+        setEmail("")
+      }
+    } catch (error: any) {
+      toast({ 
+        title: "Subscription failed", 
+        description: error.message || "Could not subscribe. Please try again.", 
+        variant: "destructive" 
+      })
+    } finally {
+      setSubscribing(false)
+    }
+  }
+
   return (
     <footer className="border-t bg-muted/30">
       <div className="container mx-auto px-4 py-12">
@@ -78,8 +136,16 @@ export function SiteFooter() {
             <div className="space-y-2">
               <h3 className="font-semibold">Subscribe to our newsletter</h3>
               <div className="flex gap-2">
-                <Input type="email" placeholder="Enter your email" className="max-w-xs" />
-                <Button className="cursor-pointer">Subscribe</Button>
+                <Input 
+                  type="email" 
+                  placeholder="Enter your email" 
+                  className="max-w-xs" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                <Button onClick={handleSubscribe} disabled={subscribing} className="cursor-pointer">
+                  {subscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Subscribe"}
+                </Button>
               </div>
             </div>
 
@@ -186,7 +252,7 @@ export function SiteFooter() {
           {/* Copyright notice with dynamic year */}
           <p className="text-sm text-muted-foreground text-center">
           © {new Date().getFullYear()} Swadeshika. All rights reserved. |
-            👥 Visitors: <span id="visitorCount">0</span> |
+            👥 Visitors: <span id="visitorCount">{visitorCount !== null ? visitorCount.toLocaleString() : '...'}</span> |
           </p>
         </div>
       </div>

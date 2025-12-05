@@ -1,8 +1,18 @@
 const db = require('../config/db');
 
+/**
+ * WishlistModel.js
+ * ----------------
+ * Database interactions for Wishlist.
+ */
 class WishlistModel {
     /**
      * Add product to user's wishlist
+     * 
+     * @param {number|string} userId - User ID
+     * @param {number|string} productId - Product ID
+     * @returns {Promise<number>} Insert ID
+     * @throws {Error} If product already in wishlist
      */
     static async addToWishlist(userId, productId) {
         try {
@@ -21,6 +31,10 @@ class WishlistModel {
 
     /**
      * Remove product from user's wishlist
+     * 
+     * @param {number|string} userId - User ID
+     * @param {number|string} productId - Product ID
+     * @returns {Promise<boolean>} True if removed
      */
     static async removeFromWishlist(userId, productId) {
         const [result] = await db.query(
@@ -33,6 +47,9 @@ class WishlistModel {
     /**
      * Get user's wishlist with product details
      * Avoids SELECT * by fetching only necessary fields
+     * 
+     * @param {number|string} userId - User ID
+     * @returns {Promise<Array>} List of wishlist items with product details
      */
     static async getWishlist(userId) {
         const sql = `
@@ -58,6 +75,10 @@ class WishlistModel {
 
     /**
      * Check if product is in wishlist
+     * 
+     * @param {number|string} userId - User ID
+     * @param {number|string} productId - Product ID
+     * @returns {Promise<boolean>} True if exists
      */
     static async isInWishlist(userId, productId) {
         const [rows] = await db.query(

@@ -8,7 +8,20 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Upload } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { api } from "@/lib/api"
 
+/**
+ * ContactForm Component
+ * 
+ * A public-facing form for users to send inquiries.
+ * 
+ * Features:
+ * - Form validation (required fields)
+ * - File upload support (UI only, backend integration pending)
+ * - Conditional rendering for Order Number field
+ * - Submits data to POST /api/v1/contact
+ * - Loading state and toast notifications
+ */
 export function ContactForm() {
   const { toast } = useToast()
   const [formData, setFormData] = useState({
@@ -35,7 +48,7 @@ export function ContactForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const { name, email, subject, message } = formData
+    const { name, email, subject, message, orderNumber, phone } = formData
     
     if (!name.trim() || !email.trim() || !subject.trim() || !message.trim()) {
       toast({ title: "Required fields missing", description: "Please fill in all required fields.", variant: "destructive" })
@@ -43,25 +56,44 @@ export function ContactForm() {
     }
 
     setLoading(true)
-    // Simulate API call
-    await new Promise((r) => setTimeout(r, 1000))
-    
-    // Reset form
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      subject: "",
-      orderNumber: "",
-      message: ""
-    })
-    setFile(null)
-    
-    setLoading(false)
-    toast({ 
-      title: "Message sent successfully!", 
-      description: "Our team will get back to you within 24 hours." 
-    })
+    try {
+      const payload = {
+        name,
+        email,
+        phone,
+        subject,
+        order_number: orderNumber,
+        message
+      }
+      
+      const response = await api.post('/contact', payload)
+      
+      if (response.data.success) {
+        // Reset form
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          subject: "",
+          orderNumber: "",
+          message: ""
+        })
+        setFile(null)
+        
+        toast({ 
+          title: "Message sent successfully!", 
+          description: "Our team will get back to you within 24 hours." 
+        })
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error sending message",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

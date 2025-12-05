@@ -8,6 +8,7 @@
  * - Role-based authentication (customer vs admin)
  * - Persistent authentication state
  * - User profile management
+ * - Integration with backend auth APIs
  *
  * Roles:
  * - customer: Regular users who can browse and purchase products
@@ -16,6 +17,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { authService } from "./authService"
 
 // Define user roles for role-based access control
 export type UserRole = "customer" | "admin"
@@ -26,6 +28,7 @@ export interface User {
   email: string
   name: string
   role: UserRole
+  phone?: string
 }
 
 // Authentication state interface
@@ -33,35 +36,9 @@ interface AuthState {
   user: User | null
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<{ success: boolean; role: UserRole }>
-  logout: () => void
+  logout: () => Promise<void>
   setUser: (user: User) => void
-}
-
-/**
- * Demo credentials for testing
- * In production, this would be replaced with actual API authentication
- */
-const DEMO_USERS = {
-  admin: {
-    email: "admin@swadeshika.com",
-    password: "admin123",
-    user: {
-      id: "1",
-      email: "admin@swadeshika.com",
-      name: "Admin User",
-      role: "admin" as UserRole,
-    },
-  },
-  customer: {
-    email: "customer@example.com",
-    password: "customer123",
-    user: {
-      id: "2",
-      email: "customer@example.com",
-      name: "Customer User",
-      role: "customer" as UserRole,
-    },
-  },
+  register: (name: string, email: string, password: string, phone?: string) => Promise<{ success: boolean; role: UserRole }>
 }
 
 /**
@@ -70,72 +47,91 @@ const DEMO_USERS = {
  */
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       isAuthenticated: false,
 
       /**
        * Login function
-       * Authenticates user and determines their role
+       * Authenticates user with backend API and determines their role
        *
        * @param email - User's email address
        * @param password - User's password
        * @returns Promise with success status and user role
        */
       login: async (email: string, password: string) => {
-        // Simulate API call delay
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+        try {
+          const response = await authService.login({ email, password })
 
-        // Check admin credentials
-        if (email === DEMO_USERS.admin.email && password === DEMO_USERS.admin.password) {
+          // Set user in store
           set({
-            user: DEMO_USERS.admin.user,
+            user: response.user,
             isAuthenticated: true,
           })
-          return { success: true, role: "admin" as UserRole }
-        }
 
-        // Check customer credentials or allow any other email as customer
-        if (email === DEMO_USERS.customer.email && password === DEMO_USERS.customer.password) {
+          return { success: true, role: response.user.role }
+        } catch (error: any) {
+          console.error('Login error:', error)
+
+          // Clear any existing auth state on error
           set({
-            user: DEMO_USERS.customer.user,
+            user: null,
+            isAuthenticated: false,
+          })
+
+          return { success: false, role: "customer" as UserRole }
+        }
+      },
+
+      /**
+       * Register function
+       * Creates a new user account
+       *
+       * @param name - User's full name
+       * @param email - User's email address
+       * @param password - User's password
+       * @param phone - Optional phone number
+       * @returns Promise with success status and user role
+       */
+      register: async (name: string, email: string, password: string, phone?: string) => {
+        try {
+          const response = await authService.register({ name, email, password, phone })
+
+          // Set user in store
+          set({
+            user: response.user,
             isAuthenticated: true,
           })
-          return { success: true, role: "customer" as UserRole }
-        }
 
-        // Default: treat any other valid email as customer
-        if (email && password) {
-          const customerUser = {
-            id: Date.now().toString(),
-            email,
-            name: email.split("@")[0],
-            role: "customer" as UserRole,
-          }
-          set({
-            user: customerUser,
-            isAuthenticated: true,
-          })
-          return { success: true, role: "customer" as UserRole }
-        }
+          return { success: true, role: response.user.role }
+        } catch (error: any) {
+          console.error('Registration error:', error)
 
-        return { success: false, role: "customer" as UserRole }
+          return { success: false, role: "customer" as UserRole }
+        }
       },
 
       /**
        * Logout function
        * Clears user session and authentication state
        */
-      logout: () => {
-        set({
-          user: null,
-          isAuthenticated: false,
-        })
+      logout: async () => {
+        try {
+          await authService.logout()
+        } catch (error) {
+          console.error('Logout error:', error)
+        } finally {
+          // Always clear store
+          set({
+            user: null,
+            isAuthenticated: false,
+          })
+        }
       },
 
       /**
        * Set user function
-       * Manually set user data (useful for registration or profile updates)
+       * Manually set user data (useful for profile updates)
        */
       setUser: (user: User) => {
         set({

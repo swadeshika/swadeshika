@@ -1,198 +1,103 @@
-// src/models/userModel.js
+const db = require('../config/db');
 
 /**
- * User Model (MySQL)
- * -------------------
- * This class handles all database operations related to USERS.
- * 
- * Responsibilities:
- *  - Create User
- *  - Fetch User by email or ID
- *  - Verify credentials (login)
- *  - Update profile (name, phone)
- *  - Update or reset password
- * 
- * WHY A SEPARATE MODEL?
- * ---------------------
- * To keep database logic centralized.
- * No DB queries should be written inside controllers.
+ * userModel.js
+ * ------------
+ * Database interactions for Users.
  */
-
-const db = require('../config/db'); // MySQL connection pool
-const { v4: uuidv4 } = require('uuid'); // Generate unique user ID
-const { hashPassword, comparePasswords } = require('../utils/hash'); // Password utilities
-const { USER_MESSAGES } = require('../constants/messages'); // User-related messages
-const { ROLES } = require('../constants/roles'); // Default roles
-
 class UserModel {
+    /**
+     * Find all users with pagination
+     * 
+     * @param {Object} options - { page, limit, search }
+     * @returns {Promise<Object>} Users and pagination info
+     */
+    static async findAll({ page = 1, limit = 20, search } = {}) {
+        const offset = (page - 1) * limit;
+        let sql = `SELECT id, name, email, phone, role, created_at FROM users WHERE 1=1`;
+        const params = [];
 
-  /**
-   * Create a new user
-   * ------------------
-   * Steps:
-   *  1. Check if email already exists
-   *  2. Hash password
-   *  3. Generate UUID
-   *  4. Insert into database
-   *  5. Return newly created user
-   */
-  static async create({ email, password, name, phone, role = ROLES.CUSTOMER }) {
+        if (search) {
+            sql += ` AND (name LIKE ? OR email LIKE ?)`;
+            params.push(`%${search}%`, `%${search}%`);
+        }
 
-    // Check if user already exists with same email
-    const existing = await this.findByEmail(email);
-    if (existing) throw new Error(USER_MESSAGES.EMAIL_ALREADY_EXISTS || 'Email exists');
+        // Count total
+        const countSql = `SELECT COUNT(*) as total FROM users WHERE 1=1 ${search ? 'AND (name LIKE ? OR email LIKE ?)' : ''}`;
+        const countParams = search ? [`%${search}%`, `%${search}%`] : [];
+        const [countResult] = await db.query(countSql, countParams);
+        const total = countResult[0].total;
 
-    // Securely hash password
-    const hashed = await hashPassword(password);
+        // Fetch data
+        sql += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+        params.push(parseInt(limit), parseInt(offset));
 
-    // Generate unique ID (UUID v4)
-    const id = uuidv4();
+        const [users] = await db.query(sql, params);
 
-    // Insert into MySQL
-    await db.query(
-      `INSERT INTO users (id, email, password, name, phone, role, created_at, updated_at) 
-       VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-      [id, email, hashed, name, phone, role]
-    );
+        return { users, total, page: parseInt(page), limit: parseInt(limit), pages: Math.ceil(total / limit) };
+    }
 
-    // Return the full user object (except password)
-    return this.findById(id);
-  }
+    /**
+     * Find user by ID
+     * 
+     * @param {number|string} id - User ID
+     * @returns {Promise<Object|undefined>} User object
+     */
+    static async findById(id) {
+        const [rows] = await db.query(
+            `SELECT id, name, email, phone, role, created_at FROM users WHERE id = ?`,
+            [id]
+        );
+        return rows[0];
+    }
 
+    /**
+     * Find user by email
+     * 
+     * @param {string} email - User email
+     * @returns {Promise<Object|undefined>} User object with password
+     */
+    static async findByEmail(email) {
+        const [rows] = await db.query(
+            `SELECT id, name, email, password, phone, role, created_at FROM users WHERE email = ?`,
+            [email]
+        );
+        return rows[0];
+    }
 
-  /**
-   * Find a user by their email
-   * ---------------------------
-   * Used in:
-   *  - Login
-   *  - Registration check
-   *  - Forgot password
-   */
-  static async findByEmail(email) {
-    const [rows] = await db.query(
-      'SELECT id, email, password, name, phone, role, created_at, updated_at FROM users WHERE email = ?', 
-      [email]
-    );
-    return rows[0] || null;
-  }
+    /**
+     * Update user
+     * 
+     * @param {number|string} id - User ID
+     * @param {Object} data - Update data
+     * @returns {Promise<boolean>} True if updated
+     */
+    static async update(id, data) {
+        const updates = [];
+        const params = [];
 
+        if (data.name) { updates.push('name = ?'); params.push(data.name); }
+        if (data.phone) { updates.push('phone = ?'); params.push(data.phone); }
 
-  /**
-   * Find user by ID
-   * ----------------
-   * Used in:
-   *  - Auth middleware
-   *  - getMe endpoint
-   *  - Token verification
-   */
-  static async findById(id) {
-    const [rows] = await db.query(
-      'SELECT id, email, name, phone, role, created_at, updated_at FROM users WHERE id = ?', 
-      [id]
-    );
-    return rows[0] || null;
-  }
+        if (updates.length === 0) return false;
 
+        params.push(id);
+        const sql = `UPDATE users SET ${updates.join(', ')}, updated_at = NOW() WHERE id = ?`;
+        
+        const [result] = await db.query(sql, params);
+        return result.affectedRows > 0;
+    }
 
-  /**
-   * Verify credentials (for login)
-   * -------------------------------
-   * Steps:
-   *  - Get user by email
-   *  - Compare hashed password
-   *  - Strip password before returning
-   */
-  static async verifyCredentials(email, password) {
-
-    const user = await this.findByEmail(email);
-    if (!user) return null;
-
-    // Compare plain password with hashed password
-    const match = await comparePasswords(password, user.password);
-    if (!match) return null;
-
-    // Remove password before returning
-    const { password: removed, ...userData } = user;
-    return userData;
-  }
-
-
-  /**
-   * Update user profile
-   * --------------------
-   * Used when user edits:
-   *  - name
-   *  - phone
-   */
-  static async updateProfile(userId, { name, phone }) {
-
-    await db.query(
-      'UPDATE users SET name = ?, phone = ?, updated_at = NOW() WHERE id = ?', 
-      [name, phone, userId]
-    );
-
-    return this.findById(userId); // Return updated user
-  }
-
-
-  /**
-   * Update password (requires current password)
-   * --------------------------------------------
-   * Steps:
-   *  1. Fetch user password
-   *  2. Compare with currentPassword
-   *  3. Hash new password
-   *  4. Update DB
-   */
-  static async updatePassword(userId, currentPassword, newPassword) {
-
-    const [rows] = await db.query(
-      'SELECT password FROM users WHERE id = ?', 
-      [userId]
-    );
-
-    if (!rows.length)
-      throw new Error(USER_MESSAGES.USER_NOT_FOUND || 'User not found');
-
-    const user = rows[0];
-
-    // Check if current password matches
-    const ok = await comparePasswords(currentPassword, user.password);
-    if (!ok)
-      throw new Error(USER_MESSAGES.INVALID_CURRENT_PASSWORD || 'Invalid current password');
-
-    // Hash new password
-    const hashed = await hashPassword(newPassword);
-
-    // Update DB
-    await db.query(
-      'UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?', 
-      [hashed, userId]
-    );
-
-    return true;
-  }
-
-
-  /**
-   * Force reset password (admin / forgot-password reset)
-   * -----------------------------------------------------
-   * Does NOT require checking old password.
-   * Only used for:
-   *  - Reset password with token
-   *  - Admin resetting user password
-   */
-  static async forceSetPassword(userId, newPassword) {
-
-    const hashed = await hashPassword(newPassword);
-
-    await db.query(
-      'UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?', 
-      [hashed, userId]
-    );
-
-    return true;
-  }
+    /**
+     * Delete user
+     * 
+     * @param {number|string} id - User ID
+     * @returns {Promise<boolean>} True if deleted
+     */
+    static async delete(id) {
+        const [result] = await db.query(`DELETE FROM users WHERE id = ?`, [id]);
+        return result.affectedRows > 0;
+    }
 }
 
 module.exports = UserModel;

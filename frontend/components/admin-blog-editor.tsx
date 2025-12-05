@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { blogService, BlogCategory } from '@/lib/blogService'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -36,6 +37,8 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
   const router = useRouter()
   const [isSaving, setIsSaving] = useState(false)
   const [newTag, setNewTag] = useState('')
+  const [categories, setCategories] = useState<BlogCategory[]>([])
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true)
   
   // Track if slug has been manually modified
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false)
@@ -63,6 +66,24 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
     featuredImage: '',
     tags: []
   })
+
+  // Fetch blog categories on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setIsLoadingCategories(true)
+        const data = await blogService.getActiveCategories()
+        setCategories(data)
+      } catch (error) {
+        console.error('Failed to fetch blog categories:', error)
+        // Optionally show error toast/notification
+      } finally {
+        setIsLoadingCategories(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
 
   // Update post with automatic slug generation
   const updatePost = (updates: Partial<BlogPost>) => {
@@ -371,17 +392,20 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
                 <Select
                   value={post.category}
                   onValueChange={(value) => setPost({...post, category: value})}
+                  disabled={isLoadingCategories}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
+                    <SelectValue placeholder={isLoadingCategories ? "Loading categories..." : "Select a category"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="health">Health & Wellness</SelectItem>
-                    <SelectItem value="ayurveda">Ayurveda</SelectItem>
-                    <SelectItem value="nutrition">Nutrition</SelectItem>
-                    <SelectItem value="recipes">Recipes</SelectItem>
-                    <SelectItem value="sustainable-living">Sustainable Living</SelectItem>
-                    <SelectItem value="mindfulness">Mindfulness</SelectItem>
+                    {categories.length === 0 && !isLoadingCategories && (
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">No categories available</div>
+                    )}
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.slug}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </CardContent>

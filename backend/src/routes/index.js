@@ -1,109 +1,77 @@
-// src/routes/index.js
-
-/**
- * Main Route Register File
- * -------------------------
- * This file combines all route modules (auth, users, products, orders)
- * and exposes them through a central router.
- *
- * WHY DO WE USE A CENTRAL ROUTER?
- * --------------------------------
- * - Cleaner app.js (we only mount '/api/v1' once)
- * - Easy to manage multiple modules
- * - Easy to scale for admin/customer-specific routes later
- */
-
 const express = require('express');
 const router = express.Router();
 
-// Import authentication routes
-const authRoutes = require('./authRoutes');
-const settingsRoutes = require('./adminSettingsRoutes');
-
 /**
- * Dynamic Module Loading (Temporary Placeholders)
- * ------------------------------------------------
- * WHY?
- * - While building the project, some route files may not exist yet
- * - Instead of crashing the backend, we "catch" the error and create a placeholder route
- *
- * HOW IT WORKS:
- * try { require('./file') }
- * catch → create a dummy router sending simple JSON
+ * Main Router
+ * Mounts all API routes.
  */
 
-// Try loading "userRoutes"
-let userRoutes;
-try {
-  userRoutes = require('./userRoutes');
-} catch (e) {
-  // Fallback placeholder if file does not exist yet
-  userRoutes = express.Router().get('/', (req, res) =>
-    res.json({ msg: 'users route placeholder' })
-  );
-}
-
-// Load "productRoutes"
+// Import Route Modules
+const authRoutes = require('./authRoutes');
+const adminSettingsRoutes = require('./adminSettingsRoutes');
 const productRoutes = require('./productRoutes');
 const categoryRoutes = require('./categoryRoutes');
+const wishlistRoutes = require('./wishlistRoutes');
+const cartRoutes = require('./cartRoutes');
+const userRoutes = require('./userRoutes');
+const addressRoutes = require('./addressRoutes');
+const adminOrderRoutes = require('./adminOrderRoutes');
+const blogRoutes = require('./blogRoutes');
+const adminBlogRoutes = require('./adminBlogRoutes');
+const blogCategoryRoutes = require('./blogCategoryRoutes');
+const couponRoutes = require('./couponRoutes');
+const reviewRoutes = require('./reviewRoutes');
+const dashboardRoutes = require('./dashboardRoutes');
+const contactRoutes = require('./contactRoutes');
+const newsletterRoutes = require('./newsletterRoutes');
+const analyticsRoutes = require('./analyticsRoutes');
 
-// Try loading "orderRoutes"
+// Dynamic loading for Order Routes (as it might be fragile or WIP)
 let orderRoutes;
 try {
-  orderRoutes = require('./orderRoutes');
+    orderRoutes = require('./orderRoutes');
 } catch (e) {
-  orderRoutes = express.Router().get('/', (req, res) =>
-    res.json({ msg: 'orders route placeholder' })
-  );
+    orderRoutes = express.Router().get('/', (req, res) => res.json({ msg: 'orders route placeholder' }));
 }
 
-/**
- * API Route Mounting
- * -------------------
- * These connect URLs → specific route modules.
- *
- * Example:
- * /api/v1/auth/register  → handled inside authRoutes.js
- */
-
+// Mount Routes
 router.use('/auth', authRoutes);
-router.use('/admin/settings', settingsRoutes);
-
-// These stay commented until you create related modules
-// router.use('/users', userRoutes);
+router.use('/users', userRoutes);
+router.use('/users/addresses', addressRoutes); // Address routes mounted under /users/addresses
 router.use('/products', productRoutes);
-router.use('/orders', orderRoutes);
-router.use('/admin/orders', require('./adminOrderRoutes'));
-router.use('/blog', require('./blogRoutes'));
-router.use('/admin/blog', require('./adminBlogRoutes'));
-
 router.use('/categories', categoryRoutes);
-// router.use('/orders', orderRoutes);
-router.use('/wishlist', require('./wishlistRoutes'));
+router.use('/cart', cartRoutes);
+router.use('/wishlist', wishlistRoutes);
+router.use('/orders', orderRoutes);
+router.use('/coupons', couponRoutes);
+router.use('/reviews', reviewRoutes);
+router.use('/blog', blogRoutes);
+router.use('/blog/categories', blogCategoryRoutes);
+router.use('/contact', contactRoutes);
+router.use('/newsletter', newsletterRoutes);
+router.use('/analytics', analyticsRoutes);
 
-/**
- * Health Check Route
- * -------------------
- * Used by server monitors or frontend to check if backend is alive.
- */
-router.get('/health', (req, res) =>
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-  })
-);
+// Admin Routes
+router.use('/admin/settings', adminSettingsRoutes);
+router.use('/admin/orders', adminOrderRoutes);
+router.use('/admin/blog', adminBlogRoutes);
+router.use('/admin/dashboard', dashboardRoutes);
 
-/**
- * 404 Handler for undefined API endpoints
- * ---------------------------------------
- * Only applies to routes inside /api/v1
- */
-router.use((req, res) =>
-  res.status(404).json({
-    success: false,
-    message: 'API endpoint not found',
-    path: req.originalUrl,
-  })
-);
+// Health Check
+router.get('/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// 404 Handler
+router.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        message: 'API endpoint not found',
+        path: req.originalUrl
+    });
+});
 
 module.exports = router;

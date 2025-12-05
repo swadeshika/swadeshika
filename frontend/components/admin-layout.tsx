@@ -57,6 +57,7 @@ const navigation = [
   { name: "Products", href: "/admin/products", icon: Package },
   { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
   { name: "Customers", href: "/admin/customers", icon: Users },
+  { name: "Contacts", href: "/admin/contacts", icon: Users },
   { name: "Categories", href: "/admin/categories", icon: Tag },
   {
     name: "Blog",
@@ -292,7 +293,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
               <DropdownMenu >
                 <DropdownMenuTrigger asChild>
-                  <Button variant={Ghost} className="p-0 h-8 w-8 rounded-full">
+                  <Button variant="ghost" className="p-0 h-8 w-8 rounded-full">
                     <Avatar >
                       <AvatarFallback >{user?.name?.substring(0, 2).toUpperCase() || "AD"}</AvatarFallback>
                     </Avatar> 

@@ -1,7 +1,18 @@
 const db = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
 
+/**
+ * Order Model
+ * Handles all database operations for orders and order items.
+ */
 class Order {
+    /**
+     * Create a new order with items
+     * Uses a transaction to ensure integrity.
+     * @param {Object} orderData - Order details
+     * @param {Array} items - Array of order items
+     * @returns {Promise<Object>} Created order object
+     */
     static async create(orderData, items) {
         const connection = await db.getConnection();
         try {
@@ -63,6 +74,11 @@ class Order {
         }
     }
 
+    /**
+     * Find all orders with pagination and filtering
+     * @param {Object} options - { page, limit, status, userId }
+     * @returns {Promise<Object>} { orders, total, page, limit, pages }
+     */
     static async findAll({ page = 1, limit = 20, status, userId }) {
         const offset = (page - 1) * limit;
         let query = 'SELECT * FROM orders';
@@ -102,6 +118,11 @@ class Order {
         return { orders, total, page: parseInt(page), limit: parseInt(limit), pages: Math.ceil(total / limit) };
     }
 
+    /**
+     * Find order by ID including items and address
+     * @param {string} id 
+     * @returns {Promise<Object|null>}
+     */
     static async findById(id) {
         const [orders] = await db.query('SELECT * FROM orders WHERE id = ?', [id]);
         if (orders.length === 0) return null;
@@ -117,6 +138,12 @@ class Order {
         return { ...order, items, address: address[0] || null };
     }
 
+    /**
+     * Update order status
+     * @param {string} id 
+     * @param {string} status 
+     * @returns {Promise<boolean>}
+     */
     static async updateStatus(id, status) {
         const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
         if (!validStatuses.includes(status)) {
@@ -144,11 +171,21 @@ class Order {
         return result.affectedRows > 0;
     }
 
+    /**
+     * Delete an order
+     * @param {string} id 
+     * @returns {Promise<boolean>}
+     */
     static async delete(id) {
         const [result] = await db.query('DELETE FROM orders WHERE id = ?', [id]);
         return result.affectedRows > 0;
     }
 
+    /**
+     * Find orders by User ID
+     * @param {string} userId 
+     * @returns {Promise<Object>}
+     */
     static async findByUserId(userId) {
         // This is effectively covered by findAll with userId param, but keeping a specific method if needed for simple non-paginated or specific logic.
         // For now, let's alias it or just use findAll in controller. 
@@ -159,6 +196,12 @@ class Order {
         // So I will implement it to just call findAll with userId.
         return this.findAll({ userId });
     }
+
+    /**
+     * Get cart items for a user
+     * @param {string} userId 
+     * @returns {Promise<Array>}
+     */
     static async getCartItems(userId) {
         const [items] = await db.query(
             `SELECT ci.*, p.name as product_name, p.sku, pv.name as variant_name 
@@ -171,6 +214,11 @@ class Order {
         return items;
     }
 
+    /**
+     * Clear user cart
+     * @param {string} userId 
+     * @param {Object} connection - Optional DB connection for transaction
+     */
     static async clearCart(userId, connection) {
         const query = 'DELETE FROM cart_items WHERE user_id = ?';
         if (connection) {
@@ -178,6 +226,28 @@ class Order {
         } else {
             await db.query(query, [userId]);
         }
+    }
+
+    /**
+     * Find order by Order Number
+     * @param {string} orderNumber 
+     * @returns {Promise<Object|null>}
+     */
+    static async findByOrderNumber(orderNumber) {
+        const query = `
+            SELECT o.*, u.email as user_email 
+            FROM orders o
+            JOIN users u ON o.user_id = u.id
+            WHERE o.order_number = ?
+        `;
+        const [rows] = await db.query(query, [orderNumber]);
+        if (rows.length === 0) return null;
+
+        const order = rows[0];
+        const [items] = await db.query('SELECT * FROM order_items WHERE order_id = ?', [order.id]);
+        const [address] = await db.query('SELECT * FROM addresses WHERE id = ?', [order.address_id]);
+
+        return { ...order, items, address: address[0] || null };
     }
 }
 

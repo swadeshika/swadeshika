@@ -1,7 +1,24 @@
 const WishlistService = require('../services/WishlistService');
 
+/**
+ * WishlistController.js
+ * ---------------------
+ * Handles wishlist operations for authenticated users.
+ * 
+ * Operations:
+ * 1. Add to Wishlist
+ * 2. Remove from Wishlist
+ * 3. Get Wishlist
+ */
 class WishlistController {
-    static async addToWishlist(req, res) {
+    /**
+     * Add product to wishlist
+     * 
+     * @param {Object} req - Express request object
+     * @param {Object} res - Express response object
+     * @param {Function} next - Express next middleware function
+     */
+    static async addToWishlist(req, res, next) {
         try {
             const userId = req.user.id; // Assumes authMiddleware populates req.user
             const { productId } = req.body;
@@ -13,11 +30,18 @@ class WishlistController {
             if (error.message === 'Product already in wishlist') {
                 return res.status(409).json({ message: error.message });
             }
-            res.status(500).json({ message: 'Error adding to wishlist', error: error.message });
+            next(error);
         }
     }
 
-    static async removeFromWishlist(req, res) {
+    /**
+     * Remove product from wishlist
+     * 
+     * @param {Object} req - Express request object
+     * @param {Object} res - Express response object
+     * @param {Function} next - Express next middleware function
+     */
+    static async removeFromWishlist(req, res, next) {
         try {
             const userId = req.user.id;
             const { productId } = req.params;
@@ -30,18 +54,25 @@ class WishlistController {
 
             res.status(200).json({ message: 'Product removed from wishlist' });
         } catch (error) {
-            res.status(500).json({ message: 'Error removing from wishlist', error: error.message });
+            next(error);
         }
     }
 
-    static async getWishlist(req, res) {
+    /**
+     * Get user's wishlist
+     * 
+     * @param {Object} req - Express request object
+     * @param {Object} res - Express response object
+     * @param {Function} next - Express next middleware function
+     */
+    static async getWishlist(req, res, next) {
         try {
             const userId = req.user.id;
             const wishlist = await WishlistService.getWishlist(userId);
 
             res.status(200).json(wishlist);
         } catch (error) {
-            res.status(500).json({ message: 'Error fetching wishlist', error: error.message });
+            next(error);
         }
     }
 }

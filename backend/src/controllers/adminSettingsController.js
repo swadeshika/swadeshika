@@ -1,14 +1,27 @@
 const AdminSettingsService = require('../services/adminSettingsService');
 const { getMessage } = require('../constants/messages');
 
+/**
+ * adminSettingsController.js
+ * --------------------------
+ * Handles global application settings managed by admins.
+ * 
+ * Operations:
+ * 1. Get Settings
+ * 2. Update Settings
+ */
 class AdminSettingsController {
     /**
      * Get Settings API
      * ----------------
      * Method: GET
      * Path: /api/v1/settings
+     * 
+     * @param {Object} req - Express request object
+     * @param {Object} res - Express response object
+     * @param {Function} next - Express next middleware function
      */
-    static async getSettings(req, res) {
+    static async getSettings(req, res, next) {
         try {
             const settings = await AdminSettingsService.getSettings();
 
@@ -24,11 +37,7 @@ class AdminSettingsController {
                 data: settings,
             });
         } catch (err) {
-            console.error('Get Settings Error:', err);
-            return res.status(500).json({
-                success: false,
-                message: getMessage('INTERNAL_SERVER_ERROR'),
-            });
+            next(err);
         }
     }
 
@@ -37,8 +46,12 @@ class AdminSettingsController {
      * -------------------
      * Method: PUT
      * Path: /api/v1/admin/settings
+     * 
+     * @param {Object} req - Express request object
+     * @param {Object} res - Express response object
+     * @param {Function} next - Express next middleware function
      */
-    static async updateSettings(req, res) {
+    static async updateSettings(req, res, next) {
         try {
             const data = req.body;
 
@@ -85,11 +98,7 @@ class AdminSettingsController {
                 data: updatedSettings,
             });
         } catch (err) {
-            console.error('Update Settings Error:', err);
-            return res.status(500).json({
-                success: false,
-                message: getMessage('INTERNAL_SERVER_ERROR'),
-            });
+            next(err);
         }
     }
 }

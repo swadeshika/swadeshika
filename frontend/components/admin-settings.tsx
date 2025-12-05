@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useEffect, useRef, useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { ChangePassword } from "@/components/admin-change-password"
+import { api } from "@/lib/api"
 
 type Gateway = "razorpay" | "stripe" | "cashfree" | "cod"
 
@@ -90,19 +91,85 @@ export function AdminSettings() {
   })
 
   useEffect(() => {
-    const storedSettings = localStorage.getItem("settings")
-    if (storedSettings) {
-      setSettings(JSON.parse(storedSettings))
-    }
+    fetchSettings()
   }, [])
 
-  useEffect(() => {
-    localStorage.setItem("settings", JSON.stringify(settings))
-  }, [settings])
+  const fetchSettings = async () => {
+    try {
+      const response = await api.get('/admin/settings')
+      if (response.data.success) {
+        const data = response.data.data
+        // Map snake_case to camelCase
+        setSettings({
+          storeName: data.store_name || "Swadeshika",
+          storeEmail: data.support_email || "support@swadeshika.com",
+          storePhone: data.support_phone || "+91 98765 43210",
+          storeAddress: data.store_address || "",
+          logoDataUrl: data.logo_data_url || null,
+          guestCheckout: Boolean(data.guest_checkout),
+          defaultOrderStatus: data.default_order_status || "pending",
+          currency: data.currency || "inr",
+          enabledGateways: data.enabled_gateways || { razorpay: false, stripe: false, cashfree: false, cod: false },
+          gatewayConfigs: data.gateway_configs || {},
+          shippingMethod: data.shipping_method || "standard",
+          freeShippingThreshold: data.free_shipping_threshold !== null ? Number(data.free_shipping_threshold) : '',
+          flatRate: data.flat_rate !== null ? Number(data.flat_rate) : '',
+          gstPercent: data.gst_percent !== null ? Number(data.gst_percent) : '',
+          pricesIncludeTax: Boolean(data.prices_include_tax),
+          gaId: data.ga_id || "",
+          searchConsoleId: data.search_console_id || "",
+          timezone: data.timezone || "asia-kolkata",
+          units: data.units || "metric",
+          lowStockThreshold: data.low_stock_threshold !== null ? Number(data.low_stock_threshold) : 10,
+          allowBackorders: Boolean(data.allow_backorders),
+          twoFactorEnabled: Boolean(data.two_factor_enabled),
+        })
+      }
+    } catch (error) {
+      console.error("Failed to fetch settings:", error)
+      toast({ title: "Error", description: "Failed to load settings.", variant: "destructive" })
+    }
+  }
 
-  const handleSave = () => {
-    localStorage.setItem("settings", JSON.stringify(settings))
-    toast({ title: "Settings Saved", description: "Your changes have been saved." })
+  const handleSave = async () => {
+    try {
+      // Map camelCase to snake_case
+      const payload = {
+        store_name: settings.storeName,
+        support_email: settings.storeEmail,
+        support_phone: settings.storePhone,
+        store_address: settings.storeAddress,
+        logo_data_url: settings.logoDataUrl,
+        guest_checkout: settings.guestCheckout,
+        default_order_status: settings.defaultOrderStatus,
+        currency: settings.currency,
+        enabled_gateways: settings.enabledGateways,
+        gateway_configs: settings.gatewayConfigs,
+        shipping_method: settings.shippingMethod,
+        free_shipping_threshold: settings.freeShippingThreshold === '' ? null : settings.freeShippingThreshold,
+        flat_rate: settings.flatRate === '' ? null : settings.flatRate,
+        gst_percent: settings.gstPercent === '' ? null : settings.gstPercent,
+        prices_include_tax: settings.pricesIncludeTax,
+        ga_id: settings.gaId,
+        search_console_id: settings.searchConsoleId,
+        timezone: settings.timezone,
+        units: settings.units,
+        low_stock_threshold: settings.lowStockThreshold === '' ? null : settings.lowStockThreshold,
+        allow_backorders: settings.allowBackorders,
+        two_factor_enabled: settings.twoFactorEnabled
+      }
+
+      const response = await api.put('/admin/settings', payload)
+      if (response.data.success) {
+        toast({ title: "Settings Saved", description: "Your changes have been saved." })
+      }
+    } catch (error: any) {
+      toast({ 
+        title: "Save Failed", 
+        description: error.message || "Could not save settings.", 
+        variant: "destructive" 
+      })
+    }
   }
 
   return (

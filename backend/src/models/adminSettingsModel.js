@@ -31,6 +31,8 @@ class AdminSettingsModel {
         low_stock_threshold, 
         allow_backorders, 
         two_factor_enabled, 
+        enabled_gateways,
+        gateway_configs,
         updated_at
       FROM admin_settings
       LIMIT 1
@@ -68,7 +70,9 @@ class AdminSettingsModel {
       'units',
       'low_stock_threshold',
       'allow_backorders',
-      'two_factor_enabled'
+      'two_factor_enabled',
+      'enabled_gateways',
+      'gateway_configs'
     ];
 
     // 1. Get existing settings to find the correct ID

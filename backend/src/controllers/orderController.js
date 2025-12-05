@@ -1,6 +1,26 @@
 const Order = require('../models/orderModel');
 
-exports.createOrder = async (req, res) => {
+/**
+ * orderController.js
+ * ------------------
+ * Handles all order-related operations:
+ * 1. Create Order (Checkout)
+ * 2. Get All Orders (Admin)
+ * 3. Get My Orders (User)
+ * 4. Get Order By ID
+ * 5. Update Order Status (Admin)
+ * 6. Cancel Order (User)
+ * 7. Delete Order (Admin)
+ */
+
+/**
+ * Create a new order
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
+exports.createOrder = async (req, res, next) => {
     try {
         const userId = req.user.id;
         const { addressId, paymentMethod, couponCode, notes } = req.body;
@@ -66,12 +86,18 @@ exports.createOrder = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Create Order Error:', error);
-        res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+        next(error);
     }
 };
 
-exports.getAllOrders = async (req, res) => {
+/**
+ * Get all orders (Admin)
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
+exports.getAllOrders = async (req, res, next) => {
     try {
         const { page = 1, limit = 20, status, search } = req.query;
         // Admin can see all orders
@@ -97,12 +123,18 @@ exports.getAllOrders = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Get All Orders Error:', error);
-        res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+        next(error);
     }
 };
 
-exports.getMyOrders = async (req, res) => {
+/**
+ * Get my orders (User)
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
+exports.getMyOrders = async (req, res, next) => {
     try {
         const userId = req.user.id;
         const { page = 1, limit = 20, status } = req.query;
@@ -127,12 +159,18 @@ exports.getMyOrders = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Get My Orders Error:', error);
-        res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+        next(error);
     }
 };
 
-exports.getOrderById = async (req, res) => {
+/**
+ * Get order by ID
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
+exports.getOrderById = async (req, res, next) => {
     try {
         const order = await Order.findById(req.params.id);
 
@@ -182,12 +220,18 @@ exports.getOrderById = async (req, res) => {
             data: formattedOrder
         });
     } catch (error) {
-        console.error('Get Order By ID Error:', error);
-        res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+        next(error);
     }
 };
 
-exports.updateOrderStatus = async (req, res) => {
+/**
+ * Update order status (Admin)
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
+exports.updateOrderStatus = async (req, res, next) => {
     try {
         const { status, trackingNumber } = req.body;
         // Note: trackingNumber update logic needs to be added to model if we want to support it
@@ -203,12 +247,18 @@ exports.updateOrderStatus = async (req, res) => {
             message: 'Order status updated successfully'
         });
     } catch (error) {
-        console.error('Update Order Status Error:', error);
-        res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+        next(error);
     }
 };
 
-exports.cancelOrder = async (req, res) => {
+/**
+ * Cancel order (User)
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
+exports.cancelOrder = async (req, res, next) => {
     try {
         const order = await Order.findById(req.params.id);
 
@@ -237,12 +287,18 @@ exports.cancelOrder = async (req, res) => {
             message: 'Order cancelled successfully'
         });
     } catch (error) {
-        console.error('Cancel Order Error:', error);
-        res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+        next(error);
     }
 };
 
-exports.deleteOrder = async (req, res) => {
+/**
+ * Delete order (Admin)
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
+exports.deleteOrder = async (req, res, next) => {
     try {
         const success = await Order.delete(req.params.id);
 
@@ -255,7 +311,7 @@ exports.deleteOrder = async (req, res) => {
             message: 'Order deleted successfully'
         });
     } catch (error) {
-        console.error('Delete Order Error:', error);
-        res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+        next(error);
     }
 };
+

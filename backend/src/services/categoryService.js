@@ -1,9 +1,18 @@
 const CategoryModel = require('../models/categoryModel');
 const { slugify } = require('../utils/stringUtils');
 
+/**
+ * categoryService.js
+ * ------------------
+ * Business logic for Category operations.
+ * Handles slug generation, uniqueness checks, and data preparation.
+ */
 class CategoryService {
     /**
      * Get all categories
+     * 
+     * @param {Object} query - Query parameters (e.g., includeSubcategories)
+     * @returns {Promise<Array>} List of categories
      */
     static async getAllCategories(query) {
         const includeSubcategories = query.includeSubcategories === 'true';
@@ -12,6 +21,10 @@ class CategoryService {
 
     /**
      * Get category by ID
+     * 
+     * @param {number|string} id - Category ID
+     * @returns {Promise<Object>} Category object
+     * @throws {Error} If category not found
      */
     static async getCategoryById(id) {
         const category = await CategoryModel.findById(id);
@@ -23,6 +36,10 @@ class CategoryService {
 
     /**
      * Create new category
+     * 
+     * @param {Object} data - Category data
+     * @returns {Promise<Object>} Created category object with ID
+     * @throws {Error} If slug/name already exists
      */
     static async createCategory(data) {
         // Generate slug if not provided
@@ -45,6 +62,11 @@ class CategoryService {
 
     /**
      * Update category
+     * 
+     * @param {number|string} id - Category ID
+     * @param {Object} data - Update data
+     * @returns {Promise<Object>} Updated category object
+     * @throws {Error} If category not found or slug collision
      */
     static async updateCategory(id, data) {
         const category = await CategoryModel.findById(id);
@@ -78,6 +100,10 @@ class CategoryService {
 
     /**
      * Delete category
+     * 
+     * @param {number|string} id - Category ID
+     * @returns {Promise<boolean>} True if deleted
+     * @throws {Error} If category not found
      */
     static async deleteCategory(id) {
         const category = await CategoryModel.findById(id);

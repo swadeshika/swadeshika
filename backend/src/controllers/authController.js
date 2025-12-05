@@ -30,6 +30,7 @@ const { TOKEN_TYPES } = require('../constants/tokens');
 const { comparePasswords, hashPassword } = require('../utils/hash');
 const sendEmail = require('../utils/email');
 const crypto = require('crypto');
+const AuthService = require('../services/authService');
 
 
 /**
@@ -379,6 +380,43 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// ===================================================================
+// 8. CHANGE PASSWORD
+// ===================================================================
+
+/**
+ * changePassword()
+ * ----------------
+ * Updates password for authenticated user.
+ */
+const changePassword = async (req, res) => {
+  try {
+    const { old_password, new_password } = req.body;
+    const { id, role } = req.user;
+
+    await AuthService.changePassword(id, role, old_password, new_password);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password updated successfully',
+    });
+  } catch (err) {
+    console.error('Change password error:', err);
+
+    if (err.message === 'Incorrect current password' || err.message.includes('Invalid current password')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Incorrect current password',
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: getMessage('INTERNAL_SERVER_ERROR'),
+    });
+  }
+};
+
 
 module.exports = {
   register,
@@ -388,4 +426,5 @@ module.exports = {
   refreshToken,
   forgotPassword,
   resetPassword,
+  changePassword,
 };

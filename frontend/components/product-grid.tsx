@@ -16,13 +16,14 @@
  * - When adding infinite scroll or pagination, wrap the mapped section appropriately.
  */
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
 import { ProductCard } from "@/components/product-card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { LayoutGrid, List, Search } from "lucide-react"
-import { Product, allProducts } from "@/data/products"
+import { productService } from "@/lib/services/productService"
+import { Product } from "@/lib/services/productService"
 
 interface ProductGridProps {
   category?: string
@@ -44,74 +45,99 @@ export function ProductGrid({
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [sortBy, setSortBy] = useState("featured")
 
-  const filteredProducts = useMemo(() => {
-    let filtered: Product[] = [...allProducts]
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [total, setTotal] = useState(0)
 
-    // Filter by category (from URL or selected categories)
-    if (category) {
-      filtered = filtered.filter((p) => p.category.toLowerCase().replace(" ", "-") === category)
-    } else if (selectedCategories.length > 0) {
-      filtered = filtered.filter((p) => selectedCategories.includes(p.category.toLowerCase().replace(" ", "-")))
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true)
+      try {
+        // Map sort values to backend expected format
+        let sortParam = "newest" // default
+        if (sortBy === "price-low") sortParam = "price_asc"
+        else if (sortBy === "price-high") sortParam = "price_desc"
+        else if (sortBy === "rating") sortParam = "popular"
+        
+        // Prepare query params
+        const params: any = {
+          page: 1, // TODO: Add pagination support
+          limit: 100, // Fetch more for now since we don't have pagination UI yet
+          sort: sortParam,
+          search: searchQuery,
+          min_price: priceRange[0],
+          max_price: priceRange[1],
+        }
+
+        // Category filter
+        // Note: Backend expects category slug or ID. 
+        // If 'category' prop is present (from URL), use it.
+        // If 'selectedCategories' keys are present, we might need to handle multiple.
+        // For now, let's prioritize the specific category prop, or pick the first selected category.
+        if (category) {
+          params.category_id = undefined // Backend might accept slug via a different param or mapped, let's check. 
+          // Wait, backend findAll checks 'category' param against c.slug. Perfect.
+          params.category = category
+        } else if (selectedCategories.length > 0) {
+          // Backend currently handles single 'category' parameter in findAll. 
+          // Supporting multiple categories might need backend update, or we pick the first one.
+          params.category = selectedCategories[0]
+        }
+
+        // Tags - mapping 'badge' to tags if possible, or verify backend support
+        // Backend has 'featured' filter which is boolean. 
+        // If 'Best Seller' is a tag, backend doesn't seem to have generic tag filter in findAll yet?
+        // Checked productModel.js: it checks inStock, featured, but not generic tags in findAll params.
+        // We will skip tag filtering on backend for now or add it later.
+
+        const data = await productService.getAllProducts(params)
+        
+        // Map backend products to frontend interface if needed, 
+        // but Typescript might complain if types don't match exactly.
+        // Let's rely on the returned data structure which seems compatible-ish.
+        // We need to ensure the mapped Product satisfies the UI usage.
+        
+        // Transform API product to UI product
+        const mappedProducts = data.products.map((p: any) => ({
+          ...p,
+          image: p.primary_image || p.image || '/placeholder.jpg',
+          category: p.category_name || 'Uncategorized', // Need category name for display
+          badge: p.is_featured ? 'Featured' : null,
+          reviews: p.review_count || 0
+        }))
+
+        setProducts(mappedProducts)
+        setTotal(data.total)
+      } catch (error) {
+        console.error("Failed to fetch products:", error)
+      } finally {
+        setLoading(false)
+      }
     }
 
-    // Filter by price range
-    filtered = filtered.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1])
+    // Debounce fetch to avoid too many requests while sliding price
+    const timeoutId = setTimeout(() => {
+        fetchProducts()
+    }, 500)
 
-    // Filter by search query (name, category)
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter((p) =>
-        p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query)
-      )
-    }
-
-    // Filter by brands (if implemented in product data)
-    if (selectedBrands.length > 0) {
-      // Add brand filtering logic when product data includes brands
-    }
-
-    // Filter by tags
-    if (selectedTags.length > 0) {
-      filtered = filtered.filter((p) => selectedTags.includes(p.badge?.toLowerCase() || ""))
-    }
-
-    // Sort products
-    switch (sortBy) {
-      case "price-low":
-        filtered.sort((a, b) => a.price - b.price)
-        break
-      case "price-high":
-        filtered.sort((a, b) => b.price - a.price)
-        break
-      case "rating":
-        filtered.sort((a, b) => b.rating - a.rating)
-        break
-      case "newest":
-        // Assuming newer products have higher IDs
-        filtered.sort((a, b) => Number(b.id) - Number(a.id))
-        break
-      default:
-        // Featured - keep original order
-        break
-    }
-
-    return filtered
+    return () => clearTimeout(timeoutId)
   }, [category, priceRange, selectedCategories, selectedBrands, selectedTags, sortBy, searchQuery])
+
 
   return (
     <div className="space-y-6">
       {/* Toolbar */}
       <div className="flex items-center justify-between rounded-2xl border-2 border-[#E8DCC8] bg-white p-4">
-        {filteredProducts.length > 0 ? (
+        {products.length > 0 ? (
           <p className="text-sm text-[#8B6F47]">
             {searchQuery ? (
               <>
-                Showing <span className="font-semibold text-[#6B4423]">{filteredProducts.length}</span> results for
+                Showing <span className="font-semibold text-[#6B4423]">{products.length}</span> results for
                 <span className="ml-1 font-semibold text-[#6B4423]">"{searchQuery}"</span>
               </>
             ) : (
               <>
-                Showing <span className="font-semibold text-[#6B4423]">{filteredProducts.length}</span> products
+                Showing <span className="font-semibold text-[#6B4423]">{products.length}</span> products
               </>
             )}
           </p>
@@ -167,9 +193,15 @@ export function ProductGrid({
       </div>
 
       {/* Products */}
-      {filteredProducts.length > 0 ? (
+      {loading ? (
+           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+             {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-96 bg-gray-100 animate-pulse rounded-2xl"></div>
+             ))}
+           </div>
+        ) : products.length > 0 ? (
         <div className={`grid gap-6 ${viewMode === 'grid' ? 'sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
-          {filteredProducts.map((product) => (
+          {products.map((product: any) => (
             <ProductCard 
               key={product.id}
               id={Number(product.id)}

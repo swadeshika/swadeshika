@@ -89,8 +89,8 @@ export const authService = {
      */
     async changePassword(currentPassword: string, newPassword: string): Promise<void> {
         await api.post('/auth/change-password', {
-            currentPassword,
-            newPassword
+            old_password: currentPassword,
+            new_password: newPassword
         });
     },
 

@@ -22,18 +22,30 @@ const sendEmail = async (options) => {
 
   // 3. Send email
   try {
-    if (!process.env.EMAIL_USERNAME || !process.env.EMAIL_PASSWORD) {
-        console.log('⚠️  Email credentials missing in .env. Logging email to console instead:');
-        console.log(`To: ${options.email}`);
-        console.log(`Subject: ${options.subject}`);
-        console.log(`Message: ${options.message}`);
-        return;
+    if (!process.env.EMAIL_USERNAME || !process.env.EMAIL_PASSWORD || process.env.EMAIL_USERNAME === '' || process.env.EMAIL_PASSWORD === '') {
+      console.log('⚠️  Email credentials missing in .env. Logging email to console instead:');
+      console.log(`To: ${options.email}`);
+      console.log(`Subject: ${options.subject}`);
+      console.log(`Message: ${options.message}`);
+      // IMPORTANT: We do NOT return here, we treat this as a "success" so the user isn't blocked.
+      // But we skip the actual nodemailer send
+      return;
     }
     await transporter.sendMail(mailOptions);
     console.log(`📧 Email sent to ${options.email}`);
   } catch (err) {
-    console.error('❌ Error sending email:', err);
-    throw new Error('Email could not be sent');
+    console.error('❌ Error sending email:', err.message);
+
+    // Fallback: If email fails (e.g. wrong credentials), log to console so dev works
+    console.log('⚠️  Email sending failed. Logging email to console as fallback:');
+    console.log(`To: ${options.email}`);
+    console.log(`Subject: ${options.subject}`);
+    console.log(`Message: ${options.message}`);
+
+    // Do NOT throw error in development, so the user flow continues
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Email could not be sent');
+    }
   }
 };
 

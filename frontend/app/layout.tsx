@@ -1,4 +1,4 @@
-import type React from "react"
+import React from "react"
 import type { Metadata } from "next"
 import { Poppins } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
@@ -9,6 +9,7 @@ import "primeicons/primeicons.css"
 import "quill/dist/quill.snow.css"
 import { ScrollToTop } from "@/components/scroll-to-top"
 import { Toaster } from "@/components/ui/toaster"
+import { AuthInitializer } from "@/components/auth-initializer"
 
 // Register Poppins for both sans and serif CSS variables so all text (including elements using `font-serif`) uses Poppins
 const poppinsSans = Poppins({
@@ -38,6 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${poppinsSans.className} ${poppinsSerif.variable} antialiased`}>
+        <AuthInitializer />
         <ScrollToTop />
         {children}
         <Toaster />

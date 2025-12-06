@@ -67,9 +67,9 @@ if (NODE_ENV === 'development') app.use(morgan('dev'));
    Applies ONLY to routes starting with /api
    ============================================================ */
 const limiter = rateLimit({
-  max: RATE_LIMIT_MAX || 100,                         // Max requests allowed
-  windowMs: RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000,   // Time window
-  message: "Too many requests, try again later.",      // Response message
+   max: RATE_LIMIT_MAX || 100,                         // Max requests allowed
+   windowMs: RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000,   // Time window
+   message: "Too many requests, try again later.",      // Response message
 });
 app.use('/api', limiter);
 
@@ -111,8 +111,27 @@ app.use(hpp());
    - credentials: true -> send cookies (refresh token)
    ============================================================ */
 app.use(cors({
-  origin: CORS_ORIGIN,   // Only allow your frontend domain
-  credentials: true,     // Needed for cookies
+   origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      // Allowed origins
+      const allowedOrigins = [CORS_ORIGIN, 'http://localhost:3000', 'http://127.0.0.1:3000'];
+
+      if (allowedOrigins.indexOf(origin) === -1) {
+         // For development convenience, we can log this but still block it.
+         // Or just allow it if we want to be permissive.
+         // callback(new Error('Not allowed by CORS'));
+
+         // Let's be permissive if dev mode:
+         if (NODE_ENV === 'development') {
+            return callback(null, true);
+         }
+         return callback(new Error('Not allowed by CORS'));
+      }
+      return callback(null, true);
+   },
+   credentials: true,
 }));
 
 /* ============================================================

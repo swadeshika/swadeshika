@@ -1,4 +1,4 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000/api/v1';
 
 /**
  * Standard API Response structure
@@ -31,6 +31,8 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
         }
     }
 
+    console.log(`[API] Fetching: ${url}`); // Debug log
+
     const response = await fetch(url, {
         ...options,
         headers,
@@ -39,6 +41,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     const data = await response.json();
 
     if (!response.ok) {
+        console.error(`[API] Error ${response.status}:`, data);
         throw new Error(data.message || 'API request failed');
     }
 

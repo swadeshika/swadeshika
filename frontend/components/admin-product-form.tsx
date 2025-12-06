@@ -46,6 +46,12 @@ import { ImageGalleryUploader } from "@/components/admin/image-gallery-uploader"
 
 type Mode = "create" | "edit"
 
+import { productService } from "@/lib/services/productService"
+import { categoryService, Category } from "@/lib/services/categoryService"
+import { useEffect } from "react"
+
+// ... imports
+
 interface AdminProductFormProps {
   initial?: Partial<{
     name: string
@@ -67,8 +73,10 @@ interface AdminProductFormProps {
     metaDescription: string
     publish: boolean
     related: string
+    weightUnit: string
   }>
   mode?: Mode
+  productId?: number
   initialVariants?: Variant[]
   initialFeatures?: string[]
   initialSpecs?: SpecRow[]
@@ -76,7 +84,7 @@ interface AdminProductFormProps {
   initialGalleryUrls?: string[]
 }
 
-export function AdminProductForm({ initial, mode = "create", initialVariants = [], initialFeatures = [], initialSpecs = [], initialPrimaryImageUrl = null, initialGalleryUrls = [] }: AdminProductFormProps) {
+export function AdminProductForm({ initial, mode = "create", productId, initialVariants = [], initialFeatures = [], initialSpecs = [], initialPrimaryImageUrl = null, initialGalleryUrls = [] }: AdminProductFormProps) {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const [slugTouched, setSlugTouched] = useState(false)
@@ -96,14 +104,12 @@ export function AdminProductForm({ initial, mode = "create", initialVariants = [
     length: initial?.length || "",
     width: initial?.width || "",
     height: initial?.height || "",
-    image1: "",
-    image2: "",
-    image3: "",
     tags: initial?.tags || "",
     metaTitle: initial?.metaTitle || "",
     metaDescription: initial?.metaDescription || "",
     publish: initial?.publish ?? true,
     related: initial?.related || "",
+    weightUnit: initial?.weightUnit || "kg",
   })
 
   const [variants, setVariants] = useState<Variant[]>(initialVariants)
@@ -111,6 +117,16 @@ export function AdminProductForm({ initial, mode = "create", initialVariants = [
   const [specs, setSpecs] = useState<SpecRow[]>(initialSpecs)
   const [primaryImage, setPrimaryImage] = useState<{ file: File | null; url: string | null }>({ file: null, url: initialPrimaryImageUrl })
   const [galleryImages, setGalleryImages] = useState<{ files: File[]; urls: string[] }>({ files: [], urls: initialGalleryUrls })
+  const [categories, setCategories] = useState<Category[]>([])
+
+  useEffect(() => {
+    categoryService.getAllCategories()
+      .then((data) => setCategories(data))
+      .catch((err) => {
+        console.error("Failed to fetch categories:", err)
+        toast({ title: "Error", description: "Failed to load categories", variant: "destructive" })
+      })
+  }, [])
 
   const update = (key: keyof typeof form, value: string | boolean) => setForm((f) => ({ ...f, [key]: value }))
 
@@ -122,23 +138,22 @@ export function AdminProductForm({ initial, mode = "create", initialVariants = [
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-")
 
+  // ... validation logic same as before ...
   // whether user added any variants; affects pricing requirements
   const hasVariants = variants.length > 0
-  // Validation rules for default (product-level) pricing
-  const priceNum = parseFloat(form.price || "")
-  const mrpNum = parseFloat(form.comparePrice || "")
+  const priceNum = parseFloat(form.price || "0")
+  const mrpNum = parseFloat(form.comparePrice || "0")
   const priceRequired = !hasVariants
   const mrpRequired = !hasVariants
   const priceMissing = priceRequired && !form.price
   const mrpMissing = mrpRequired && !form.comparePrice
   const priceGtMrp = !!form.price && !!form.comparePrice && priceNum > mrpNum
 
-  // Validate variants pricing when present: each variant must have Selling and MRP, and Selling ≤ MRP
   const variantIssues: string[] = []
   if (hasVariants) {
     variants.forEach((v, idx) => {
-      const vp = parseFloat(v.price || "")
-      const vm = parseFloat(v.salePrice || "")
+      const vp = parseFloat(v.price || "0")
+      const vm = parseFloat(v.salePrice || "0")
       if (!v.price || !v.salePrice) {
         variantIssues.push(`Variant #${idx + 1}: Selling and MRP are required`)
         return
@@ -153,24 +168,67 @@ export function AdminProductForm({ initial, mode = "create", initialVariants = [
     name: !form.name ? "Name is required" : "",
     price: priceMissing ? "Selling price is required (or add variants)" : priceGtMrp ? "Selling should be ≤ MRP" : "",
     mrp: mrpMissing ? "MRP is required (or add variants)" : "",
-    category: !form.category ? "Category is required" : "",
+    category: !form.category ? "Category is required" : "", // TODO: Map string to ID?
     variants: hasVariants && variantIssues.length ? variantIssues[0] : "",
   }
   const isValid = !errors.name && !errors.category && !errors.price && !errors.mrp && !errors.variants
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // block submit if invalid, reflecting conditional pricing rules
     if (!isValid) {
       const firstError = errors.name || errors.category || errors.price || errors.mrp || errors.variants
       toast({ title: "Please fix the form", description: firstError || "Check highlighted fields." })
       return
     }
+    
+    setSubmitting(true)
     try {
-      setSubmitting(true)
-      await new Promise((r) => setTimeout(r, 800))
-      toast({ title: "Product created", description: `${form.name} has been added.` })
-      router.push("/admin/products")
+        const payload: any = {
+            name: form.name,
+            slug: form.slug,
+            description: form.description,
+            short_description: form.shortDescription,
+            price: parseFloat(form.price || "0") || 0,
+            compare_price: parseFloat(form.comparePrice || "0") || 0,
+            // category_id is now selected from the list.
+            category_id: form.category ? parseInt(form.category) : 1, // Default to 1 if empty, or handle error better. Validator checks validity.
+            stock_quantity: parseInt(form.stock || "0") || 0,
+            sku: form.sku,
+            weight: parseFloat(form.weight || "0") || 0,
+            weight_unit: 'kg', // fixed for now
+            in_stock: form.status === 'active',
+            is_active: form.status === 'active',
+            meta_title: form.metaTitle,
+            meta_description: form.metaDescription,
+            tags: form.tags.split(',').map(t => t.trim()),
+            features: features,
+            specifications: specs.reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {}),
+            images: [
+              ...(primaryImage.url ? [{ url: primaryImage.url, alt_text: form.name, is_primary: true, display_order: 0 }] : []),
+              ...galleryImages.urls.map((url, i) => ({ url, alt_text: `${form.name} - ${i + 1}`, is_primary: false, display_order: i + 1 }))
+            ],
+            variants: variants.map(v => ({
+                name: v.name,
+                price: parseFloat(v.price || "0"),
+                compare_price: parseFloat(v.salePrice || "0"),
+                sku: v.sku,
+                stock_quantity: parseInt(v.stock || "0"),
+                attributes: { size: v.name }
+            }))
+        }
+        
+        if (mode === 'edit' && productId) {
+            await productService.updateProduct(productId, payload)
+            toast({ title: "Product updated", description: `${form.name} has been updated.` })
+        } else {
+            await productService.createProduct(payload)
+            toast({ title: "Product created", description: `${form.name} has been added.` })
+        }
+        
+        router.push("/admin/products")
+    } catch (error) {
+        console.error(error)
+        toast({ title: "Error", description: "Failed to save product", variant: "destructive" })
     } finally {
       setSubmitting(false)
     }
@@ -426,11 +484,11 @@ export function AdminProductForm({ initial, mode = "create", initialVariants = [
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ghee">Ghee</SelectItem>
-                    <SelectItem value="spices">Spices</SelectItem>
-                    <SelectItem value="dry-fruits">Dry Fruits</SelectItem>
-                    <SelectItem value="oils">Oils</SelectItem>
-                    <SelectItem value="grains">Grains & Pulses</SelectItem>
+                    {categories.map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 {errors.category && <p className="text-xs text-red-600">{errors.category}</p>}

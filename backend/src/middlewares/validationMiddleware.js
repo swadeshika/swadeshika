@@ -21,10 +21,10 @@
  * 5. If validation passes → continue to next middleware/controller
  */
 
-const { validationResult } = require('express-validator'); 
+const { validationResult } = require('express-validator');
 // Extracts validation errors from request
 
-const { getMessage } = require('../constants/messages'); 
+const { getMessage } = require('../constants/messages');
 // Unified message system for all validation messages
 
 /**
@@ -40,7 +40,7 @@ const { getMessage } = require('../constants/messages');
  *   → call next() (continue request flow)
  */
 const validate = (req, res, next) => {
-  
+
   // Collect all validation errors from express-validator
   const errors = validationResult(req);
 
@@ -49,15 +49,17 @@ const validate = (req, res, next) => {
 
   // Format error output into a simple array instead of complex objects
   const formatted = errors.array().map(e => ({
-    field: e.param,   // Which field failed (email, password, etc.)
+    field: e.path || e.param,   // Which field failed (path in v7, param in v6)
     message: e.msg,   // The validation message
     value: e.value    // The invalid value user sent
   }));
 
+  console.log('❌ [Validation Failed]:', JSON.stringify(formatted, null, 2));
+
   // Respond with 400 Bad Request
   return res.status(400).json({
     success: false,
-    message: getMessage('VALIDATION_ERROR'),
+    message: getMessage('VALIDATION_ERROR') || 'Validation failed',
     errors: formatted
   });
 };

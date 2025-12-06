@@ -191,9 +191,9 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
             price: parseFloat(form.price || "0") || 0,
             compare_price: parseFloat(form.comparePrice || "0") || 0,
             // category_id is now selected from the list.
-            category_id: form.category ? parseInt(form.category) : 1, // Default to 1 if empty, or handle error better. Validator checks validity.
+            category_id: form.category ? parseInt(form.category) : null, // Send null if no category selected (allowed by DB)
             stock_quantity: parseInt(form.stock || "0") || 0,
-            sku: form.sku,
+            sku: form.sku || `SKU-${Date.now()}`, // Auto-generate SKU if missing
             weight: parseFloat(form.weight || "0") || 0,
             weight_unit: 'kg', // fixed for now
             in_stock: form.status === 'active',

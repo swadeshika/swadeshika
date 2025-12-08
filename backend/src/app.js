@@ -80,8 +80,8 @@ app.use('/api', limiter);
    express.urlencoded() -> Parse form data (x-www-form-urlencoded)
    cookieParser()       -> Read cookies from request headers
    ============================================================ */
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 /* ============================================================

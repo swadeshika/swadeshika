@@ -30,7 +30,7 @@ const config = {
 
   // JWT Settings
   JWT_SECRET: process.env.JWT_SECRET || 'change_this_in_prod',
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '15m',
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '24h',
   JWT_ISSUER: process.env.JWT_ISSUER || 'swadeshika-ecommerce',
 
   // CORS Allowed Origin

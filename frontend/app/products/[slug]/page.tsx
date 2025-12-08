@@ -88,6 +88,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
       shortDescription: apiProduct.short_description || "",
       metaTitle: apiProduct.meta_title,
       metaDescription: apiProduct.meta_description,
+      comparePrice: apiProduct.compare_price,
       inStock: apiProduct.in_stock,
       reviewCount: apiProduct.review_count,
       weightUnit: apiProduct.weight_unit || 'kg',
@@ -99,6 +100,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
       variants: (apiProduct as any).variants?.map((v: any) => ({
         ...v,
         quantity: v.stock_quantity,
+         comparePrice: v.compare_price,
         isActive: true
       }))
     }

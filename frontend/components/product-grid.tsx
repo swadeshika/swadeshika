@@ -103,7 +103,8 @@ export function ProductGrid({
           image: p.primary_image || p.image || '/placeholder.jpg',
           category: p.category_name || 'Uncategorized', // Need category name for display
           badge: p.is_featured ? 'Featured' : null,
-          reviews: p.review_count || 0
+          reviews: p.review_count || 0,
+          comparePrice: p.compare_price
         }))
 
         setProducts(mappedProducts)

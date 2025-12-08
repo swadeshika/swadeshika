@@ -200,8 +200,8 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
             is_active: form.status === 'active',
             meta_title: form.metaTitle,
             meta_description: form.metaDescription,
-            tags: form.tags.split(',').map(t => t.trim()),
-            features: features,
+            tags: form.tags.split(',').map(t => t.trim()).filter(t => t.length > 0),
+            features: features.filter(f => f.trim().length > 0),
             specifications: specs.reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {}),
             images: [
               ...(primaryImage.url ? [{ url: primaryImage.url, alt_text: form.name, is_primary: true, display_order: 0 }] : []),

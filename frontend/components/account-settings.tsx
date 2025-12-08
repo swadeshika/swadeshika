@@ -98,7 +98,6 @@ export function AccountSettings() {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setPasswordLoading(true)
-    setPasswordLoading(true)
     
     // Basic validations
     if (!currentPassword) {

@@ -174,9 +174,9 @@ class ProductModel {
 
       // 3. Insert Variants
       if (data.variants && data.variants.length) {
-        const variantValues = data.variants.map(v => [productId, v.name, v.sku, v.price, v.stock_quantity || 0]);
+        const variantValues = data.variants.map(v => [productId, v.name, v.sku, v.price, v.compare_price || null, v.stock_quantity || 0]);
         await conn.query(
-          `INSERT INTO product_variants (product_id, name, sku, price, stock_quantity) VALUES ?`,
+          `INSERT INTO product_variants (product_id, name, sku, price, compare_price, stock_quantity) VALUES ?`,
           [variantValues]
         );
       }
@@ -260,8 +260,8 @@ class ProductModel {
         // TODO: Handle referential integrity if variants are used.
         await conn.query(`DELETE FROM product_variants WHERE product_id = ?`, [id]);
         if (data.variants.length) {
-          const variantValues = data.variants.map(v => [id, v.name, v.sku, v.price, v.stock_quantity || 0]);
-          await conn.query(`INSERT INTO product_variants (product_id, name, sku, price, stock_quantity) VALUES ?`, [variantValues]);
+          const variantValues = data.variants.map(v => [id, v.name, v.sku, v.price, v.compare_price || null, v.stock_quantity || 0]);
+          await conn.query(`INSERT INTO product_variants (product_id, name, sku, price, compare_price, stock_quantity) VALUES ?`, [variantValues]);
         }
       }
 

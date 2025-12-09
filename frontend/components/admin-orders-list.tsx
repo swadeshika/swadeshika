@@ -19,95 +19,75 @@
  * - Export produces a UTF-8 CSV and downloads it client-side.
  */
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Search, Eye, Download } from "lucide-react"
+import { Search, Eye, Download, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
-const orders = [
-  {
-    id: "1",
-    orderNumber: "ORD-20250116-1234",
-    customer: "Priya Sharma",
-    email: "priya@example.com",
-    amount: 1880,
-    status: "Delivered",
-    date: "Jan 16, 2025",
-    items: 2,
-  },
-  {
-    id: "2",
-    orderNumber: "ORD-20250116-5678",
-    customer: "Rajesh Kumar",
-    email: "rajesh@example.com",
-    amount: 650,
-    status: "Shipped",
-    date: "Jan 16, 2025",
-    items: 1,
-  },
-  {
-    id: "3",
-    orderNumber: "ORD-20250116-9012",
-    customer: "Anita Desai",
-    email: "anita@example.com",
-    amount: 1200,
-    status: "Processing",
-    date: "Jan 16, 2025",
-    items: 3,
-  },
-  {
-    id: "4",
-    orderNumber: "ORD-20250115-3456",
-    customer: "Vikram Singh",
-    email: "vikram@example.com",
-    amount: 450,
-    status: "Pending",
-    date: "Jan 15, 2025",
-    items: 1,
-  },
-]
+import { ordersService, Order } from "@/lib/services/ordersService"
+import { toast } from "@/hooks/use-toast"
+import { useDebounce } from "@/hooks/use-debounce" // Assuming you have this or will implement simple debounce
 
 const statusColors: Record<string, string> = {
-  Delivered: "bg-[#2D5F3F]/10 text-[#2D5F3F]",
-  Shipped: "bg-[#FF7E00]/10 text-[#FF7E00]",
-  Processing: "bg-[#8B6F47]/10 text-[#6B4423]",
-  Pending: "bg-[#FF7E00]/10 text-[#FF7E00]",
-  Cancelled: "bg-red-100 text-red-700",
+  delivered: "bg-[#2D5F3F]/10 text-[#2D5F3F]",
+  shipped: "bg-[#FF7E00]/10 text-[#FF7E00]",
+  processing: "bg-[#8B6F47]/10 text-[#6B4423]",
+  pending: "bg-[#FF7E00]/10 text-[#FF7E00]",
+  cancelled: "bg-red-100 text-red-700",
 }
 
 export function AdminOrdersList() {
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
-  
-  // Derive filtered orders based on search and status filter (case-insensitive)
-  const q = searchQuery.trim().toLowerCase()
-  const filtered = orders.filter((o) => {
-    const matchesSearch =
-      !q ||
-      o.orderNumber.toLowerCase().includes(q) ||
-      o.customer.toLowerCase().includes(q) ||
-      o.email.toLowerCase().includes(q) ||
-      o.status.toLowerCase().includes(q)
-    const matchesStatus = statusFilter === "all" || o.status.toLowerCase() === statusFilter
-    return matchesSearch && matchesStatus
-  })
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 1 })
+
+  // Simple debounce logic if hook not valid
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  const fetchOrders = async () => {
+    setLoading(true)
+    try {
+      const data = await ordersService.getAllOrders({
+        page: pagination.page,
+        limit: pagination.limit,
+        status: statusFilter,
+        search: debouncedSearch
+      })
+      setOrders(data.orders || []) // Backend returns { orders: [], pagination: {} }
+      setPagination(prev => ({ ...prev, ...data.pagination }))
+    } catch (error) {
+      console.error("Failed to fetch orders:", error)
+      toast({ title: "Error", description: "Failed to load orders", variant: "destructive" })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Effect to load data when filters change
+  useEffect(() => {
+    fetchOrders()
+  }, [debouncedSearch, statusFilter, pagination.page]) // Add pagination.page dependency if implementing page buttons
 
   // Export the currently filtered orders as CSV
   const handleExportCsv = () => {
-    const header = ["Order Number", "Customer", "Email", "Date", "Items", "Amount", "Status"]
-    const rows = filtered.map((o) => [
+    const header = ["Order Number", "Customer ID", "Amount", "Status", "Date"]
+    const rows = orders.map((o) => [
       o.orderNumber,
-      o.customer,
-      o.email,
-      o.date,
-      String(o.items),
-      String(o.amount),
+      o.user?.id || "Guest",
+      o.totalAmount,
       o.status,
+      new Date(o.createdAt || "").toLocaleDateString(),
     ])
     const csv = [header, ...rows]
       .map((r) => r.map((field) => `"${String(field).replace(/"/g, '""')}"`).join(","))
@@ -172,34 +152,40 @@ export function AdminOrdersList() {
                   <TableHead className="text-[#6B4423]">Order Number</TableHead>
                   <TableHead className="text-[#6B4423]">Customer</TableHead>
                   <TableHead className="text-[#6B4423]">Date</TableHead>
-                  <TableHead className="text-[#6B4423]">Items</TableHead>
+                  {/* <TableHead className="text-[#6B4423]">Items</TableHead> */}
                   <TableHead className="text-[#6B4423]">Amount</TableHead>
                   <TableHead className="text-[#6B4423]">Status</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.length === 0 ? (
+                {loading ? (
+                    <TableRow>
+                        <TableCell colSpan={7} className="h-24 text-center">
+                            <Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2D5F3F]" />
+                        </TableCell>
+                    </TableRow>
+                ) : orders.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="py-12 text-center text-[#8B6F47]">
                       No orders found. Adjust filters or search to see results.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((order) => (
+                  orders.map((order) => (
                     <TableRow key={order.id}>
                       <TableCell className="font-medium text-[#6B4423]">{order.orderNumber}</TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium text-[#6B4423]">{order.customer}</p>
-                          <p className="text-sm text-[#8B6F47]">{order.email}</p>
+                          <p className="font-medium text-[#6B4423]">User #{order.user?.id || '?'}</p>
+                          {/* <p className="text-sm text-[#8B6F47]">{order.user?.email}</p> */}
                         </div>
                       </TableCell>
-                      <TableCell>{order.date}</TableCell>
-                      <TableCell>{order.items}</TableCell>
-                      <TableCell className="font-semibold text-[#2D5F3F]">₹{order.amount}</TableCell>
+                      <TableCell>{new Date(order.createdAt || "").toLocaleDateString()}</TableCell>
+                      {/* <TableCell>{order.items?.length || 0}</TableCell> */}
+                      <TableCell className="font-semibold text-[#2D5F3F]">₹{order.totalAmount}</TableCell>
                       <TableCell>
-                        <Badge className={`${statusColors[order.status]} border-0`}>{order.status}</Badge>
+                        <Badge className={`${statusColors[order.status.toLowerCase()] || 'bg-gray-100'} border-0 uppercase`}>{order.status}</Badge>
                       </TableCell>
                       <TableCell>
                         <Button variant="ghost" size="icon" asChild>

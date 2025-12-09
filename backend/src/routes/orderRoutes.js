@@ -6,7 +6,9 @@ const {
     getMyOrders,
     getOrderById,
     getOrderById,
+    updateOrderStatus,
     cancelOrder,
+    deleteOrder,
     trackOrder
 } = require('../controllers/orderController');
 const { authenticate, authorize } = require('../middlewares/authMiddleware');
@@ -15,10 +17,16 @@ const { authenticate, authorize } = require('../middlewares/authMiddleware');
 // Public Routes
 router.post('/track', trackOrder);
 
-// Protected Routes
+// Protected Routes (User)
 router.post('/', authenticate, createOrder);
 router.get('/', authenticate, getMyOrders);
-router.get('/:id', authenticate, getOrderById);
+router.get('/:id', authenticate, getOrderById); // Controller handles permission check for owner/admin
 router.post('/:id/cancel', authenticate, cancelOrder);
+
+// Admin Routes
+router.get('/all/list', authenticate, authorize('admin'), getAllOrders); // Changed path to avoid conflict with /:id if not careful, though /:id is below. Better: /admin/all or just /all
+router.get('/admin/all', authenticate, authorize('admin'), getAllOrders);
+router.put('/:id/status', authenticate, authorize('admin'), updateOrderStatus);
+router.delete('/:id', authenticate, authorize('admin'), deleteOrder);
 
 module.exports = router;

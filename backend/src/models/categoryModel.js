@@ -107,7 +107,7 @@ class CategoryModel {
             data.name,
             data.slug,
             data.parent_id || null,
-            data.description,
+            data.description || null,
             data.display_order || 0,
             data.is_active !== undefined ? data.is_active : true
         ]);
@@ -131,7 +131,7 @@ class CategoryModel {
             data.name,
             data.slug,
             data.parent_id || null,
-            data.description,
+            data.description || null,
             data.display_order || 0,
             data.is_active !== undefined ? data.is_active : true,
             id

@@ -5,7 +5,7 @@
  * Manages product categories and subcategories with CRUD operations
  */
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Search, Edit, Trash2, GripVertical } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,25 +24,36 @@ import {
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
-
-const categories = [
-  { id: "1", name: "Ghee", slug: "ghee", parent: null, productCount: 12, order: 1 },
-  { id: "2", name: "Spices", slug: "spices", parent: null, productCount: 24, order: 2 },
-  { id: "3", name: "Turmeric", slug: "turmeric", parent: "Spices", productCount: 8, order: 1 },
-  { id: "4", name: "Chili Powder", slug: "chili-powder", parent: "Spices", productCount: 6, order: 2 },
-  { id: "5", name: "Dry Fruits", slug: "dry-fruits", parent: null, productCount: 18, order: 3 },
-  { id: "6", name: "Oils", slug: "oils", parent: null, productCount: 15, order: 4 },
-]
+import { categoryService, Category } from "@/lib/services/categoryService"
 
 export function AdminCategoriesList() {
   const [searchQuery, setSearchQuery] = useState("")
-  const [items, setItems] = useState(categories)
+  const [items, setItems] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [newCategory, setNewCategory] = useState<{ name: string; parent: string } | null>({ name: "", parent: "none" })
+  const [newCategory, setNewCategory] = useState<{ name: string; parent: string }>({ name: "", parent: "none" })
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [editCategory, setEditCategory] = useState<{ id: string; name: string; parent: string } | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+  const [editCategory, setEditCategory] = useState<{ id: number; name: string; parent: string; slug: string } | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
   const { toast } = useToast()
+
+  // Fetch categories on mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    setLoading(true);
+    try {
+      const data = await categoryService.getAllCategories();
+      setItems(data);
+    } catch (error) {
+      console.error("Failed to load categories:", error);
+      toast({ title: "Error", description: "Failed to load categories.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const slugify = (str: string) =>
     str
@@ -52,77 +63,98 @@ export function AdminCategoriesList() {
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-")
 
-  const topLevelOptions = items.filter((c) => c.parent === null)
+  const topLevelOptions = items.filter((c) => !c.parent_id);
+
+  // Helper to get parent name from ID
+  const getParentName = (parentId: number | null | undefined) => {
+    if (!parentId) return null;
+    return items.find(i => i.id === parentId)?.name || null;
+  }
 
   const filtered = items.filter((c) => {
     const q = searchQuery.trim().toLowerCase()
     if (!q) return true
+    const parentName = getParentName(c.parent_id)?.toLowerCase() || ""
     return (
       c.name.toLowerCase().includes(q) ||
       c.slug.toLowerCase().includes(q) ||
-      (c.parent ? String(c.parent).toLowerCase().includes(q) : false)
+      parentName.includes(q)
     )
   })
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (!newCategory) return
     const name = newCategory.name.trim()
     if (!name) {
       toast({ title: "Name required", description: "Please enter a category name.", variant: "destructive" })
       return
     }
-    const slug = slugify(name)
-    const parentSlug = newCategory.parent && newCategory.parent !== "none" ? newCategory.parent : ""
-    const parentName = parentSlug ? items.find((i) => i.slug === parentSlug)?.name ?? null : null
-    const newItem = {
-      id: Date.now().toString(),
-      name,
-      slug,
-      parent: parentName,
-      productCount: 0,
-      order: (items.filter((i) => i.parent === parentName).length || 0) + 1,
+    
+    // Optimistic UI updates could be done, but let's stick to simple await for now
+    try {
+        const payload: Partial<Category> = {
+            name,
+            slug: slugify(name),
+            parent_id: newCategory.parent && newCategory.parent !== "none" ? parseInt(newCategory.parent) : null
+        };
+        
+        await categoryService.createCategory(payload);
+        toast({ title: "Category Added", description: `${name} has been added successfully.` })
+        setIsAddDialogOpen(false)
+        setNewCategory({ name: "", parent: "none" })
+        fetchCategories(); // Refresh list
+    } catch (error: any) {
+        toast({ title: "Error", description: error.message || "Failed to create category", variant: "destructive" })
     }
-    setItems((prev) => [
-      ...prev,
-      newItem,
-    ])
-    toast({ title: "Category Added", description: `${name} has been added successfully.` })
-    setIsAddDialogOpen(false)
-    setNewCategory({ name: "", parent: "none" })
   }
 
-  const openEdit = (id: string) => {
+  const openEdit = (id: number) => {
     const found = items.find((i) => i.id === id)
     if (!found) return
-    const parentSlug = found.parent ? items.find((i) => i.name === found.parent)?.slug ?? "none" : "none"
-    setEditCategory({ id: found.id, name: found.name, parent: parentSlug })
+    // Parent select stores ID as string
+    const parentVal = found.parent_id ? String(found.parent_id) : "none"
+    setEditCategory({ id: found.id, name: found.name, slug: found.slug, parent: parentVal })
     setIsEditDialogOpen(true)
   }
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editCategory) return
     const name = editCategory.name.trim()
     if (!name) {
       toast({ title: "Name required", description: "Please enter a category name.", variant: "destructive" })
       return
     }
-    const slug = slugify(name)
-    const parentSlug = editCategory.parent && editCategory.parent !== "none" ? editCategory.parent : ""
-    const parentName = parentSlug ? items.find((i) => i.slug === parentSlug)?.name ?? null : null
-    setItems((prev) =>
-      prev.map((i) => (i.id === editCategory.id ? { ...i, name, slug, parent: parentName } : i))
-    )
-    toast({ title: "Category Updated", description: `${name} has been updated.` })
-    setIsEditDialogOpen(false)
-    setEditCategory(null)
+
+    try {
+        const payload: Partial<Category> = {
+            name,
+            slug: slugify(name), // Optionally update slug or keep original? Let's auto-update for now
+            parent_id: editCategory.parent && editCategory.parent !== "none" ? parseInt(editCategory.parent) : null
+        };
+
+        await categoryService.updateCategory(editCategory.id, payload);
+        toast({ title: "Category Updated", description: `${name} has been updated.` })
+        setIsEditDialogOpen(false)
+        setEditCategory(null)
+        fetchCategories();
+    } catch (error: any) {
+        toast({ title: "Error", description: error.message || "Failed to update category", variant: "destructive" })
+    }
   }
 
-  const confirmDelete = (id: string, name: string) => setDeleteTarget({ id, name })
-  const handleDelete = () => {
+  const confirmDelete = (id: number, name: string) => setDeleteTarget({ id, name })
+  
+  const handleDelete = async () => {
     if (!deleteTarget) return
-    setItems((prev) => prev.filter((i) => i.id !== deleteTarget.id))
-    toast({ title: "Category Deleted", description: `${deleteTarget.name} has been removed.` })
-    setDeleteTarget(null)
+    try {
+        await categoryService.deleteCategory(deleteTarget.id);
+        toast({ title: "Category Deleted", description: `${deleteTarget.name} has been removed.` })
+        fetchCategories(); 
+    } catch (error: any) {
+        toast({ title: "Error", description: error.message || "Failed to delete category", variant: "destructive" })
+    } finally {
+        setDeleteTarget(null)
+    }
   }
 
   return (
@@ -151,14 +183,14 @@ export function AdminCategoriesList() {
                   id="category-name"
                   placeholder="e.g., Organic Spices"
                   value={newCategory?.name ?? ""}
-                  onChange={(e) => setNewCategory((prev) => ({ ...(prev as any), name: e.target.value }))}
+                  onChange={(e) => setNewCategory((prev) => ({ ...prev, name: e.target.value }))}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="parent-category">Parent Category (Optional)</Label>
                 <Select
                   value={newCategory?.parent ?? "none"}
-                  onValueChange={(value) => setNewCategory((prev) => ({ ...(prev as any), parent: value }))}
+                  onValueChange={(value) => setNewCategory((prev) => ({ ...prev, parent: value }))}
                 >
                   <SelectTrigger id="parent-category">
                     <SelectValue placeholder="Select parent category" />
@@ -166,7 +198,7 @@ export function AdminCategoriesList() {
                   <SelectContent>
                     <SelectItem value="none">None (Top Level)</SelectItem>
                     {topLevelOptions.map((opt) => (
-                      <SelectItem key={opt.id} value={opt.slug}>{opt.name}</SelectItem>
+                      <SelectItem key={opt.id} value={String(opt.id)}>{opt.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -211,7 +243,11 @@ export function AdminCategoriesList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.length === 0 ? (
+                {loading ? (
+                    <TableRow>
+                        <TableCell colSpan={6} className="py-12 text-center text-[#8B6F47]">Loading...</TableCell>
+                    </TableRow>
+                ) : filtered.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="py-12 text-center text-[#8B6F47]">
                       No categories found. Add a category to get started.
@@ -228,13 +264,13 @@ export function AdminCategoriesList() {
                       <TableCell className="font-medium">{category.name}</TableCell>
                       <TableCell>{category.slug}</TableCell>
                       <TableCell>
-                        {category.parent ? (
-                          <span className="text-[#6B4423]">{category.parent}</span>
+                        {category.parent_id ? (
+                          <span className="text-[#6B4423]">{getParentName(category.parent_id)}</span>
                         ) : (
                           <span className="text-[#8B6F47] text-sm">Top Level</span>
                         )}
                       </TableCell>
-                    <TableCell>{category.productCount}</TableCell>
+                    <TableCell>{category.product_count || 0}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Button variant="ghost" size="icon" onClick={() => openEdit(category.id)}>
@@ -282,8 +318,8 @@ export function AdminCategoriesList() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None (Top Level)</SelectItem>
-                  {topLevelOptions.map((opt) => (
-                    <SelectItem key={opt.id} value={opt.slug}>{opt.name}</SelectItem>
+                  {topLevelOptions.filter(o => o.id !== editCategory?.id).map((opt) => (
+                    <SelectItem key={opt.id} value={String(opt.id)}>{opt.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

@@ -67,9 +67,9 @@ if (NODE_ENV === 'development') app.use(morgan('dev'));
    Applies ONLY to routes starting with /api
    ============================================================ */
 const limiter = rateLimit({
-  max: RATE_LIMIT_MAX || 100,                         // Max requests allowed
-  windowMs: RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000,   // Time window
-  message: "Too many requests, try again later.",      // Response message
+   max: RATE_LIMIT_MAX || 100,                         // Max requests allowed
+   windowMs: RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000,   // Time window
+   message: "Too many requests, try again later.",      // Response message
 });
 app.use('/api', limiter);
 
@@ -80,8 +80,8 @@ app.use('/api', limiter);
    express.urlencoded() -> Parse form data (x-www-form-urlencoded)
    cookieParser()       -> Read cookies from request headers
    ============================================================ */
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 /* ============================================================
@@ -111,8 +111,8 @@ app.use(hpp());
    - credentials: true -> send cookies (refresh token)
    ============================================================ */
 app.use(cors({
-  origin: CORS_ORIGIN,   // Only allow your frontend domain
-  credentials: true,     // Needed for cookies
+   origin: CORS_ORIGIN,   // Only allow your frontend domain
+   credentials: true,     // Needed for cookies
 }));
 
 /* ============================================================

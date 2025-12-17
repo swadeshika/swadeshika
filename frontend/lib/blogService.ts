@@ -24,9 +24,13 @@ export interface BlogPost {
     excerpt: string;
     content: string;
     featured_image?: string;
-    author_id?: string;
+    author_name?: string;
+    author_image?: string;
+    category_name?: string;
+    category_slug?: string;
     category_id?: number;
-    tags?: string[];
+    author_id?: number;
+    tags?: string[] | string;
     status: 'draft' | 'published' | 'archived';
     published_at?: string;
     created_at?: string;
@@ -72,8 +76,8 @@ export const blogService = {
     async getAllPosts(params?: { page?: number; limit?: number; status?: string; category?: string }): Promise<BlogPost[]> {
         const queryString = new URLSearchParams(params as any).toString();
         const endpoint = queryString ? `/blog?${queryString}` : '/blog';
-        const response = await api.get<BlogPost[]>(endpoint);
-        return response.data.data;
+        const response = await api.get<any>(endpoint);
+        return response.data.data.posts;
     },
 
     async getPostBySlug(slug: string): Promise<BlogPost> {

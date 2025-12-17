@@ -16,6 +16,8 @@ const categoryValidation = [
 
 // Public route - Get active categories
 router.get('/active', BlogCategoryController.getActiveCategories);
+// Public route - Get all categories (for debugging visibility issues)
+// router.get('/all', BlogCategoryController.getAllCategories);
 
 // Admin routes - CRUD operations
 router.get('/', authenticate, authorize('admin'), BlogCategoryController.getAllCategories);

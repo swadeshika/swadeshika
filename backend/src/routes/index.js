@@ -19,6 +19,7 @@ const adminOrderRoutes = require('./adminOrderRoutes');
 const blogRoutes = require('./blogRoutes');
 const adminBlogRoutes = require('./adminBlogRoutes');
 const blogCategoryRoutes = require('./blogCategoryRoutes');
+const adminBlogAuthorRoutes = require('./adminBlogAuthorRoutes');
 const couponRoutes = require('./couponRoutes');
 const reviewRoutes = require('./reviewRoutes');
 const dashboardRoutes = require('./dashboardRoutes');
@@ -45,8 +46,8 @@ router.use('/wishlist', wishlistRoutes);
 router.use('/orders', orderRoutes);
 router.use('/coupons', couponRoutes);
 router.use('/reviews', reviewRoutes);
-router.use('/blog', blogRoutes);
 router.use('/blog/categories', blogCategoryRoutes);
+router.use('/blog', blogRoutes);
 router.use('/contact', contactRoutes);
 router.use('/newsletter', newsletterRoutes);
 router.use('/analytics', analyticsRoutes);
@@ -54,6 +55,7 @@ router.use('/analytics', analyticsRoutes);
 // Admin Routes
 router.use('/admin/settings', adminSettingsRoutes);
 router.use('/admin/orders', adminOrderRoutes);
+router.use('/admin/blog/authors', adminBlogAuthorRoutes);
 router.use('/admin/blog', adminBlogRoutes);
 router.use('/admin/dashboard', dashboardRoutes);
 

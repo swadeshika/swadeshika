@@ -79,10 +79,28 @@ class CartModel {
             INSERT INTO cart_items (user_id, product_id, variant_id, quantity)
             VALUES (?, ?, ?, ?)
         `;
+        // Normalize variantId
+        let variantId = data.variantId;
+        if (!variantId || variantId === 'null' || variantId === 'undefined' || variantId === '') {
+            variantId = null;
+        }
+
+        // Validate variant existence if provided
+        if (variantId) {
+            const [variant] = await db.query('SELECT id FROM product_variants WHERE id = ?', [variantId]);
+            if (variant.length === 0) {
+                // Option 1: Throw error
+                throw new Error('Invalid variant ID: ' + variantId);
+                // Option 2: Set to null (fallback to base product) - safer?
+                // msg: "Variant not found, adding base product"
+                // distinct behavior: let's throw error for now so frontend knows it sent bad data.
+            }
+        }
+
         const [result] = await db.query(sql, [
             userId,
             data.productId,
-            data.variantId || null,
+            variantId,
             data.quantity
         ]);
         return result.insertId;

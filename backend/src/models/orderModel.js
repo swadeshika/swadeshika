@@ -124,7 +124,13 @@ class Order {
      * @returns {Promise<Object|null>}
      */
     static async findById(id) {
-        const [orders] = await db.query('SELECT * FROM orders WHERE id = ?', [id]);
+        const [orders] = await db.query(
+            `SELECT o.*, u.email as user_email 
+             FROM orders o 
+             LEFT JOIN users u ON o.user_id = u.id 
+             WHERE o.id = ?`,
+            [id]
+        );
         if (orders.length === 0) return null;
 
         const order = orders[0];
@@ -144,7 +150,7 @@ class Order {
      * @param {string} status 
      * @returns {Promise<boolean>}
      */
-    static async updateStatus(id, status) {
+    static async updateStatus(id, status, trackingNumber = null) {
         const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
         if (!validStatuses.includes(status)) {
             throw new Error('Invalid status');
@@ -159,6 +165,11 @@ class Order {
             updates.push('delivered_at = NOW()');
         } else if (status === 'cancelled') {
             updates.push('cancelled_at = NOW()');
+        }
+
+        if (trackingNumber) {
+            updates.push('tracking_number = ?');
+            params.push(trackingNumber);
         }
 
         params.push(id);
@@ -204,7 +215,8 @@ class Order {
      */
     static async getCartItems(userId) {
         const [items] = await db.query(
-            `SELECT ci.*, p.name as product_name, p.sku, pv.name as variant_name 
+            `SELECT ci.*, p.name as product_name, p.sku, pv.name as variant_name, 
+            CAST(COALESCE(pv.price, p.price) AS DECIMAL(10,2)) as price 
        FROM cart_items ci
        JOIN products p ON ci.product_id = p.id
        LEFT JOIN product_variants pv ON ci.variant_id = pv.id

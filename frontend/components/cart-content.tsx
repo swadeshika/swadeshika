@@ -7,16 +7,36 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { useCartStore } from "@/lib/cart-store"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { settingsService, AppSettings } from "@/lib/services/settingsService"
 
 export function CartContent() {
   const { items, updateQuantity, removeItem } = useCartStore()
   const [couponCode, setCouponCode] = useState("")
+  const [settings, setSettings] = useState<AppSettings | null>(null)
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const data = await settingsService.getSettings()
+        setSettings(data)
+      } catch (error) {
+        console.error("Failed to fetch settings", error)
+      }
+    }
+    fetchSettings()
+  }, [])
+
+  const shippingThreshold = settings?.free_shipping_threshold ?? 500
+  const flatRate = settings?.flat_rate ?? 50
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const shipping = subtotal >= 999 ? 0 : 50
+  const shipping = subtotal >= shippingThreshold ? 0 : flatRate
   const discount = 0
   const total = subtotal + shipping - discount
+
+  // Calculate amount needed for free shipping
+  const amountForFreeShipping = shippingThreshold - subtotal
 
   if (items.length === 0) {
     return (
@@ -112,8 +132,8 @@ export function CartContent() {
                   <span className="font-medium">-₹{discount}</span>
                 </div>
               )}
-              {subtotal < 999 && (
-                <p className="text-sm text-[#8B6F47]">Add ₹{999 - subtotal} more for free shipping</p>
+              {amountForFreeShipping > 0 && (
+                <p className="text-sm text-[#8B6F47]">Add ₹{amountForFreeShipping} more for free shipping</p>
               )}
             </div>
 

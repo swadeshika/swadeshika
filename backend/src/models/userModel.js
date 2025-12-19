@@ -1,4 +1,6 @@
 const db = require('../config/db');
+const { hashPassword } = require('../utils/hash');
+const { v4: uuidv4 } = require('uuid');
 
 /**
  * userModel.js
@@ -83,7 +85,7 @@ class UserModel {
 
         params.push(id);
         const sql = `UPDATE users SET ${updates.join(', ')}, updated_at = NOW() WHERE id = ?`;
-        
+
         const [result] = await db.query(sql, params);
         return result.affectedRows > 0;
     }
@@ -96,6 +98,43 @@ class UserModel {
      */
     static async delete(id) {
         const [result] = await db.query(`DELETE FROM users WHERE id = ?`, [id]);
+        return result.affectedRows > 0;
+    }
+
+
+    /**
+     * Create a new user
+     * 
+     * @param {Object} data - User data { name, email, password, phone }
+     * @returns {Promise<Object>} Created user object
+     */
+    static async create(data) {
+        const { name, email, password, phone } = data;
+        const hashedPassword = await hashPassword(password);
+        const id = uuidv4();
+
+        const [result] = await db.query(
+            `INSERT INTO users (id, name, email, password, phone) VALUES (?, ?, ?, ?, ?)`,
+            [id, name, email, hashedPassword, phone]
+        );
+
+        return this.findById(id);
+    }
+
+    /**
+     * Force update password (no old password check)
+     * Used for Forgot Password / Reset Password
+     * 
+     * @param {number|string} id - User ID
+     * @param {string} password - New plain text password
+     * @returns {Promise<boolean>} True if updated
+     */
+    static async forceSetPassword(id, password) {
+        const hashedPassword = await hashPassword(password);
+        const [result] = await db.query(
+            `UPDATE users SET password = ? WHERE id = ?`,
+            [hashedPassword, id]
+        );
         return result.affectedRows > 0;
     }
 }

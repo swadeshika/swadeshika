@@ -5,7 +5,6 @@ const {
     getAllOrders,
     getMyOrders,
     getOrderById,
-    getOrderById,
     updateOrderStatus,
     cancelOrder,
     deleteOrder,

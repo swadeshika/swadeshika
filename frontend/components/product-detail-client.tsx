@@ -105,16 +105,13 @@ export function ProductDetailClient({ product, relatedProducts, reviews }: Produ
   const handleAddToCart = async () => {
     try {
       setIsAdding(true)
-      // addItem() auto-increments quantity if already in cart; call it `quantity` times for now
-      for (let i = 0; i < quantity; i++) {
-        addItem({
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          image: product.images[0],
-          category: product.category,
-        })
-      }
+      await addItem({
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.images[0],
+        category: product.category,
+      }, quantity)
       toast.success(`${product.name} added to cart!`)
     } finally {
       setIsAdding(false)

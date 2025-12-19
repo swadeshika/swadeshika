@@ -27,15 +27,12 @@ const newsletterRoutes = require('./newsletterRoutes');
 const analyticsRoutes = require('./analyticsRoutes');
 
 // Dynamic loading for Order Routes (as it might be fragile or WIP)
-let orderRoutes;
-try {
-    orderRoutes = require('./orderRoutes');
-} catch (e) {
-    orderRoutes = express.Router().get('/', (req, res) => res.json({ msg: 'orders route placeholder' }));
-}
+const orderRoutes = require('./orderRoutes');
+const settingsRoutes = require('./settingsRoutes'); // Public settings
 
 // Mount Routes
 router.use('/auth', authRoutes);
+router.use('/settings', settingsRoutes); // Public settings endpoint
 router.use('/users', userRoutes);
 router.use('/users/addresses', addressRoutes); // Address routes mounted under /users/addresses
 router.use('/products', productRoutes);

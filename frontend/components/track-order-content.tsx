@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Search, Truck, CheckCircle, Package, Clock, MapPin } from "lucide-react"
+import { Search, Truck, CheckCircle, Package, Clock, MapPin, XCircle, AlertCircle } from "lucide-react"
+import { ordersService } from "@/lib/services/ordersService"
 
 type TimelineStep = {
-  status: "placed" | "confirmed" | "processing" | "shipped" | "out_for_delivery" | "delivered"
+  status: "placed" | "confirmed" | "processing" | "shipped" | "out_for_delivery" | "delivered" | "pending" | "cancelled" | "refunded"
   label: string
   location?: string
   date?: string | null
@@ -34,6 +35,9 @@ const statusIcon: Record<TimelineStep["status"], any> = {
   shipped: Truck,
   out_for_delivery: Truck,
   delivered: CheckCircle,
+  pending: Clock,
+  cancelled: XCircle,
+  refunded: AlertCircle,
 }
 
 const statusBadge: Record<TimelineStep["status"], { label: string; className: string }> = {
@@ -43,6 +47,9 @@ const statusBadge: Record<TimelineStep["status"], { label: string; className: st
   shipped: { label: "Shipped", className: "bg-orange-100 text-orange-700" },
   out_for_delivery: { label: "Out for delivery", className: "bg-amber-100 text-amber-700" },
   delivered: { label: "Delivered", className: "bg-green-100 text-green-700" },
+  pending: { label: "Pending", className: "bg-yellow-100 text-yellow-700" },
+  cancelled: { label: "Cancelled", className: "bg-red-100 text-red-700" },
+  refunded: { label: "Refunded", className: "bg-gray-100 text-gray-700" },
 }
 
 export default function TrackOrderContent() {
@@ -59,8 +66,8 @@ export default function TrackOrderContent() {
   }
 
   const validateOrderId = (id: string) => {
-    // Must match ORD-2025-00001 (5 digits at end)
-    return /^ORD-2025-\d{5}$/.test(id)
+    // Matches ORD- followed by any alphanumeric/dash characters
+    return /^ORD-[\w-]+$/.test(id)
   }
 
   const handleTrack = async () => {
@@ -73,7 +80,7 @@ export default function TrackOrderContent() {
       return
     }
     if (!validateOrderId(orderId)) {
-      setOrderIdError("Order ID must be in format ORD-2025-00001")
+      setOrderIdError("Order ID must start with ORD-")
       return
     }
 
@@ -88,26 +95,25 @@ export default function TrackOrderContent() {
     }
 
     setLoading(true)
-    // Simulate API
-    await new Promise((r) => setTimeout(r, 800))
-    const data: TrackingData = {
-      orderId: orderId,
-      status: "shipped",
-      estimatedDelivery: "2025-11-05T00:00:00Z",
-      carrier: "Blue Dart",
-      trackingNumber: "BD123456789IN",
-      currentLocation: "Bangalore Sorting Hub",
-      timeline: [
-        { status: "placed", label: "Order Placed", location: "Swadeshika Warehouse", date: "2025-10-30T10:30:00Z", completed: true },
-        { status: "confirmed", label: "Order Confirmed", location: "Swadeshika Warehouse", date: "2025-10-30T11:00:00Z", completed: true },
-        { status: "processing", label: "Packed & Ready", location: "Swadeshika Warehouse", date: "2025-10-31T09:00:00Z", completed: true },
-        { status: "shipped", label: "Shipped", location: "Bangalore Hub", date: "2025-10-31T14:30:00Z", completed: true },
-        { status: "out_for_delivery", label: "Out for Delivery", location: "Koramangala Delivery Center", date: null, completed: false },
-        { status: "delivered", label: "Delivered", location: "Your Address", date: null, completed: false },
-      ],
+    try {
+      const data = await ordersService.trackOrder(orderId, email);
+
+      // Map backend response to component TrackingData if needed
+      // Backend returns: { orderId, status, trackingNumber, carrier, estimatedDelivery, currentLocation, timeline: [...] }
+      // Component expects: same structure mostly. 
+      // Need to ensure types match.
+      // Component TrackingData: { orderId, status, estimatedDelivery, carrier, trackingNumber, currentLocation, timeline: TimelineStep[] }
+      // Backend timeline items: { status, label, date, completed }
+      // Component timeline items: { status, label, location?, date?, completed }
+      // Looks compatible.
+
+      setTracking(data as unknown as TrackingData);
+    } catch (error) {
+      setOrderIdError("Could not find order with provided details");
+      setTracking(null);
+    } finally {
+      setLoading(false);
     }
-    setTracking(data)
-    setLoading(false)
   }
 
   const progressPercent = (() => {

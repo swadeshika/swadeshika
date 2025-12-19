@@ -61,7 +61,7 @@ export const ordersService = {
         if (params.search) query.append('search', params.search);
 
         const res = await api.get<{ orders: Order[]; pagination: any }>(`/orders/admin/all?${query.toString()}`);
-        return res.data;
+        return res.data.data;
     },
 
     /**
@@ -69,14 +69,14 @@ export const ordersService = {
      */
     getOrderById: async (id: string) => {
         const res = await api.get<Order>(`/orders/${id}`);
-        return res.data;
+        return res.data.data;
     },
 
     /**
      * Update order status (Admin)
      */
-    updateStatus: async (id: string, status: string) => {
-        const res = await api.put<{ message: string }>(`/orders/${id}/status`, { status });
+    updateStatus: async (id: string, status: string, trackingNumber?: string) => {
+        const res = await api.put<{ message: string }>(`/orders/${id}/status`, { status, trackingNumber });
         return res.data;
     },
 
@@ -86,5 +86,48 @@ export const ordersService = {
     deleteOrder: async (id: string) => {
         const res = await api.delete<{ message: string }>(`/orders/${id}`);
         return res.data;
+    },
+
+    /**
+     * Get my orders (User)
+     */
+    getMyOrders: async (params: { page?: number; limit?: number; status?: string } = {}) => {
+        const query = new URLSearchParams();
+        if (params.page) query.append('page', String(params.page));
+        if (params.limit) query.append('limit', String(params.limit));
+        if (params.status && params.status !== 'all') query.append('status', params.status);
+
+        const res = await api.get<{ orders: Order[]; pagination: any }>(`/orders?${query.toString()}`);
+        return res.data.data;
+    },
+
+    /**
+     * Create a new order (User)
+     */
+    createOrder: async (orderData: {
+        items: any[];
+        shippingAddress: any;
+        billingAddress: any;
+        paymentMethod: string;
+        subtotal: number;
+        tax: number;
+        shippingCost: number;
+        totalAmount: number;
+        phone?: string;
+        email?: string;
+        couponCode?: string | null;
+        notes?: string;
+    }) => {
+        const res = await api.post<{ message: string; orderId: string }>(`/orders`, orderData);
+        return res.data;
+    },
+
+    /**
+     * Track Order (Public)
+     */
+    trackOrder: async (orderId: string, email: string) => {
+        const res = await api.post<{ data: any }>(`/orders/track`, { orderId, email });
+        return res.data.data;
     }
 };
+

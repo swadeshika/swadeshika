@@ -1,71 +1,96 @@
 "use client"
 
-/**
- * Admin Customer Detail
- *
- * Purpose
- * - Displays a single customer's profile inside the Admin panel with a consistent layout and visual language.
- * - Provides a quick overview of identity, contact, activity summary, addresses, and recent orders.
- *
- * Key Features
- * - Breadcrumbs for navigation context (Admin / Customers / Name)
- * - Customer header: name, email, phone, and status badge
- * - Recent orders list with amount and date, plus a link to all orders
- * - Addresses section (Shipping/Billing) rendered as neat cards
- * - Sticky summary sidebar: total orders and total spent with quick navigation
- *
- * Props
- * - customerId: string — the identifier of the selected customer (mocked locally for now)
- *
- * Notes
- * - Styling follows the admin brand tokens used elsewhere: rounded-2xl, border-[#E8DCC8], and text colors.
- * - Replace mock data with an API call in the future; preserve the same UI contract.
- */
-
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Mail, Phone, User } from "lucide-react"
+import { Mail, Phone, User, Loader2, Edit, Save } from "lucide-react"
 import Link from "next/link"
-
-// Mock customer data (replace with API data later)
-const mockCustomer = {
-  id: "CUST-001",
-  name: "Rajesh Kumar",
-  email: "rajesh@example.com",
-  phone: "+91 98765 43210",
-  totalOrders: 5,
-  totalSpent: 12499,
-  status: "active",
-  addresses: [
-    {
-      type: "Shipping",
-      name: "Rajesh Kumar",
-      phone: "+91 98765 43210",
-      address: "123, MG Road, Koramangala",
-      city: "Bangalore",
-      state: "Karnataka",
-      pincode: "560034",
-    },
-    {
-      type: "Billing",
-      name: "Rajesh Kumar",
-      phone: "+91 98765 43210",
-      address: "123, MG Road, Koramangala",
-      city: "Bangalore",
-      state: "Karnataka",
-      pincode: "560034",
-    },
-  ],
-  recentOrders: [
-    { id: "ORD-2024-001", date: "2024-01-15T10:30:00Z", total: 2499, status: "delivered" },
-    { id: "ORD-2024-002", date: "2024-02-03T11:20:00Z", total: 1899, status: "processing" },
-  ],
-}
+import { customersService, Customer } from "@/lib/services/customersService"
+import { ordersService, Order } from "@/lib/services/ordersService"
+import { Input } from "@/components/ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
 
 export default function AdminCustomerDetail({ customerId }: { customerId: string }) {
-  const customer = { ...mockCustomer, id: customerId }
+  const [customer, setCustomer] = useState<Customer | null>(null)
+  const [recentOrders, setRecentOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(false)
+  const [formData, setFormData] = useState({ first_name: "", last_name: "", phone: "", status: "" })
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true)
+        const [customerData, ordersData] = await Promise.all([
+          customersService.getById(customerId),
+          ordersService.getAllOrders({ customer: customerId, limit: 5 })
+        ])
+        setCustomer(customerData)
+        setRecentOrders(ordersData.orders)
+
+        setFormData({
+          first_name: customerData.first_name,
+          last_name: customerData.last_name,
+          phone: customerData.phone || "",
+          status: customerData.status
+        })
+      } catch (error) {
+        console.error("Failed to fetch customer data", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [customerId])
+
+  const handleUpdate = async () => {
+    try {
+      await customersService.update(customerId, formData);
+      setEditing(false);
+      // Refresh data
+      const updated = await customersService.getById(customerId);
+      setCustomer(updated);
+    } catch (error) {
+      console.error("Failed to update", error);
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to deactivate this customer?")) return;
+    try {
+      await customersService.delete(customerId);
+      const updated = await customersService.getById(customerId);
+      setCustomer(updated);
+    } catch (error) {
+      console.error("Failed to delete", error);
+    }
+  }
+
+  if (loading) {
+    return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[#6B4423]" /></div>
+  }
+
+  if (!customer) {
+    return <div>Customer not found</div>
+  }
 
   return (
     <div className="space-y-8">
@@ -75,22 +100,71 @@ export default function AdminCustomerDetail({ customerId }: { customerId: string
         <span className="mx-2">/</span>
         <Link href="/admin/customers" className="hover:underline">Customers</Link>
         <span className="mx-2">/</span>
-        <span className="text-[#6B4423] font-medium">{customer.name}</span>
+        <span className="text-[#6B4423] font-medium">{customer.first_name} {customer.last_name}</span>
       </div>
 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-[#6B4423]">{customer.name}</h1>
+          <h1 className="text-3xl font-serif font-bold text-[#6B4423]">{customer.first_name} {customer.last_name}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-[#8B6F47]">
             <span className="inline-flex items-center gap-2"><Mail className="h-4 w-4" /> {customer.email}</span>
-            <span className="inline-flex items-center gap-2"><Phone className="h-4 w-4" /> {customer.phone}</span>
+            <span className="inline-flex items-center gap-2"><Phone className="h-4 w-4" /> {customer.phone || 'N/A'}</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Badge className={customer.status === "active" ? "bg-[#2D5F3F]/10 text-[#2D5F3F] border-0" : "bg-red-100 text-red-700"}>
-            {customer.status === "active" ? "Active" : "Inactive"}
+          <Badge className={customer.status === "Active" ? "bg-[#2D5F3F]/10 text-[#2D5F3F] border-0" : "bg-red-100 text-red-700"}>
+            {customer.status}
           </Badge>
+
+          <Dialog open={editing} onOpenChange={setEditing}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Edit className="h-4 w-4" /> Edit
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Edit Profile</DialogTitle>
+                <DialogDescription>
+                  Make changes to your customer's profile here.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="firstName" className="text-right"> First Name </Label>
+                  <Input id="firstName" value={formData.first_name} onChange={(e) => setFormData({ ...formData, first_name: e.target.value })} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="lastName" className="text-right"> Last Name </Label>
+                  <Input id="lastName" value={formData.last_name} onChange={(e) => setFormData({ ...formData, last_name: e.target.value })} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="phone" className="text-right"> Phone </Label>
+                  <Input id="phone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="status" className="text-right"> Status </Label>
+                  <Select value={formData.status} onValueChange={(val) => setFormData({ ...formData, status: val })}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Active">Active</SelectItem>
+                      <SelectItem value="Inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit" onClick={handleUpdate}>Save changes</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={handleDelete}>
+            Deactivate
+          </Button>
         </div>
       </div>
 
@@ -101,49 +175,40 @@ export default function AdminCustomerDetail({ customerId }: { customerId: string
           <Card className="rounded-2xl border-2 border-[#E8DCC8] bg-white py-5">
             <CardHeader>
               <CardTitle>Recent Orders</CardTitle>
-              <CardDescription>Last {customer.recentOrders.length} orders</CardDescription>
+              <CardDescription>Last {recentOrders.length} orders</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {customer.recentOrders.map((o) => (
-                  <div key={o.id} className="flex items-center justify-between border-b last:border-0 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-full bg-[#F5F1E8] p-2 border border-[#E8DCC8]"><User className="h-4 w-4 text-[#6B4423]" /></div>
-                      <div>
-                        <p className="font-medium text-[#6B4423]">Order #{o.id}</p>
-                        <p className="text-xs text-[#8B6F47]">{new Date(o.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
+                {recentOrders.length === 0 ? <p className="text-center text-gray-500">No orders found.</p> :
+                  recentOrders.map((o) => (
+                    <div key={o.id} className="flex items-center justify-between border-b last:border-0 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-full bg-[#F5F1E8] p-2 border border-[#E8DCC8]"><User className="h-4 w-4 text-[#6B4423]" /></div>
+                        <div>
+                          <p className="font-medium text-[#6B4423]">Order #{o.orderNumber}</p>
+                          <p className="text-xs text-[#8B6F47]">{new Date(o.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">₹{Number(o.totalAmount).toLocaleString("en-IN")}</p>
+                        <p className="text-xs text-[#8B6F47] capitalize">{o.status}</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">₹{o.total.toLocaleString("en-IN")}</p>
-                      <p className="text-xs text-[#8B6F47] capitalize">{o.status}</p>
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </div>
               <Separator className="my-4" />
               <Button asChild variant="outline" className="bg-transparent">
-                <Link href={`/admin/orders`}>View All Orders</Link>
+                <Link href={`/admin/orders?customer=${customer.id}`}>View All Orders</Link>
               </Button>
             </CardContent>
           </Card>
 
-          {/* Addresses */}
+          {/* Addresses - Placeholder for now as API doesn't return list yet */}
+          {/* 
           <div className="grid md:grid-cols-2 gap-6">
-            {customer.addresses.map((addr, idx) => (
-              <Card key={idx} className="rounded-2xl border-2 border-[#E8DCC8] bg-white py-5">
-                <CardHeader>
-                  <CardTitle>{addr.type} Address</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm space-y-1">
-                  <p className="font-medium">{addr.name}</p>
-                  <p className="text-[#8B6F47]">{addr.address}</p>
-                  <p className="text-[#8B6F47]">{addr.city}, {addr.state} - {addr.pincode}</p>
-                  <p className="text-[#8B6F47]">{addr.phone}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+             ... Address Cards ...
+          </div> 
+          */}
         </div>
 
         {/* Right column */}
@@ -155,13 +220,14 @@ export default function AdminCustomerDetail({ customerId }: { customerId: string
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-[#8B6F47]">Total Orders</span>
-                <span className="font-medium">{customer.totalOrders}</span>
+                <span className="font-medium">{customer.orders || 0}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-[#8B6F47]">Total Spent</span>
-                <span className="font-medium">₹{customer.totalSpent.toLocaleString("en-IN")}</span>
+                <span className="font-medium">₹{(customer.totalSpent || 0).toLocaleString("en-IN")}</span>
               </div>
               <Button asChild className="w-full">
+                {/* Note: In real app, we filter orders list by customer ID */}
                 <Link href={`/admin/orders?customer=${customer.id}`}>View Orders</Link>
               </Button>
             </CardContent>

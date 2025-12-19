@@ -6,7 +6,8 @@ export const metadata = {
   description: "View customer profile and recent orders",
 }
 
-export default function AdminCustomerDetailPage({ params }: { params: { id: string } }) {
+export default async function AdminCustomerDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   return (
     <AdminLayout>
       <AdminCustomerDetail customerId={params.id} />

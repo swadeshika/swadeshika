@@ -23,7 +23,7 @@ class DashboardModel {
         const [orderStats] = await db.query(query, [startDate, endDate]);
 
         const [productStats] = await db.query('SELECT COUNT(*) as products FROM products WHERE is_active = TRUE');
-        
+
         const [customerStats] = await db.query(
             'SELECT COUNT(*) as customers FROM users WHERE role = "customer" AND created_at BETWEEN ? AND ?',
             [startDate, endDate]
@@ -85,12 +85,13 @@ class DashboardModel {
      */
     static async getTopCustomers(startDate, endDate) {
         const query = `
-            SELECT u.name, SUM(o.total_amount) as spent, COUNT(o.id) as orders
+            SELECT COALESCE(CONCAT(c.first_name, ' ', COALESCE(c.last_name, '')), u.name) as name, SUM(o.total_amount) as spent, COUNT(o.id) as orders
             FROM orders o
             JOIN users u ON o.user_id = u.id
+            LEFT JOIN customers c ON u.email COLLATE utf8mb4_unicode_ci = c.email COLLATE utf8mb4_unicode_ci
             WHERE o.created_at BETWEEN ? AND ?
             AND o.status != 'cancelled'
-            GROUP BY u.id, u.name
+            GROUP BY u.id, u.name, c.first_name
             ORDER BY spent DESC
             LIMIT 5
         `;
@@ -126,9 +127,12 @@ class DashboardModel {
      */
     static async getRecentOrders() {
         const query = `
-            SELECT o.id, o.order_number, u.name as customer, o.total_amount as amount, o.status, o.created_at
+            SELECT o.id, o.order_number, 
+                   COALESCE(CONCAT(c.first_name, ' ', COALESCE(c.last_name, '')), u.name) as customer, 
+                   o.total_amount as amount, o.status, o.created_at
             FROM orders o
             JOIN users u ON o.user_id = u.id
+            LEFT JOIN customers c ON u.email COLLATE utf8mb4_unicode_ci = c.email COLLATE utf8mb4_unicode_ci
             ORDER BY o.created_at DESC
             LIMIT 5
         `;

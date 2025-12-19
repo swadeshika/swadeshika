@@ -40,38 +40,45 @@ const apiRoutes = require('./routes');
 const app = express();
 
 /* ============================================================
-   1. SECURITY: Add essential HTTP headers using Helmet
+   1. CORS Configuration (Moved to TOP)
    ------------------------------------------------------------
    WHY?
-   - Prevent common vulnerabilities (clickjacking, MIME sniffing, etc)
-   - Make your API more resistant to attacks
+   - Must be first to handle preflight requests properly
+   - Solves "Failed to fetch" on errors (413, 500)
    ============================================================ */
-app.use(helmet());
+/* ============================================================
+   1. CORS Configuration
+   ------------------------------------------------------------ */
+app.use(cors({
+   origin: true, // Dynamically reflect request origin
+   credentials: true,
+   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+}));
+
+/* ============================================================
+   2. SECURITY: Add essential HTTP headers using Helmet
+   ------------------------------------------------------------ */
+app.use(helmet({
+   contentSecurityPolicy: false, // Disable CSP for easier development
+}));
 
 /* ============================================================
    2. LOGGING: Show logs only in development mode
-   ------------------------------------------------------------
-   WHY?
-   - Helpful while developing/debugging APIs
-   - Avoids logs in production for performance & security
-   ============================================================ */
+   ------------------------------------------------------------ */
 if (NODE_ENV === 'development') app.use(morgan('dev'));
 
 /* ============================================================
    3. RATE LIMITING: Protect API from brute-force attacks
-   ------------------------------------------------------------
-   WHY?
-   - Avoid DDoS
-   - Prevent someone from abusing your API with too many requests
-   ------------------------------------------------------------
-   Applies ONLY to routes starting with /api
-   ============================================================ */
-const limiter = rateLimit({
-  max: RATE_LIMIT_MAX || 100,                         // Max requests allowed
-  windowMs: RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000,   // Time window
-  message: "Too many requests, try again later.",      // Response message
-});
-app.use('/api', limiter);
+   ------------------------------------------------------------ */
+if (NODE_ENV === 'production') {
+   const limiter = rateLimit({
+      max: RATE_LIMIT_MAX || 100,
+      windowMs: RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000,
+      message: "Too many requests, try again later.",
+   });
+   app.use('/api', limiter);
+}
 
 /* ============================================================
    4. BODY PARSERS: Parse incoming request bodies
@@ -80,8 +87,8 @@ app.use('/api', limiter);
    express.urlencoded() -> Parse form data (x-www-form-urlencoded)
    cookieParser()       -> Read cookies from request headers
    ============================================================ */
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
 /* ============================================================
@@ -104,16 +111,8 @@ app.use(xss());
 app.use(hpp());
 
 /* ============================================================
-   7. CORS Configuration
-   ------------------------------------------------------------
-   WHY?
-   - Allow frontend (React, Next.js, Admin panel) to call backend
-   - credentials: true -> send cookies (refresh token)
-   ============================================================ */
-app.use(cors({
-  origin: CORS_ORIGIN,   // Only allow your frontend domain
-  credentials: true,     // Needed for cookies
-}));
+   8. STATIC FILES (Optional)
+   ------------------------------------------------------------ */
 
 /* ============================================================
    8. STATIC FILES (Optional)

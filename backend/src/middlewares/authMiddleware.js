@@ -24,6 +24,39 @@ const { hasRole, hasPermission, ROLES } = require('../constants/roles');
 
 
 /**
+ * optionalAuthenticate()
+ * -----------------------
+ * If an Authorization header/token is present, try to authenticate and attach `req.user`.
+ * If no token is present or verification fails, do NOT block the request — just continue
+ * with `req.user` undefined. This is useful for guest-friendly routes like checkout.
+ */
+const optionalAuthenticate = async (req, res, next) => {
+  try {
+    const header = req.headers.authorization || req.headers.Authorization;
+    const token = extractTokenFromHeader(header);
+
+    if (!token) {
+      req.user = null;
+      return next();
+    }
+
+    // Try verifying token. If it fails, don't block the request.
+    try {
+      const decoded = verifyToken(token, TOKEN_TYPES.ACCESS);
+      const user = await UserModel.findById(decoded.id);
+      req.user = user || null;
+    } catch (err) {
+      req.user = null;
+    }
+
+    return next();
+  } catch (err) {
+    req.user = null;
+    return next();
+  }
+};
+
+/**
  * 🔐 authenticate()
  * -----------------
  * Checks if the request contains a valid Access Token.
@@ -232,4 +265,5 @@ module.exports = {
   hasPermissions,
   guest,
   selfOrAdmin,
+  optionalAuthenticate,
 };

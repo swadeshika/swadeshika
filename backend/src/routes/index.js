@@ -25,6 +25,7 @@ const dashboardRoutes = require('./dashboardRoutes');
 const contactRoutes = require('./contactRoutes');
 const newsletterRoutes = require('./newsletterRoutes');
 const analyticsRoutes = require('./analyticsRoutes');
+const customersRoutes = require('./customers.routes');
 
 // Dynamic loading for Order Routes (as it might be fragile or WIP)
 let orderRoutes;
@@ -50,6 +51,7 @@ router.use('/blog/categories', blogCategoryRoutes);
 router.use('/contact', contactRoutes);
 router.use('/newsletter', newsletterRoutes);
 router.use('/analytics', analyticsRoutes);
+router.use('/customers', customersRoutes);
 
 // Admin Routes
 router.use('/admin/settings', adminSettingsRoutes);

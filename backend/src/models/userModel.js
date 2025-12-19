@@ -1,11 +1,34 @@
 const db = require('../config/db');
 
+const { v4: uuidv4 } = require('uuid');
+const { hashPassword } = require('../utils/hash');
+
 /**
  * userModel.js
  * ------------
  * Database interactions for Users.
  */
 class UserModel {
+    /**
+     * Create a new user
+     * 
+     * @param {Object} userData - User details
+     * @returns {Promise<Object>} Created user object
+     */
+    static async create(userData) {
+        const id = uuidv4();
+        const { name, email, password, phone, role = 'customer' } = userData;
+
+        const hashedPw = await hashPassword(password);
+
+        await db.query(
+            'INSERT INTO users (id, name, email, password, phone, role) VALUES (?, ?, ?, ?, ?, ?)',
+            [id, name, email, hashedPw, phone, role]
+        );
+
+        return { id, name, email, phone, role };
+    }
+
     /**
      * Find all users with pagination
      * 
@@ -83,7 +106,7 @@ class UserModel {
 
         params.push(id);
         const sql = `UPDATE users SET ${updates.join(', ')}, updated_at = NOW() WHERE id = ?`;
-        
+
         const [result] = await db.query(sql, params);
         return result.affectedRows > 0;
     }

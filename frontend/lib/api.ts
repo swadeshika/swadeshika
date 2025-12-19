@@ -39,6 +39,15 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     const data = await response.json();
 
     if (!response.ok) {
+        // If token expired, clear local storage so user can re-login
+        if (data.message?.toLowerCase().includes('token') && (data.message?.toLowerCase().includes('expire') || response.status === 401)) {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('user');
+            // We use a small delay for reload to ensure current updates process
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 100);
+        }
         throw new Error(data.message || 'API request failed');
     }
 

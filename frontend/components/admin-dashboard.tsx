@@ -1,98 +1,54 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Package, ShoppingCart, Users, TrendingUp, ArrowUp, ArrowDown, AlertTriangle } from "lucide-react"
+import { Package, ShoppingCart, Users, TrendingUp, ArrowUp, ArrowDown, AlertTriangle, BarChart3 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { ReportService } from "@/lib/reportService"
+import { toast } from "sonner"
 
-const stats = [
-  {
-    title: "Total Revenue",
-    value: "₹1,24,580",
-    change: "+12.5%",
-    trend: "up",
-    icon: TrendingUp,
-  },
-  {
-    title: "Total Orders",
-    value: "156",
-    change: "+8.2%",
-    trend: "up",
-    icon: ShoppingCart,
-  },
-  {
-    title: "Total Products",
-    value: "48",
-    change: "+3",
-    trend: "up",
-    icon: Package,
-  },
-  {
-    title: "Total Customers",
-    value: "892",
-    change: "+15.3%",
-    trend: "up",
-    icon: Users,
-  },
-]
-
-const recentOrders = [
-  {
-    id: "1",
-    orderNumber: "ORD-20250116-1234",
-    customer: "Priya Sharma",
-    amount: 1880,
-    status: "Delivered",
-    date: "2 hours ago",
-  },
-  {
-    id: "2",
-    orderNumber: "ORD-20250116-5678",
-    customer: "Rajesh Kumar",
-    amount: 650,
-    status: "Shipped",
-    date: "5 hours ago",
-  },
-  {
-    id: "3",
-    orderNumber: "ORD-20250116-9012",
-    customer: "Anita Desai",
-    amount: 1200,
-    status: "Processing",
-    date: "1 day ago",
-  },
-  {
-    id: "4",
-    orderNumber: "ORD-20250115-3456",
-    customer: "Vikram Singh",
-    amount: 450,
-    status: "Pending",
-    date: "1 day ago",
-  },
-]
-
-const topProducts = [
-  { name: "Pure Desi Cow Ghee", sales: 124, revenue: 105400, image: "/golden-ghee-in-glass-jar.jpg" },
-  { name: "Organic Turmeric Powder", sales: 89, revenue: 16020, image: "/turmeric-powder-in-bowl.jpg" },
-  { name: "Premium Kashmiri Almonds", sales: 56, revenue: 36400, image: "/kashmiri-almonds.jpg" },
-  { name: "Cold Pressed Coconut Oil", sales: 43, revenue: 13760, image: "/coconut-oil-in-glass-bottle.jpg" },
-]
-
-const lowStockProducts = [
-  { name: "Cold Pressed Coconut Oil", stock: 5, threshold: 20, image: "/coconut-oil-in-glass-bottle.jpg" },
-  { name: "Organic Honey", stock: 8, threshold: 15, image: "/golden-honey-jar.png" },
-  { name: "Basmati Rice", stock: 12, threshold: 25, image: "/rice-bag.png" },
-]
+const iconMap: Record<string, any> = {
+  BarChart3,
+  ShoppingCart,
+  Package,
+  Users,
+  TrendingUp
+}
 
 const statusColors: Record<string, string> = {
-  Delivered: "bg-[#2D5F3F]/10 text-[#2D5F3F]",
-  Shipped: "bg-[#FF7E00]/10 text-[#FF7E00]",
-  Processing: "bg-[#8B6F47]/10 text-[#6B4423]",
-  Pending: "bg-[#FF7E00]/10 text-[#FF7E00]",
+  delivered: "bg-[#2D5F3F]/10 text-[#2D5F3F]",
+  shipped: "bg-[#FF7E00]/10 text-[#FF7E00]",
+  processing: "bg-[#8B6F47]/10 text-[#6B4423]",
+  pending: "bg-[#FF7E00]/10 text-[#FF7E00]",
+  cancelled: "bg-red-100 text-red-600"
 }
 
 export function AdminDashboard() {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await ReportService.getOverview()
+        if (res.data.success) {
+          setData(res.data.data)
+        }
+      } catch (error) {
+        console.error("Dashboard fetch error", error)
+        toast.error("Failed to load dashboard data")
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  if (loading) return <div className="p-8 text-center text-[#8B6F47]">Loading dashboard...</div>
+  if (!data) return <div className="p-8 text-center text-red-500">Failed to load data</div>
+
   return (
     <div className="space-y-6 font-sans">
       <div>
@@ -102,29 +58,32 @@ export function AdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
-          <Card key={stat.title} className="rounded-2xl border-2 border-[#E8DCC8]">
-            <CardContent className="p-3 md:p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full bg-[#2D5F3F]/10 text-[#2D5F3F]">
-                    <stat.icon className="h-4 w-4 md:h-5 md:w-5" />
-                  </div>
-                <div
-                  className={`flex items-center gap-1 text-sm font-medium ${
-                    stat.trend === "up" ? "text-[#2D5F3F]" : "text-red-600"
-                  }`}
-                >
-                  {stat.trend === "up" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-                  {stat.change}
+        {data.stats.map((stat: any) => {
+          const Icon = iconMap[stat.icon] || BarChart3
+          return (
+            <Card key={stat.title} className="rounded-2xl border-2 border-[#E8DCC8]">
+              <CardContent className="p-3 md:p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full bg-[#2D5F3F]/10 text-[#2D5F3F]">
+                      <Icon className="h-4 w-4 md:h-5 md:w-5" />
+                    </div>
+                  {stat.trend && (
+                    <div className={`flex items-center gap-1 text-sm font-medium ${
+                        stat.trend === "up" ? "text-[#2D5F3F]" : "text-red-600"
+                      }`}>
+                      {stat.trend === "up" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                      {stat.change}
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div>
-                <p className="text-xl md:text-2xl font-bold text-[#6B4423]">{stat.value}</p>
-                <p className="text-xs md:text-sm text-[#8B6F47]">{stat.title}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                <div>
+                  <p className="text-xl md:text-2xl font-bold text-[#6B4423]">{stat.value}</p>
+                  <p className="text-xs md:text-sm text-[#8B6F47]">{stat.title}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       {/* Low Stock Alerts Section */}
@@ -139,26 +98,30 @@ export function AdminDashboard() {
           </Button>
         </CardHeader>
         <CardContent className="space-y-2 md:space-y-3">
-          {lowStockProducts.map((product, index) => (
-            <div key={index} className="flex items-center justify-between p-2 md:p-3 bg-white rounded-xl border-2 border-[#E8DCC8]">
-              <div className="flex items-center gap-2 md:gap-3">
-                <div className="relative w-8 h-8 md:w-10 md:h-10 flex-shrink-0 overflow-hidden rounded-md bg-[#F5F1E8] border-2 border-[#E8DCC8]">
-                  <img
-                    src={product.image || "/placeholder.svg"}
-                    alt={product.name}
-                    className="object-cover w-full h-full"
-                  />
+          {data.lowStockProducts.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">No low stock alerts.</p>
+          ) : (
+            data.lowStockProducts.map((product: any, index: number) => (
+                <div key={index} className="flex items-center justify-between p-2 md:p-3 bg-white rounded-xl border-2 border-[#E8DCC8]">
+                <div className="flex items-center gap-2 md:gap-3">
+                    <div className="relative w-8 h-8 md:w-10 md:h-10 flex-shrink-0 overflow-hidden rounded-md bg-[#F5F1E8] border-2 border-[#E8DCC8]">
+                    <img
+                        src={product.image || "/placeholder.svg"}
+                        alt={product.name}
+                        className="object-cover w-full h-full"
+                    />
+                    </div>
+                    <div>
+                    <p className="font-medium text-xs md:text-sm text-[#6B4423]">{product.name}</p>
+                    <p className="text-[10px] md:text-xs text-[#8B6F47]">Threshold: {product.threshold} units</p>
+                    </div>
                 </div>
-                <div>
-                  <p className="font-medium text-xs md:text-sm text-[#6B4423]">{product.name}</p>
-                  <p className="text-[10px] md:text-xs text-[#8B6F47]">Threshold: {product.threshold} units</p>
+                <Badge variant="outline" className="bg-[#FF7E00]/10 text-[#FF7E00] border-0 text-xs md:text-sm">
+                    {product.stock} left
+                </Badge>
                 </div>
-              </div>
-              <Badge variant="outline" className="bg-[#FF7E00]/10 text-[#FF7E00] border-0 text-xs md:text-sm">
-                {product.stock} left
-              </Badge>
-            </div>
-          ))}
+            ))
+          )}
         </CardContent>
       </Card>
 
@@ -172,21 +135,25 @@ export function AdminDashboard() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-2 md:space-y-4">
-            {recentOrders.map((order) => (
-              <div key={order.id} className="flex items-center justify-between p-2 md:p-4 border-2 border-[#E8DCC8] rounded-xl">
-                <div className="space-y-0 md:space-y-1">
-                  <p className="font-semibold text-sm md:text-base text-[#6B4423]">{order.orderNumber}</p>
-                  <p className="text-xs md:text-sm text-[#8B6F47]">{order.customer}</p>
-                  <p className="text-[10px] md:text-xs text-[#8B6F47]">{order.date}</p>
+            {data.recentOrders.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No recent orders.</p>
+            ) : (
+                data.recentOrders.map((order: any) => (
+                <div key={order.id} className="flex items-center justify-between p-2 md:p-4 border-2 border-[#E8DCC8] rounded-xl">
+                    <div className="space-y-0 md:space-y-1">
+                    <p className="font-semibold text-sm md:text-base text-[#6B4423]">{order.order_number || order.orderNumber}</p>
+                    <p className="text-xs md:text-sm text-[#8B6F47]">{order.customer}</p>
+                    <p className="text-[10px] md:text-xs text-[#8B6F47]">{order.date}</p>
+                    </div>
+                    <div className="flex items-center gap-2 md:gap-4">
+                    <div className="text-right">
+                        <p className="font-semibold text-sm md:text-base text-[#2D5F3F]">₹{order.amount}</p>
+                        <Badge className={`${statusColors[order.status?.toLowerCase()] || statusColors.pending} border-0 text-xs md:text-sm`}>{order.status}</Badge>
+                    </div>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2 md:gap-4">
-                  <div className="text-right">
-                    <p className="font-semibold text-sm md:text-base text-[#2D5F3F]">₹{order.amount}</p>
-                    <Badge className={`${statusColors[order.status]} border-0 text-xs md:text-sm`}>{order.status}</Badge>
-                  </div>
-                </div>
-              </div>
-            ))}
+                ))
+            )}
           </CardContent>
         </Card>
 
@@ -199,22 +166,26 @@ export function AdminDashboard() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-2 md:space-y-4">
-            {topProducts.map((product, index) => (
-              <div key={index} className="flex items-center gap-2 md:gap-4 mb-2 md:mb-4">
-                <div className="relative w-8 h-8 md:w-12 md:h-12 flex-shrink-0 overflow-hidden rounded-md bg-[#F5F1E8] border-2 border-[#E8DCC8]">
-                  <img
-                    src={product.image || "/placeholder.svg"}
-                    alt={product.name}
-                    className="object-cover w-full h-full"
-                  />
+            {data.topProducts.length === 0 ? (
+                 <p className="text-sm text-muted-foreground text-center py-4">No top products.</p>
+            ) : (
+                data.topProducts.map((product: any, index: number) => (
+                <div key={index} className="flex items-center gap-2 md:gap-4 mb-2 md:mb-4">
+                    <div className="relative w-8 h-8 md:w-12 md:h-12 flex-shrink-0 overflow-hidden rounded-md bg-[#F5F1E8] border-2 border-[#E8DCC8]">
+                    <img
+                        src={product.image || "/placeholder.svg"}
+                        alt={product.name}
+                        className="object-cover w-full h-full"
+                    />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm md:text-base max-w-[10rem] md:max-w-none whitespace-normal text-[#6B4423]">{product.name}</p>
+                    <p className="text-xs md:text-sm text-[#8B6F47]">{product.sales} sales</p>
+                    </div>
+                    <p className="font-semibold text-sm md:text-base text-[#2D5F3F]">₹{product.revenue.toLocaleString()}</p>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm md:text-base max-w-[10rem] md:max-w-none whitespace-normal text-[#6B4423]">{product.name}</p>
-                  <p className="text-xs md:text-sm text-[#8B6F47]">{product.sales} sales</p>
-                </div>
-                <p className="font-semibold text-sm md:text-base text-[#2D5F3F]">₹{product.revenue.toLocaleString()}</p>
-              </div>
-            ))}
+                ))
+            )}
           </CardContent>
         </Card>
       </div>

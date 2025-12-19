@@ -83,7 +83,7 @@ class UserModel {
 
         params.push(id);
         const sql = `UPDATE users SET ${updates.join(', ')}, updated_at = NOW() WHERE id = ?`;
-        
+
         const [result] = await db.query(sql, params);
         return result.affectedRows > 0;
     }

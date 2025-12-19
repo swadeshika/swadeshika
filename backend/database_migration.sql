@@ -555,6 +555,30 @@ CREATE TABLE visitor_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
+-- 25. REPORTS TABLE
+-- ✅ ADDED: For storing generated reports and analytics snapshots
+-- ============================================================
+CREATE TABLE reports (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  report_type ENUM('sales', 'inventory', 'customers', 'financial', 'custom') NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  parameters JSON COMMENT 'Filters used: date range, category, etc.',
+  data_snapshot JSON COMMENT 'Stores the summary data for quick retrieval',
+  file_url VARCHAR(500) COMMENT 'URL to downloadable PDF/CSV if generated',
+  format ENUM('json', 'pdf', 'csv', 'excel') DEFAULT 'json',
+  status ENUM('pending', 'processing', 'completed', 'failed') DEFAULT 'pending',
+  error_message TEXT,
+  generated_by VARCHAR(36) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  completed_at TIMESTAMP NULL,
+  FOREIGN KEY (generated_by) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_type (report_type),
+  INDEX idx_status (status),
+  INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ============================================================
 -- SAMPLE DATA (Optional - for testing)
 -- ============================================================
 

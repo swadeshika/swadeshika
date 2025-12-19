@@ -1,4 +1,6 @@
 const db = require('../config/db');
+const { hashPassword } = require('../utils/hash');
+const { v4: uuidv4 } = require('uuid');
 
 /**
  * userModel.js
@@ -83,7 +85,7 @@ class UserModel {
 
         params.push(id);
         const sql = `UPDATE users SET ${updates.join(', ')}, updated_at = NOW() WHERE id = ?`;
-        
+
         const [result] = await db.query(sql, params);
         return result.affectedRows > 0;
     }
@@ -97,6 +99,23 @@ class UserModel {
     static async delete(id) {
         const [result] = await db.query(`DELETE FROM users WHERE id = ?`, [id]);
         return result.affectedRows > 0;
+    }
+    /**
+     * Create new user
+     * 
+     * @param {Object} userData - { name, email, password, phone }
+     * @returns {Promise<Object>} Created user
+     */
+    static async create({ name, email, password, phone }) {
+        const hashedPassword = await hashPassword(password);
+        const id = uuidv4();
+
+        await db.query(
+            `INSERT INTO users (id, name, email, password, phone, role, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'customer', NOW(), NOW())`,
+            [id, name, email, hashedPassword, phone]
+        );
+
+        return this.findById(id);
     }
 }
 

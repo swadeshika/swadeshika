@@ -8,5 +8,8 @@ router.post('/', ContactController.submitContactForm);
 
 // Admin
 router.get('/', authenticate, authorize('admin'), ContactController.getAllSubmissions);
+router.get('/:id', authenticate, authorize('admin'), ContactController.getSubmissionById);
+router.put('/:id', authenticate, authorize('admin'), ContactController.updateSubmissionStatus);
+router.delete('/:id', authenticate, authorize('admin'), ContactController.deleteSubmission);
 
 module.exports = router;

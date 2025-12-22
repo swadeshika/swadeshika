@@ -6,6 +6,7 @@ import { Facebook, Instagram, Twitter, Mail, Phone, MapPin, Loader2 } from "luci
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
+import { newsletterService } from "@/lib/services/newsletterService"
 import { useToast } from "@/hooks/use-toast"
 
 /**
@@ -98,7 +99,7 @@ export function SiteFooter() {
 
     setSubscribing(true)
     try {
-      const response = await api.post('/newsletter/subscribe', { email })
+      const response = await newsletterService.subscribe(email)
       if (response.data.success) {
         toast({ title: "Subscribed!", description: response.data.message })
         setEmail("")

@@ -37,6 +37,7 @@ import {
   FileText,
   PlusCircle,
   Ghost,
+  Mail,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -58,6 +59,7 @@ const navigation = [
   { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Contacts", href: "/admin/contacts", icon: Users },
+  { name: "Newsletter", href: "/admin/newsletter", icon: Mail },
   { name: "Categories", href: "/admin/categories", icon: Tag },
   {
     name: "Blog",

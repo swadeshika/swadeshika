@@ -8,5 +8,6 @@ router.post('/subscribe', NewsletterController.subscribe);
 
 // Admin
 router.get('/', authenticate, authorize('admin'), NewsletterController.getAllSubscribers);
+router.delete('/:id', authenticate, authorize('admin'), NewsletterController.deleteSubscriber);
 
 module.exports = router;

@@ -16,22 +16,22 @@ export interface Address {
 
 export const addressService = {
     getAddresses: async () => {
-        const res = await api.get<Address[]>('/addresses')
+        const res = await api.get<Address[]>('/users/addresses')
         return res.data.data
     },
 
     createAddress: async (data: Omit<Address, 'id' | 'isDefault'> & { isDefault?: boolean }) => {
-        const res = await api.post<Address>('/addresses', data)
+        const res = await api.post<Address>('/users/addresses', data)
         return res.data.data
     },
 
     updateAddress: async (id: string, data: Partial<Address>) => {
-        const res = await api.put<Address>(`/addresses/${id}`, data)
+        const res = await api.put<Address>(`/users/addresses/${id}`, data)
         return res.data.data
     },
 
     deleteAddress: async (id: string) => {
-        const res = await api.delete<any>(`/addresses/${id}`)
+        const res = await api.delete<any>(`/users/addresses/${id}`)
         return res.data
     }
 }

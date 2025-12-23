@@ -33,8 +33,8 @@ const settingsRoutes = require('./settingsRoutes'); // Public settings
 // Mount Routes
 router.use('/auth', authRoutes);
 router.use('/settings', settingsRoutes); // Public settings endpoint
+router.use('/users/addresses', addressRoutes); // Address routes mounted BEFORE /users to prevent collision with /users/:id
 router.use('/users', userRoutes);
-router.use('/users/addresses', addressRoutes); // Address routes mounted under /users/addresses
 router.use('/products', productRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/cart', cartRoutes);

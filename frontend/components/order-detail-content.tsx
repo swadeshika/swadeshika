@@ -3,8 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Package, Truck, CheckCircle, Clock, XCircle, Download, Phone, Mail } from "lucide-react"
+import { Package, Truck, CheckCircle, Clock, XCircle, Download, Phone, Mail, Heart, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { useWishlistStore } from "@/lib/wishlist-store"
+import { useState } from "react"
+import { useAuthStore } from "@/lib/auth-store"
+import { toast } from "@/hooks/use-toast"
+import { cn } from "@/lib/utils"
 
 // Mock order data
 const mockOrder = {
@@ -67,6 +72,29 @@ const statusConfig = {
 } as const
 
 export default function OrderDetailContent({ orderId }: { orderId: string }) {
+  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlistStore()
+  const { isAuthenticated } = useAuthStore()
+  const [togglingId, setTogglingId] = useState<string | number | null>(null)
+
+  const handleWishlistToggle = async (productId: string | number, name: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    if (!isAuthenticated) {
+      toast({ title: "Please login", description: "You need to be logged in to manage your wishlist" })
+      return
+    }
+
+    setTogglingId(productId)
+    try {
+      if (isInWishlist(Number(productId))) {
+        await removeFromWishlist(Number(productId))
+      } else {
+        await addToWishlist(Number(productId))
+      }
+    } finally {
+      setTogglingId(null)
+    }
+  }
+
   const order = mockOrder
   const StatusIcon = statusConfig[order.status as keyof typeof statusConfig].icon
 
@@ -132,9 +160,8 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
                     <div key={step.status} className="flex gap-4 my-0">
                       <div className="flex flex-col items-center">
                         <div
-                          className={`rounded-full p-2 ${
-                            step.completed ? statusConfig[step.status as keyof typeof statusConfig].color : "bg-muted"
-                          }`}
+                          className={`rounded-full p-2 ${step.completed ? statusConfig[step.status as keyof typeof statusConfig].color : "bg-muted"
+                            }`}
                         >
                           <StepIcon className={`h-4 w-4 ${step.completed ? "text-white" : "text-muted-foreground"}`} />
                         </div>
@@ -215,9 +242,29 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
                       className="w-20 h-20 object-cover rounded-lg"
                     />
                     <div className="flex-1">
-                      <h4 className="font-medium">{item.name}</h4>
-                      <p className="text-sm text-muted-foreground">{item.variant}</p>
-                      <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="font-medium">{item.name}</h4>
+                          <p className="text-sm text-muted-foreground">{item.variant}</p>
+                          <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                        </div>
+                        <button
+                          onClick={(e) => handleWishlistToggle(item.id, item.name, e)}
+                          className="p-2 rounded-full hover:bg-muted transition-colors"
+                          title={isInWishlist(Number(item.id)) ? "Remove from wishlist" : "Add to wishlist"}
+                        >
+                          {togglingId === item.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          ) : (
+                            <Heart
+                              className={cn(
+                                "h-4 w-4 transition-colors",
+                                isInWishlist(Number(item.id)) ? "fill-red-500 text-red-500" : "text-muted-foreground hover:text-red-500"
+                              )}
+                            />
+                          )}
+                        </button>
+                      </div>
                     </div>
                     <div className="text-right">
                       <p className="font-medium">₹{item.price.toLocaleString("en-IN")}</p>

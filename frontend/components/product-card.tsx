@@ -23,12 +23,14 @@
 import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
-import { Star, Loader2, Check } from "lucide-react"
+import { Star, Loader2, Check, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { useCartStore } from "@/lib/cart-store"
+import { useWishlistStore } from "@/lib/wishlist-store"
+import { useAuthStore } from "@/lib/auth-store"
 import { toast } from "@/hooks/use-toast"
 
 // TypeScript interface defining all product card props
@@ -46,6 +48,8 @@ interface ProductCardProps {
   reviews?: number // Default 120 if not provided
   className?: string // Allow custom styling from parent
   sizes?: string[] // Optional array of size variants
+  showWishlistAction?: boolean // Optional logic to hide wishlist button (default: true)
+  onAddToCart?: (id: number) => void // Optional custom add to cart handler
 }
 
 export function ProductCard({
@@ -61,11 +65,21 @@ export function ProductCard({
   reviews = 120,
   className,
   sizes,
+  showWishlistAction = true,
+  onAddToCart,
 }: ProductCardProps) {
   // Access cart store's addItem function for adding products to cart
   const addItem = useCartStore((state) => state.addItem)
+
+  // Access wishlist store
+  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlistStore()
+  const { isAuthenticated } = useAuthStore()
+
   const [isLoading, setIsLoading] = useState(false)
   const [justAdded, setJustAdded] = useState(false)
+  const [isWishlistLoading, setIsWishlistLoading] = useState(false)
+
+  const inWishlist = isInWishlist(id)
 
   /**
    * Handle add to cart click
@@ -76,11 +90,17 @@ export function ProductCard({
     try {
       setIsLoading(true)
       const start = Date.now()
-      addItem({ id, name, price, image, category })
-      toast({
-        title: "Added to cart",
-        description: `${name} has been added to your cart.`,
-      })
+
+      if (onAddToCart) {
+        onAddToCart(id)
+      } else {
+        addItem({ id, name, price, image, category })
+        toast({
+          title: "Added to cart",
+          description: `${name} has been added to your cart.`,
+        })
+      }
+
       setJustAdded(true)
       setTimeout(() => setJustAdded(false), 1200)
       // Ensure spinner is perceptible
@@ -90,6 +110,31 @@ export function ProductCard({
       }
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleWishlistToggle = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (!isAuthenticated) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to manage your wishlist",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setIsWishlistLoading(true)
+      if (inWishlist) {
+        await removeFromWishlist(id)
+      } else {
+        await addToWishlist(id)
+      }
+    } finally {
+      setIsWishlistLoading(false)
     }
   }
 
@@ -108,7 +153,7 @@ export function ProductCard({
       <Link
         href={`/products/${slug || name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()}`}
         className={cn(
-          "relative overflow-hidden bg-gray-50 rounded-lg cursor-pointer",
+          "relative overflow-hidden bg-gray-50 rounded-lg cursor-pointer block",
           isListView ? "w-[140px] h-[140px] flex-shrink-0" : "aspect-square"
         )}
       >
@@ -118,11 +163,33 @@ export function ProductCard({
           alt={name}
           className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
         />
+
         {/* Badge overlay (Best Seller, Trending, etc.) */}
         {badge && (
           <Badge className="absolute top-3 left-3 bg-green-600 hover:bg-green-700 text-white font-medium px-3 py-1 text-xs shadow-md">
             {badge}
           </Badge>
+        )}
+
+        {/* Wishlist Button */}
+        {showWishlistAction && (
+          <button
+            onClick={handleWishlistToggle}
+            className={cn(
+              "absolute top-3 right-3 p-2 rounded-full transition-all duration-300 z-10",
+              inWishlist
+                ? "bg-white text-red-500 shadow-md"
+                : "bg-white/60 text-gray-600 hover:bg-white hover:text-red-500 opacity-0 group-hover:opacity-100"
+            )}
+            title={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
+            disabled={isWishlistLoading}
+          >
+            {isWishlistLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Heart className={cn("h-4 w-4", inWishlist && "fill-current")} />
+            )}
+          </button>
         )}
       </Link>
 

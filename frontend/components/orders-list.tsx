@@ -2,6 +2,12 @@ import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Heart, Loader2 } from "lucide-react"
+import { useWishlistStore } from "@/lib/wishlist-store"
+import { useState } from "react"
+import { toast } from "@/hooks/use-toast"
+import { useAuthStore } from "@/lib/auth-store"
+import { cn } from "@/lib/utils"
 
 const orders = [
 	{
@@ -43,6 +49,29 @@ const statusClasses: Record<string, string> = {
 }
 
 export function OrdersList() {
+	const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlistStore()
+	const { isAuthenticated } = useAuthStore()
+	const [togglingId, setTogglingId] = useState<number | null>(null)
+
+	const handleWishlistToggle = async (productId: number, e: React.MouseEvent) => {
+		e.preventDefault()
+		if (!isAuthenticated) {
+			toast({ title: "Please login", description: "You need to be logged in to manage your wishlist" })
+			return
+		}
+
+		setTogglingId(productId)
+		try {
+			if (isInWishlist(productId)) {
+				await removeFromWishlist(productId)
+			} else {
+				await addToWishlist(productId)
+			}
+		} finally {
+			setTogglingId(null)
+		}
+	}
+
 	return (
 		<div className="space-y-6">
 			{orders.map((order) => (
@@ -68,11 +97,32 @@ export function OrdersList() {
 											className="object-cover w-full h-full"
 										/>
 									</div>
-									<div className="flex-1">
-										<p className="font-medium text-[#6B4423]">{item.name}</p>
-										<p className="text-sm text-[#8B6F47]">
-											{item.variant} × {item.quantity}
-										</p>
+									<div className="flex-1 flex items-start justify-between">
+										<div>
+											<p className="font-medium text-[#6B4423]">{item.name}</p>
+											<p className="text-sm text-[#8B6F47]">
+												{item.variant} × {item.quantity}
+											</p>
+										</div>
+										{/* Add to Wishlist Button (Assume item has product_id, using index+100 as fallback for mock) */}
+										<button
+											onClick={(e) => handleWishlistToggle((item as any).product_id || (index + 1), e)}
+											className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+											title={isInWishlist((item as any).product_id || (index + 1)) ? "Remove from wishlist" : "Add to wishlist"}
+										>
+											{togglingId === ((item as any).product_id || (index + 1)) ? (
+												<Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+											) : (
+												<Heart
+													className={cn(
+														"h-4 w-4 transition-colors",
+														isInWishlist((item as any).product_id || (index + 1))
+															? "fill-red-500 text-red-500"
+															: "text-gray-400 hover:text-red-500"
+													)}
+												/>
+											)}
+										</button>
 									</div>
 								</div>
 							))}

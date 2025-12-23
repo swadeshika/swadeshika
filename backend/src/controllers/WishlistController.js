@@ -20,15 +20,21 @@ class WishlistController {
      */
     static async addToWishlist(req, res, next) {
         try {
-            const userId = req.user.id; // Assumes authMiddleware populates req.user
+            const userId = req.user.id;
             const { productId } = req.body;
 
             await WishlistService.addToWishlist(userId, productId);
 
-            res.status(201).json({ message: 'Product added to wishlist' });
+            res.status(201).json({
+                success: true,
+                message: 'Product added to wishlist'
+            });
         } catch (error) {
             if (error.message === 'Product already in wishlist') {
-                return res.status(409).json({ message: error.message });
+                return res.status(409).json({
+                    success: false,
+                    message: error.message
+                });
             }
             next(error);
         }
@@ -49,10 +55,16 @@ class WishlistController {
             const removed = await WishlistService.removeFromWishlist(userId, productId);
 
             if (!removed) {
-                return res.status(404).json({ message: 'Product not found in wishlist' });
+                return res.status(404).json({
+                    success: false,
+                    message: 'Product not found in wishlist'
+                });
             }
 
-            res.status(200).json({ message: 'Product removed from wishlist' });
+            res.status(200).json({
+                success: true,
+                message: 'Product removed from wishlist'
+            });
         } catch (error) {
             next(error);
         }
@@ -70,7 +82,10 @@ class WishlistController {
             const userId = req.user.id;
             const wishlist = await WishlistService.getWishlist(userId);
 
-            res.status(200).json(wishlist);
+            res.status(200).json({
+                success: true,
+                data: wishlist
+            });
         } catch (error) {
             next(error);
         }

@@ -38,7 +38,7 @@ const config = {
 
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000, // 15 mins
-  RATE_LIMIT_MAX: process.env.RATE_LIMIT_MAX || 100, // max 100 reqs
+  RATE_LIMIT_MAX: process.env.RATE_LIMIT_MAX || 1000, // max 1000 reqs
 
   // File Upload Config
   UPLOAD_LIMIT: process.env.UPLOAD_LIMIT || '10mb',

@@ -145,6 +145,52 @@ class UserModel {
         const [result] = await db.query(`DELETE FROM users WHERE id = ?`, [id]);
         return result.affectedRows > 0;
     }
+
+    /**
+     * Create a new user
+     * 
+     * @param {Object} userData - { name, email, password, phone, role }
+     * @returns {Promise<Object>} Created user object
+     */
+    static async create({ name, email, password, phone, role = 'user' }) {
+        const { hashPassword } = require('../utils/hash');
+        const hashedPassword = await hashPassword(password);
+
+        const sql = `
+            INSERT INTO users (name, email, password, phone, role)
+            VALUES (?, ?, ?, ?, ?)
+        `;
+
+        const [result] = await db.query(sql, [name, email, hashedPassword, phone, role]);
+
+        return {
+            id: result.insertId,
+            name,
+            email,
+            phone,
+            role,
+            created_at: new Date()
+        };
+    }
+
+    /**
+     * Force set password (for reset password feature)
+     * 
+     * @param {number|string} id - User ID
+     * @param {string} password - New raw password
+     * @returns {Promise<boolean>} True if updated
+     */
+    static async forceSetPassword(id, password) {
+        const { hashPassword } = require('../utils/hash');
+        const hashedPassword = await hashPassword(password);
+
+        const [result] = await db.query(
+            `UPDATE users SET password = ? WHERE id = ?`,
+            [hashedPassword, id]
+        );
+
+        return result.affectedRows > 0;
+    }
 }
 
 module.exports = UserModel;

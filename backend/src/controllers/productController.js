@@ -50,6 +50,8 @@ const { slugify } = require('../utils/stringUtils');
  */
 exports.createProduct = async (req, res, next) => {
     try {
+        console.log('📦 [CreateProduct] Incoming Body:', JSON.stringify(req.body, null, 2));
+
         // TODO: Add validation result check here if using express-validator in routes
 
         // Auto-generate slug if not provided
@@ -68,6 +70,7 @@ exports.createProduct = async (req, res, next) => {
             data: newProduct
         });
     } catch (error) {
+        console.error('❌ [CreateProduct] Error:', error);
         next(error);
     }
 };

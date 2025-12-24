@@ -8,8 +8,8 @@
 // - Search is purely client-side for now (no API integration).
 // - Edit links use a slugified product name in the query per requirements.
 
-import { useState } from "react"
-import { Plus, Search, Edit, Trash2, MoreVertical } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Plus, Search, Edit, Trash2, MoreVertical, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,61 +18,72 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-
-const products = [
-  {
-    id: "1",
-    name: "Pure Desi Cow Ghee",
-    category: "Ghee",
-    price: 850,
-    stock: 100,
-    status: "Active",
-    image: "/golden-ghee-in-glass-jar.jpg",
-  },
-  {
-    id: "2",
-    name: "Organic Turmeric Powder",
-    category: "Spices",
-    price: 180,
-    stock: 150,
-    status: "Active",
-    image: "/turmeric-powder-in-bowl.jpg",
-  },
-  {
-    id: "3",
-    name: "Premium Kashmiri Almonds",
-    category: "Dry Fruits",
-    price: 650,
-    stock: 80,
-    status: "Active",
-    image: "/kashmiri-almonds.jpg",
-  },
-  {
-    id: "4",
-    name: "Cold Pressed Coconut Oil",
-    category: "Oils",
-    price: 320,
-    stock: 0,
-    status: "Out of Stock",
-    image: "/coconut-oil-in-glass-bottle.jpg",
-  },
-]
+import { productService, Product } from "@/lib/services/productService"
+import { toast } from "@/components/ui/use-toast"
 
 export function AdminProductsList() {
   const [searchQuery, setSearchQuery] = useState("")
-  // Convert product names to URL-friendly slugs (lowercase, hyphen-separated)
-  const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-")
-  // Keep a mutable list for client-side delete without backend
-  const [items, setItems] = useState(products)
-  // Track the product pending deletion (opens confirmation dialog)
-  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
+  const [items, setItems] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [pendingDelete, setPendingDelete] = useState<{ id: number; name: string } | null>(null)
 
-  // Derive filtered list based on the search query (case-insensitive, name/category)
-  const q = searchQuery.trim().toLowerCase()
-  const filtered = items.filter((p) => {
-    if (!q) return true
-    return p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
-  })
+  const fetchProducts = async () => {
+    setLoading(true)
+    try {
+      const data = await productService.getAllProducts({
+        limit: 100, // Fetch all for now
+        view: 'admin',
+        search: searchQuery
+      })
+      
+      const mapped = data.products.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        category: p.category_name || 'Uncategorized',
+        price: p.price,
+        stock: p.stock_quantity,
+        status: p.in_stock ? "Active" : "Out of Stock", // Or use is_active if available
+        image: p.primary_image || p.image || '/placeholder.jpg',
+      }))
+      setItems(mapped)
+    } catch (error) {
+      console.error("Failed to fetch products", error)
+      toast({
+        title: "Error",
+        description: "Failed to load products",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+        fetchProducts()
+    }, 500)
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery])
+
+  const handleDelete = async () => {
+    if (!pendingDelete) return
+    try {
+      await productService.deleteProduct(pendingDelete.id)
+      setItems((prev) => prev.filter((p) => p.id !== pendingDelete.id))
+      toast({
+        title: "Success",
+        description: "Product deleted successfully",
+      })
+    } catch (error) {
+       toast({
+        title: "Error",
+        description: "Failed to delete product",
+        variant: "destructive",
+       })
+    } finally {
+      setPendingDelete(null)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -116,14 +127,20 @@ export function AdminProductsList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.length === 0 ? (
+                {loading ? (
+                   <TableRow>
+                    <TableCell colSpan={6} className="py-12 text-center text-[#8B6F47]">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+                    </TableCell>
+                  </TableRow>
+                ) : items.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="py-12 text-center text-[#8B6F47]">
                       No products found. Please add a product to get started.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((product) => (
+                  items.map((product) => (
                     <TableRow key={product.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -158,10 +175,9 @@ export function AdminProductsList() {
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          {/* Row actions (Edit / Delete). Edit navigates to the unified edit form */}
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
-                              <Link href={`/admin/products/edit?=${slugify(product.name)}`}>
+                              <Link href={`/admin/products/edit?id=${product.id}`}>
                                 <span className="flex items-center"><Edit className="h-4 w-4 mr-2 hover:text-white" />Edit</span>
                               </Link>
                             </DropdownMenuItem>
@@ -192,12 +208,7 @@ export function AdminProductsList() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setPendingDelete(null)}>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => {
-                    if (pendingDelete) setItems((prev) => prev.filter((p) => p.id !== pendingDelete.id))
-                    setPendingDelete(null)
-                  }}
-                >
+                <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
                   Delete
                 </AlertDialogAction>
               </AlertDialogFooter>

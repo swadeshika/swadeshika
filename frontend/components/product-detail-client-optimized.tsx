@@ -690,7 +690,10 @@ export function ProductDetailClientOptimized({
                 <CardContent className="p-8">
                   <h3 className="font-sans text-2xl font-bold mb-6 text-[#6B4423]">Product Description</h3>
                   <div className="prose max-w-none text-[#6B4423]">
-                    <p className="leading-relaxed whitespace-pre-line">{product.description}</p>
+                    <div 
+                      className="leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: product.description.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'") }}
+                    />
                   </div>
                 </CardContent>
               </Card>

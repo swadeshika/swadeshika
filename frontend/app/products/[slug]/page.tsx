@@ -3,104 +3,132 @@ import type { Metadata } from "next"
 import { ProductDetailClientOptimized } from "@/components/product-detail-client-optimized"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { products, getProductReviews, relatedProducts, getProductBySlug } from "@/lib/products-data"
+import { productService } from "@/lib/services/productService"
 import { Suspense } from "react"
 
 /**
  * Product Detail Page - Individual Product View with Slug-based Routing
  *
- * Dynamic route page that displays detailed information about a single product
- * using SEO-friendly URLs (e.g., /products/pure-desi-cow-ghee).
- *
- * Features:
- * - SEO-friendly URLs with product names
- * - Product image gallery with lazy loading
- * - Detailed product information and pricing
- * - Add to cart functionality with variants
- * - Customer reviews section with lazy loading
- * - Related products recommendations
- * - Enhanced SEO metadata generation
- * - Mobile-optimized with touch gestures
- *
  * Route: /products/[slug] (e.g., /products/pure-desi-cow-ghee)
- *
- * Technical Notes:
- * - Uses Next.js generateMetadata for dynamic SEO
- * - Returns 404 if product not found
- * - Lazy loading for better performance
- * - Optimized for search engines and social sharing
  */
 
 /**
  * Generate dynamic metadata for SEO
- * Creates page title and description based on product data
- * Improves search engine visibility and social media sharing
  */
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const product = getProductBySlug(params.slug)
+  try {
+    const product = await productService.getProduct(params.slug)
 
-  if (!product) {
+    return {
+      title: product.meta_title || `${product.name} - Swadeshika`,
+      description: product.meta_description || product.short_description || product.description?.substring(0, 160),
+      keywords: (product as any).tags?.join(", "), // Assuming backend returns tags
+      openGraph: {
+        title: product.name,
+        description: product.short_description || product.description?.substring(0, 160),
+        images: [
+          {
+            url: (product as any).images?.[0]?.image_url || "/placeholder.jpg",
+            width: 800,
+            height: 600,
+            alt: product.name,
+          },
+        ],
+        type: "website",
+        url: `/products/${product.slug}`,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: product.name,
+        description: product.short_description,
+        images: [(product as any).images?.[0]?.image_url || "/placeholder.jpg"],
+      },
+      alternates: {
+        canonical: `/products/${product.slug}`,
+      },
+    }
+  } catch (error) {
     return {
       title: "Product Not Found - Swadeshika",
       description: "The requested product could not be found.",
     }
   }
-
-  return {
-    title: product.metaTitle || `${product.name} - Swadeshika`,
-    description: product.metaDescription || product.shortDescription,
-    keywords: product.tags?.join(", "),
-    openGraph: {
-      title: product.name,
-      description: product.shortDescription,
-      images: [
-        {
-          url: product.images[0],
-          width: 800,
-          height: 600,
-          alt: product.name,
-        },
-      ],
-      type: "website",
-      url: `/products/${product.slug}`,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: product.name,
-      description: product.shortDescription,
-      images: [product.images[0]],
-    },
-    alternates: {
-      canonical: `/products/${product.slug}`,
-    },
-  }
 }
 
 /**
  * Generate static params for all products
- * Pre-generates static pages for better performance
  */
 export async function generateStaticParams() {
-  return products.map((product) => ({
-    slug: product.slug,
-  }))
+  try {
+    const response = await productService.getAllProducts({ limit: 100 })
+    return response.products.map((product) => ({
+      slug: product.slug,
+    }))
+  } catch (error) {
+    console.warn("Failed to generate static params from API", error)
+    return []
+  }
 }
 
 /**
  * Product Detail Page Component
- * Fetches product data by slug and renders the detail view
- * Returns 404 page if product doesn't exist
  */
-export default function ProductPage({ params }: { params: { slug: string } }) {
-  const product = getProductBySlug(params.slug)
-
-  // Return 404 if product not found
-  // Next.js will render the not-found.tsx page
-  if (!product) {
+export default async function ProductPage({ params }: { params: { slug: string } }) {
+  let product
+  let related: any[] = []
+  let reviews: any[] = []
+  
+  try {
+    const apiProduct = await productService.getProduct(params.slug)
+    
+    // Map API response to Frontend Product Interface
+    product = {
+      ...apiProduct,
+      description: apiProduct.description || "",
+      shortDescription: apiProduct.short_description || "",
+      metaTitle: apiProduct.meta_title,
+      metaDescription: apiProduct.meta_description,
+      comparePrice: apiProduct.compare_price,
+      inStock: apiProduct.in_stock,
+      reviewCount: apiProduct.review_count,
+      weightUnit: apiProduct.weight_unit || 'kg',
+      category: (apiProduct as any).category_name || apiProduct.category_id?.toString() || 'Uncategorized',
+      features: apiProduct.features || [],
+      specifications: apiProduct.specifications || {},
+      tags: apiProduct.tags || [],
+      images: (apiProduct as any).images?.map((img: any) => img.image_url) || [],
+      variants: (apiProduct as any).variants?.map((v: any) => ({
+        ...v,
+        quantity: v.stock_quantity,
+         comparePrice: v.compare_price,
+        isActive: true
+      }))
+    }
+    
+    // Fetch related products (using same category)
+    if (apiProduct.category_id) {
+       const relatedData = await productService.getAllProducts({ 
+         category_id: apiProduct.category_id, 
+         limit: 4 
+       })
+       
+       related = relatedData.products
+        .filter(p => p.id !== apiProduct.id)
+        .slice(0, 4)
+        .map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          comparePrice: p.compare_price,
+          image: p.primary_image || p.image || '/placeholder.jpg',
+          badge: p.is_featured ? 'Featured' : undefined,
+          category: p.category_name || 'Uncategorized'
+        }))
+    }
+    
+  } catch (error) {
     notFound()
   }
-
-  const reviews = getProductReviews(product.id)
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -137,7 +165,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
         }>
           <ProductDetailClientOptimized 
             product={product} 
-            relatedProducts={relatedProducts} 
+            relatedProducts={related} 
             reviews={reviews} 
           />
         </Suspense>

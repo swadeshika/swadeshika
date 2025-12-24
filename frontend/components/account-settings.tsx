@@ -20,6 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
+import { authService } from "@/lib/authService"
 
 type Profile = {
   fullName: string
@@ -94,32 +95,44 @@ export function AccountSettings() {
     }, 600)
   }
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setPasswordLoading(true)
-    setTimeout(() => {
-      // Basic validations (client-side only)
-      if (!currentPassword) {
-        setPasswordLoading(false)
-        toast({ title: "Current password required", variant: "destructive" })
-        return
-      }
-      if (newPassword.length < 8) {
-        setPasswordLoading(false)
-        toast({ title: "Password too short", description: "Use at least 8 characters.", variant: "destructive" })
-        return
-      }
-      if (newPassword !== confirmPassword) {
-        setPasswordLoading(false)
-        toast({ title: "Passwords do not match", variant: "destructive" })
-        return
-      }
+    
+    // Basic validations
+    if (!currentPassword) {
+      setPasswordLoading(false)
+      toast({ title: "Current password required", variant: "destructive" })
+      return
+    }
+    if (newPassword.length < 8) {
+      setPasswordLoading(false)
+      toast({ title: "Password too short", description: "Use at least 8 characters.", variant: "destructive" })
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordLoading(false)
+      toast({ title: "Passwords do not match", variant: "destructive" })
+      return
+    }
+
+    try {
+      // Call actual API
+      await authService.changePassword(currentPassword, newPassword)
+      
       setCurrentPassword("")
       setNewPassword("")
       setConfirmPassword("")
+      toast({ title: "Password updated", description: "Your password has been changed successfully." })
+    } catch (error: any) {
+      toast({ 
+        title: "Update Failed", 
+        description: error.message || "Could not update password. Please check your current password.", 
+        variant: "destructive" 
+      })
+    } finally {
       setPasswordLoading(false)
-      toast({ title: "Password updated", description: "Your password has been changed." })
-    }, 600)
+    }
   }
 
   return (

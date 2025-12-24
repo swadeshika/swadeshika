@@ -13,8 +13,8 @@ const productValidation = [
     body('name').notEmpty().withMessage('Product name is required'),
     body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
     body('sku').notEmpty().withMessage('SKU is required'),
-    body('category_id').optional().isInt().withMessage('Category ID must be an integer'),
-    body('stock_quantity').optional().isInt({ min: 0 }).withMessage('Stock must be a non-negative integer'),
+    body('category_id').optional({ nullable: true }).isInt().withMessage('Category ID must be an integer'),
+    body('stock_quantity').optional({ nullable: true }).isInt({ min: 0 }).withMessage('Stock must be a non-negative integer'),
 ];
 
 // Public Routes

@@ -75,6 +75,15 @@ const register = async (req, res, next) => {
   try {
     const { name, email, password, phone } = req.body;
 
+    // Check if user already exists
+    const existingUser = await UserModel.findByEmail(email);
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: 'Email already registered. Please login instead.',
+      });
+    }
+
     // Create new user
     const user = await UserModel.create({
       name,
@@ -278,10 +287,10 @@ const refreshToken = async (req, res, next) => {
     // If token verification fails, it throws an error
     // We catch it here and return 401
     if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
-        return res.status(401).json({
-            success: false,
-            message: getMessage('INVALID_REFRESH_TOKEN'),
-        });
+      return res.status(401).json({
+        success: false,
+        message: getMessage('INVALID_REFRESH_TOKEN'),
+      });
     }
     next(err);
   }
@@ -386,10 +395,10 @@ const resetPassword = async (req, res, next) => {
     });
   } catch (err) {
     if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
-        return res.status(400).json({
-            success: false,
-            message: getMessage('INVALID_TOKEN'),
-        });
+      return res.status(400).json({
+        success: false,
+        message: getMessage('INVALID_TOKEN'),
+      });
     }
     next(err);
   }

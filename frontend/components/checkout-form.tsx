@@ -14,89 +14,140 @@ import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { User, MapPin, FileText, CreditCard, CheckCircle, Loader2 } from "lucide-react"
 import { ordersService } from "@/lib/services/ordersService"
+import { useToast } from "@/hooks/use-toast"
 
 import { useCartStore } from "@/lib/cart-store"
-
-// Removed hardcoded cartItems to use real cart state
+import { useAuthStore } from "@/lib/auth-store"
+import { addressService, Address } from "@/lib/services/addressService"
+import { settingsService, AppSettings } from "@/lib/services/settingsService"
+import { useEffect } from "react"
 
 export function CheckoutForm() {
   const router = useRouter()
+  const { toast } = useToast()
+
+  // Stores
+  const { items: cartItems, getTotalPrice } = useCartStore()
+  const { user } = useAuthStore()
+
+  // State
   const [sameAsBilling, setSameAsBilling] = useState(true)
   const [paymentMethod, setPaymentMethod] = useState("cod")
   const [placing, setPlacing] = useState(false)
-  const { items: cartItems, getTotalPrice, clearCart } = useCartStore()
+  const [loading, setLoading] = useState(true)
+
+  // Data
+  const [addresses, setAddresses] = useState<Address[]>([])
+  const [settings, setSettings] = useState<AppSettings | null>(null)
+
+  // Derived state
+  const defaultAddress = addresses.find(a => a.isDefault) || addresses[0]
+
+  // Calculate Totals
   const subtotal = getTotalPrice()
-  const shipping = 0
-  const total = subtotal + shipping
+  const shippingThreshold = settings?.free_shipping_threshold ?? 500
+  const flatRate = settings?.flat_rate ?? 50
 
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    addressLine1: "",
-    addressLine2: "",
-    city: "",
-    state: "",
-    pincode: "",
-    billingName: "",
-    billingAddress1: "",
-    billingAddress2: "",
-    billingCity: "",
-    billingState: "",
-    billingPincode: "",
-    notes: ""
-  })
+  const shipping = subtotal > 0
+    ? (subtotal >= shippingThreshold ? 0 : flatRate)
+    : 0
 
-  // Simple handler for inputs
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.id]: e.target.value })
-  }
+  // Tax logic (can be enhanced later based on settings)
+  const gstPercent = settings?.gst_percent ?? 0
+  const tax = Math.round(subtotal * (gstPercent / 100))
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (cartItems.length === 0) {
-      alert("Your cart is empty!")
-      return
+  const total = subtotal + shipping + tax;
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [fetchedAddresses, fetchedSettings] = await Promise.all([
+          addressService.getAddresses().catch(() => []),
+          settingsService.getSettings().catch(() => null)
+        ])
+        setAddresses(fetchedAddresses || [])
+        setSettings(fetchedSettings)
+      } catch (error) {
+        console.error("Failed to load checkout data", error)
+      } finally {
+        setLoading(false)
+      }
     }
+    fetchData()
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
     setPlacing(true)
 
-    try {
-      const orderPayload = {
-        addressId: null,
-        paymentMethod,
-        items: cartItems.map(item => ({
-          product_id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-          product_name: item.name,
-          sku: item.sku || `SKU-${item.id}`
-        })),
-        notes: formData.notes || "Order placed from frontend",
-        customer: {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
-        },
-        address: {
-          addressLine1: formData.addressLine1,
-          addressLine2: formData.addressLine2,
-          city: formData.city,
-          state: formData.state,
-          pincode: formData.pincode,
-        }
-      }
+    const formData = new FormData(e.currentTarget)
 
-      console.log('Order payload', orderPayload)
-      await ordersService.createOrder(orderPayload)
-      clearCart() // Clear cart after successful order
-      router.push("/order-confirmation")
-    } catch (error) {
-      console.error("Order failed", error)
+    // Construct Address Objects
+    const shippingAddress = {
+      fullName: formData.get("fullName"),
+      phone: formData.get("phone"),
+      addressLine1: formData.get("address1"),
+      addressLine2: formData.get("address2"),
+      city: formData.get("city"),
+      state: formData.get("state"),
+      postalCode: formData.get("pincode"),
+    }
+
+    const billingAddress = sameAsBilling ? shippingAddress : {
+      fullName: formData.get("billingName"),
+      phone: formData.get("phone"),
+      addressLine1: formData.get("billingAddress1"),
+      addressLine2: formData.get("billingAddress2"),
+      city: formData.get("billingCity"),
+      state: formData.get("billingState"),
+      postalCode: formData.get("billingPincode"),
+    }
+
+    const orderData = {
+      items: [], // Backend fetches from cart
+      shippingAddress,
+      billingAddress,
+      paymentMethod,
+      subtotal,
+      tax,
+      shippingCost: shipping,
+      totalAmount: total,
+      phone: formData.get("phone"),
+      email: formData.get("email"),
+      couponCode: null,
+      notes: formData.get("notes")
+    }
+
+    try {
+      const response = await ordersService.createOrder(orderData as any);
+      toast({
+        title: "Order Placed Successfully",
+        description: "Thank you for your purchase!",
+      })
+      // response is the data payload from ordersService
+      // which returns res.data.
+      // And backend returns { success: true, message:..., data: { orderId ... } }
+      // Wait, ordersService code:
+      // const res = await api.post...
+      // return res.data;
+      // Backend returns: { success: true, data: { orderId ... } }
+      // So response.data.orderId
+
+      router.push(`/order-confirmation/${response.data.orderId}`)
+    } catch (error: any) {
+      console.error("Order creation failed", error);
+      toast({
+        title: "Order Failed",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive"
+      })
     } finally {
       setPlacing(false)
     }
+  }
+
+  if (loading) {
+    return <div className="flex justify-center p-10"><Loader2 className="h-8 w-8 animate-spin text-[#6B4423]" /></div>
   }
 
   return (
@@ -115,22 +166,22 @@ export function CheckoutForm() {
                   <Label htmlFor="email">Email *</Label>
                   <Input
                     id="email"
+                    name="email"
                     type="email"
                     placeholder="your@email.com"
                     required
-                    value={formData.email}
-                    onChange={handleChange}
+                    defaultValue={user?.email || ""}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number *</Label>
                   <Input
                     id="phone"
+                    name="phone"
                     type="tel"
                     placeholder="+91 1234567890"
                     required
-                    value={formData.phone}
-                    onChange={handleChange}
+                    defaultValue={user?.phone || defaultAddress?.phone || ""}
                   />
                 </div>
               </div>
@@ -144,44 +195,34 @@ export function CheckoutForm() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName">First Name *</Label>
+                <Label htmlFor="fullName">Full Name *</Label>
                 <Input
-                  id="firstName"
-                  placeholder="John"
+                  id="fullName"
+                  name="fullName"
+                  placeholder="John Doe"
                   required
-                  value={formData.firstName}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name *</Label>
-                <Input
-                  id="lastName"
-                  placeholder="Doe"
-                  required
-                  value={formData.lastName}
-                  onChange={handleChange}
+                  defaultValue={defaultAddress?.name || user?.name || ""}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="addressLine1">Address Line 1 *</Label>
+                <Label htmlFor="address1">Address Line 1 *</Label>
                 <Input
-                  id="addressLine1"
+                  id="address1"
+                  name="address1"
                   placeholder="Street address"
                   required
-                  value={formData.addressLine1}
-                  onChange={handleChange}
+                  defaultValue={defaultAddress?.addressLine1 || ""}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="addressLine2">Address Line 2</Label>
+                <Label htmlFor="address2">Address Line 2</Label>
                 <Input
-                  id="addressLine2"
+                  id="address2"
+                  name="address2"
                   placeholder="Apartment, suite, etc. (optional)"
-                  value={formData.addressLine2}
-                  onChange={handleChange}
+                  defaultValue={defaultAddress?.addressLine2 || ""}
                 />
               </div>
 
@@ -190,30 +231,30 @@ export function CheckoutForm() {
                   <Label htmlFor="city">City *</Label>
                   <Input
                     id="city"
+                    name="city"
                     placeholder="Mumbai"
                     required
-                    value={formData.city}
-                    onChange={handleChange}
+                    defaultValue={defaultAddress?.city || ""}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="state">State *</Label>
                   <Input
                     id="state"
+                    name="state"
                     placeholder="Maharashtra"
                     required
-                    value={formData.state}
-                    onChange={handleChange}
+                    defaultValue={defaultAddress?.state || ""}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pincode">PIN Code *</Label>
                   <Input
                     id="pincode"
+                    name="pincode"
                     placeholder="400001"
                     required
-                    value={formData.pincode}
-                    onChange={handleChange}
+                    defaultValue={defaultAddress?.postalCode || ""}
                   />
                 </div>
               </div>
@@ -241,66 +282,31 @@ export function CheckoutForm() {
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="billingName">Full Name *</Label>
-                    <Input
-                      id="billingName"
-                      placeholder="John Doe"
-                      required
-                      value={formData.billingName}
-                      onChange={handleChange}
-                    />
+                    <Input id="billingName" name="billingName" placeholder="John Doe" required />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="billingAddress1">Address Line 1 *</Label>
-                    <Input
-                      id="billingAddress1"
-                      placeholder="Street address"
-                      required
-                      value={formData.billingAddress1}
-                      onChange={handleChange}
-                    />
+                    <Input id="billingAddress1" name="billingAddress1" placeholder="Street address" required />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="billingAddress2">Address Line 2</Label>
-                    <Input
-                      id="billingAddress2"
-                      placeholder="Apartment, suite, etc. (optional)"
-                      value={formData.billingAddress2}
-                      onChange={handleChange}
-                    />
+                    <Input id="billingAddress2" name="billingAddress2" placeholder="Apartment, suite, etc. (optional)" />
                   </div>
 
                   <div className="grid sm:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="billingCity">City *</Label>
-                      <Input
-                        id="billingCity"
-                        placeholder="Mumbai"
-                        required
-                        value={formData.billingCity}
-                        onChange={handleChange}
-                      />
+                      <Input id="billingCity" name="billingCity" placeholder="Mumbai" required />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="billingState">State *</Label>
-                      <Input
-                        id="billingState"
-                        placeholder="Maharashtra"
-                        required
-                        value={formData.billingState}
-                        onChange={handleChange}
-                      />
+                      <Input id="billingState" name="billingState" placeholder="Maharashtra" required />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="billingPincode">PIN Code *</Label>
-                      <Input
-                        id="billingPincode"
-                        placeholder="400001"
-                        required
-                        value={formData.billingPincode}
-                        onChange={handleChange}
-                      />
+                      <Input id="billingPincode" name="billingPincode" placeholder="400001" required />
                     </div>
                   </div>
                 </>
@@ -340,13 +346,7 @@ export function CheckoutForm() {
               <CardTitle className="text-[#6B4423]">Order Notes (Optional)</CardTitle>
             </CardHeader>
             <CardContent>
-              <Textarea
-                id="notes"
-                placeholder="Any special instructions for your order?"
-                rows={4}
-                value={formData.notes}
-                onChange={handleChange}
-              />
+              <Textarea name="notes" placeholder="Any special instructions for your order?" rows={4} />
             </CardContent>
           </Card>
         </div>
@@ -365,7 +365,7 @@ export function CheckoutForm() {
                     <div className="flex-1">
                       <p className="font-medium text-sm">{item.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {item.category} × {item.quantity}
+                        Qty: {item.quantity}
                       </p>
                     </div>
                     <p className="font-medium">₹{item.price * item.quantity}</p>

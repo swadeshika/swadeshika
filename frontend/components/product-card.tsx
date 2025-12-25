@@ -76,7 +76,7 @@ export function ProductCard({
     try {
       setIsLoading(true)
       const start = Date.now()
-      addItem({ id, name, price, image, category })
+      addItem({ productId: id, name, price, image, category })
       toast({
         title: "Added to cart",
         description: `${name} has been added to your cart.`,

@@ -40,32 +40,21 @@ const apiRoutes = require('./routes');
 const app = express();
 
 /* ============================================================
-   1. CORS Configuration (Moved to TOP)
+   1. SECURITY: Add essential HTTP headers using Helmet
    ------------------------------------------------------------
    WHY?
-   - Must be first to handle preflight requests properly
-   - Solves "Failed to fetch" on errors (413, 500)
+   - Prevent common vulnerabilities (clickjacking, MIME sniffing, etc)
+   - Make your API more resistant to attacks
    ============================================================ */
-/* ============================================================
-   1. CORS Configuration
-   ------------------------------------------------------------ */
-app.use(cors({
-   origin: true, // Dynamically reflect request origin
-   credentials: true,
-   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-}));
-
-/* ============================================================
-   2. SECURITY: Add essential HTTP headers using Helmet
-   ------------------------------------------------------------ */
-app.use(helmet({
-   contentSecurityPolicy: false, // Disable CSP for easier development
-}));
+app.use(helmet());
 
 /* ============================================================
    2. LOGGING: Show logs only in development mode
-   ------------------------------------------------------------ */
+   ------------------------------------------------------------
+   WHY?
+   - Helpful while developing/debugging APIs
+   - Avoids logs in production for performance & security
+   ============================================================ */
 if (NODE_ENV === 'development') app.use(morgan('dev'));
 
 /* ============================================================
@@ -77,14 +66,12 @@ if (NODE_ENV === 'development') app.use(morgan('dev'));
    ------------------------------------------------------------
    Applies ONLY to routes starting with /api
    ============================================================ */
-if (NODE_ENV === 'production') {
-   const limiter = rateLimit({
-      max: RATE_LIMIT_MAX || 100,
-      windowMs: RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000,
-      message: "Too many requests, try again later.",
-   });
-   app.use('/api', limiter);
-}
+const limiter = rateLimit({
+   max: RATE_LIMIT_MAX || 100,                         // Max requests allowed
+   windowMs: RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000,   // Time window
+   message: "Too many requests, try again later.",      // Response message
+});
+app.use('/api', limiter);
 
 /* ============================================================
    4. BODY PARSERS: Parse incoming request bodies
@@ -93,8 +80,8 @@ if (NODE_ENV === 'production') {
    express.urlencoded() -> Parse form data (x-www-form-urlencoded)
    cookieParser()       -> Read cookies from request headers
    ============================================================ */
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 /* ============================================================
@@ -124,27 +111,23 @@ app.use(hpp());
    - credentials: true -> send cookies (refresh token)
    ============================================================ */
 app.use(cors({
-   origin: function (origin, callback) {
+   origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
 
-      // Allowed origins
-      const allowedOrigins = [CORS_ORIGIN, 'http://localhost:3000', 'http://127.0.0.1:3000'];
-
-      if (allowedOrigins.indexOf(origin) === -1) {
-         // For development convenience, we can log this but still block it.
-         // Or just allow it if we want to be permissive.
-         // callback(new Error('Not allowed by CORS'));
-
-         // Let's be permissive if dev mode:
-         if (NODE_ENV === 'development') {
-            return callback(null, true);
-         }
-         return callback(new Error('Not allowed by CORS'));
+      // In development, allow any localhost/127.0.0.1
+      // or exact match with config
+      if (
+         (NODE_ENV === 'development' && (origin.includes('localhost') || origin.includes('127.0.0.1'))) ||
+         origin === CORS_ORIGIN
+      ) {
+         return callback(null, true);
       }
-      return callback(null, true);
+
+      console.log('Blocked by CORS:', origin);
+      callback(new Error('Not allowed by CORS'));
    },
-   credentials: true,
+   credentials: true,     // Needed for cookies
 }));
 
 /* ============================================================

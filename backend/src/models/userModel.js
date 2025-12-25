@@ -9,9 +9,6 @@ const { hashPassword } = require('../utils/hash');
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 
-const { v4: uuidv4 } = require('uuid');
-const { hashPassword } = require('../utils/hash');
-
 /**
  * userModel.js
  * ------------
@@ -143,49 +140,40 @@ class UserModel {
         return result.affectedRows > 0;
     }
 
+
     /**
      * Create a new user
      * 
-     * @param {Object} userData - { name, email, password, phone, role }
+     * @param {Object} data - User data { name, email, password, phone }
      * @returns {Promise<Object>} Created user object
      */
-    static async create({ name, email, password, phone, role = 'user' }) {
-        const { hashPassword } = require('../utils/hash');
+    static async create(data) {
+        const { name, email, password, phone } = data;
         const hashedPassword = await hashPassword(password);
+        const id = uuidv4();
 
-        const sql = `
-            INSERT INTO users (name, email, password, phone, role)
-            VALUES (?, ?, ?, ?, ?)
-        `;
+        const [result] = await db.query(
+            `INSERT INTO users (id, name, email, password, phone) VALUES (?, ?, ?, ?, ?)`,
+            [id, name, email, hashedPassword, phone]
+        );
 
-        const [result] = await db.query(sql, [name, email, hashedPassword, phone, role]);
-
-        return {
-            id: result.insertId,
-            name,
-            email,
-            phone,
-            role,
-            created_at: new Date()
-        };
+        return this.findById(id);
     }
 
     /**
-     * Force set password (for reset password feature)
+     * Force update password (no old password check)
+     * Used for Forgot Password / Reset Password
      * 
      * @param {number|string} id - User ID
-     * @param {string} password - New raw password
+     * @param {string} password - New plain text password
      * @returns {Promise<boolean>} True if updated
      */
     static async forceSetPassword(id, password) {
-        const { hashPassword } = require('../utils/hash');
         const hashedPassword = await hashPassword(password);
-
         const [result] = await db.query(
             `UPDATE users SET password = ? WHERE id = ?`,
             [hashedPassword, id]
         );
-
         return result.affectedRows > 0;
     }
 }

@@ -28,12 +28,14 @@ export function CartButton() {
   // Subscribe to cart store - component re-renders when total items changes
   // Using selector pattern for performance (only subscribes to getTotalItems)
   const totalItems = useCartStore((state) => state.getTotalItems())
+  const fetchCart = useCartStore((state) => state.fetchCart)
   const [mounted, setMounted] = useState(false)
 
   // Avoid SSR/client mismatch by rendering dynamic badge only after mount
   useEffect(() => {
     setMounted(true)
-  }, [])
+    fetchCart()
+  }, [fetchCart])
 
   return (
     <Button variant="ghost" size="icon" className="relative" asChild>

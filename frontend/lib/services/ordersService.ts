@@ -61,33 +61,23 @@ export const ordersService = {
         if (params.status && params.status !== 'all') query.append('status', params.status);
         if (params.search) query.append('search', params.search);
 
-        const res = await api.get<{ success?: boolean; data?: { orders: Order[]; pagination: any } }>(`/orders/admin/all?${query.toString()}`);
-        // Backend responses use { success, data: { orders, pagination } }
-        // Unwrap if necessary to return { orders, pagination } directly.
-        return (res.data && (res.data.data || res.data)) as any;
-    },
-
-    /**
-     * Create a new order (User)
-     */
-    createOrder: async (orderData: any) => {
-        const res = await api.post<{ success?: boolean; data?: any; message?: string }>('/orders', orderData);
-        return res.data && res.data.data ? res.data.data : res.data;
+        const res = await api.get<{ orders: Order[]; pagination: any }>(`/orders/admin/all?${query.toString()}`);
+        return res.data.data;
     },
 
     /**
      * Get order details by ID
      */
     getOrderById: async (id: string) => {
-        const res = await api.get<{ success?: boolean; data?: Order }>(`/orders/${id}`);
-        return res.data && res.data.data ? res.data.data : res.data;
+        const res = await api.get<Order>(`/orders/${id}`);
+        return res.data.data;
     },
 
     /**
      * Update order status (Admin)
      */
-    updateStatus: async (id: string, status: string) => {
-        const res = await api.put<{ success?: boolean; message?: string }>(`/orders/${id}/status`, { status });
+    updateStatus: async (id: string, status: string, trackingNumber?: string) => {
+        const res = await api.put<{ message: string }>(`/orders/${id}/status`, { status, trackingNumber });
         return res.data;
     },
 
@@ -100,29 +90,45 @@ export const ordersService = {
     },
 
     /**
-     * Export orders (Admin)
+     * Get my orders (User)
      */
-    exportOrders: async () => {
-        // Use window.open for downloading file if method is GET and returns binary/blob
-        // OR use fetch with blob response manually if auth headers needed (which they are)
-        // Since 'api' wrapper handles auth, let's use it but handle blob.
-        // Actually, easiest for CSV download with auth is to use a direct fetch with token
-        const token = localStorage.getItem('accessToken');
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/orders/admin/export`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
+    getMyOrders: async (params: { page?: number; limit?: number; status?: string } = {}) => {
+        const query = new URLSearchParams();
+        if (params.page) query.append('page', String(params.page));
+        if (params.limit) query.append('limit', String(params.limit));
+        if (params.status && params.status !== 'all') query.append('status', params.status);
 
-        if (!response.ok) throw new Error('Export failed');
+        const res = await api.get<{ orders: Order[]; pagination: any }>(`/orders?${query.toString()}`);
+        return res.data.data;
+    },
 
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `orders_export_${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+    /**
+     * Create a new order (User)
+     */
+    createOrder: async (orderData: {
+        items: any[];
+        shippingAddress: any;
+        billingAddress: any;
+        paymentMethod: string;
+        subtotal: number;
+        tax: number;
+        shippingCost: number;
+        totalAmount: number;
+        phone?: string;
+        email?: string;
+        couponCode?: string | null;
+        notes?: string;
+    }) => {
+        const res = await api.post<{ message: string; orderId: string }>(`/orders`, orderData);
+        return res.data;
+    },
+
+    /**
+     * Track Order (Public)
+     */
+    trackOrder: async (orderId: string, email: string) => {
+        const res = await api.post<{ data: any }>(`/orders/track`, { orderId, email });
+        return res.data.data;
     }
 };
+

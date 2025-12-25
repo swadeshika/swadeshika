@@ -2,154 +2,103 @@ const Order = require('../models/orderModel');
 const db = require('../config/db');
 const UserModel = require('../models/userModel');
 const crypto = require('crypto');
+const AddressModel = require('../models/addressModel'); // Import AddressModel
 
-/**
- * orderController.js
- * ------------------
- * Handles all order-related operations:
- * 1. Create Order (Checkout)
- * 2. Get All Orders (Admin)
- * 3. Get My Orders (User)
- * 4. Get Order By ID
- * 5. Update Order Status (Admin)
- * 6. Cancel Order (User)
- * 7. Delete Order (Admin)
- */
+const AdminSettingsService = require('../services/adminSettingsService'); // Import AdminSettingsService
 
-/**
- * Create a new order
- * 
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
- */
 exports.createOrder = async (req, res, next) => {
     try {
+        const userId = req.user.id;
+        let { addressId, paymentMethod, couponCode, notes, items: bodyItems, shippingAddress } = req.body;
 
-        let userId = req.user && req.user.id ? req.user.id : null;
-        const { addressId, paymentMethod, couponCode, notes, items: bodyItems, address: addressData, customer: customerData } = req.body;
-
-        // If user is not authenticated, try to find or create a lightweight user record
-        // using the provided customer email so orders.user_id (NOT NULL) can be populated.
-        if (!userId) {
-            if (customerData && customerData.email) {
-                const existingUser = await UserModel.findByEmail(customerData.email);
-                if (existingUser && existingUser.id) {
-                    userId = existingUser.id;
-                } else {
-                    // Create a lightweight user for guest checkout
-                    const randomPassword = crypto.randomBytes(8).toString('hex');
-                    const name = `${customerData.firstName || ''} ${customerData.lastName || ''}`.trim() || customerData.email;
-                    const newUser = await UserModel.create({ name, email: customerData.email, password: randomPassword, phone: customerData.phone });
-                    userId = newUser.id;
-                }
-            } else {
-                return res.status(400).json({ success: false, message: 'User not authenticated and no customer email provided' });
+        // 1. Handle Address Creation if shippingAddress provided
+        if (shippingAddress) {
+            try {
+                const newAddress = await AddressModel.create({
+                    user_id: userId,
+                    full_name: shippingAddress.fullName,
+                    phone: shippingAddress.phone,
+                    address_line1: shippingAddress.addressLine1,
+                    address_line2: shippingAddress.addressLine2,
+                    city: shippingAddress.city,
+                    state: shippingAddress.state,
+                    postal_code: shippingAddress.postalCode,
+                    country: 'India', // Default
+                    address_type: 'home', // Default
+                    is_default: false
+                });
+                addressId = newAddress.id;
+            } catch (addrErr) {
+                console.error("Failed to create address:", addrErr);
+                return res.status(400).json({ success: false, message: 'Invalid address data' });
             }
         }
 
-        // 0. Persistence Logic: Address and Customer
-        let finalAddressId = addressId;
-
-        // Create address if not provided but data is available
-        if (!finalAddressId && addressData) {
-            const { v4: uuidv4 } = require('uuid');
-            const newAddressId = uuidv4();
-            await db.query(
-                `INSERT INTO addresses (id, user_id, full_name, phone, address_line1, address_line2, city, state, postal_code) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [
-                    newAddressId, userId,
-                    `${customerData?.firstName || ''} ${customerData?.lastName || ''}`.trim(),
-                    customerData?.phone || '',
-                    addressData.addressLine1, addressData.addressLine2 || null,
-                    addressData.city, addressData.state, addressData.pincode
-                ]
-            );
-            finalAddressId = newAddressId;
+        if (!addressId) {
+            return res.status(400).json({ success: false, message: 'Shipping address is required' });
         }
 
-
-
-        let cartItems;
-
-        // 1. Try to get items from request body first (Direct Checkout / Buy Now)
-        if (bodyItems && Array.isArray(bodyItems) && bodyItems.length > 0) {
-            cartItems = bodyItems.map(item => ({
-                product_id: item.id || item.product_id, // Handle both id formats
-                variant_id: item.variantId || item.variant_id || null,
-                product_name: item.name || item.product_name || 'Unknown Product',
-                variant_name: item.variant || item.variant_name || null,
-                sku: item.sku || `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`, // Fallback SKU
-                quantity: item.quantity || 1,
-                price: item.price || 0
-            }));
-        } else {
-            // 2. Fallback to DB Cart
-            cartItems = await Order.getCartItems(userId);
+        // Validate address existence
+        const addressExists = await AddressModel.findById(addressId);
+        if (!addressExists) {
+            return res.status(400).json({ success: false, message: 'Invalid address ID provided' });
         }
 
-        if (!cartItems || cartItems.length === 0) {
-            return res.status(400).json({ success: false, message: 'Cart is empty' });
-        }
-
-        // 3. Calculate totals
+        // 2. Get items (Body Items OR Cart Items)
+        let orderItems = [];
         let subtotal = 0;
-        const orderItems = cartItems.map(item => {
-            const itemSubtotal = parseFloat(item.price) * item.quantity;
-            subtotal += itemSubtotal;
-            return {
-                product_id: item.product_id,
-                variant_id: item.variant_id,
-                product_name: item.product_name,
-                variant_name: item.variant_name,
-                sku: item.sku,
-                quantity: item.quantity,
-                price: item.price,
-                subtotal: itemSubtotal
-            };
-        });
 
-        // Placeholder for real coupon logic
+        if (bodyItems && bodyItems.length > 0) {
+            // Use items from request body
+            orderItems = bodyItems.map(item => {
+                const itemSubtotal = parseFloat(item.price) * item.quantity;
+                subtotal += itemSubtotal;
+                return {
+                    product_id: item.productId,
+                    variant_id: item.variantId || null,
+                    product_name: item.productName,
+                    variant_name: item.variantName || null,
+                    sku: item.sku || 'N/A', // SKU might be missing in frontend model
+                    quantity: item.quantity,
+                    price: item.price,
+                    subtotal: itemSubtotal
+                };
+            });
+        } else {
+            // Fallback to DB Cart
+            const cartItems = await Order.getCartItems(userId);
+            if (!cartItems || cartItems.length === 0) {
+                return res.status(400).json({ success: false, message: 'Cart is empty' });
+            }
+            orderItems = cartItems.map(item => {
+                const itemSubtotal = parseFloat(item.price) * item.quantity;
+                subtotal += itemSubtotal;
+                return {
+                    product_id: item.product_id,
+                    variant_id: item.variant_id,
+                    product_name: item.product_name,
+                    variant_name: item.variant_name,
+                    sku: item.sku,
+                    quantity: item.quantity,
+                    price: item.price,
+                    subtotal: itemSubtotal
+                };
+            });
+        }
+
+        // 3. Calculate totals (Simplified logic for now)
+        const settings = await AdminSettingsService.getSettings();
+        const shippingThreshold = settings ? Number(settings.free_shipping_threshold) : 500;
+        const flatRate = settings ? Number(settings.flat_rate) : 50;
+
         const discountAmount = 0;
-        const shippingFee = 0; // Placeholder
-        const taxAmount = 0; // Placeholder
+        const shippingFee = subtotal >= shippingThreshold ? 0 : flatRate;
+        // Optional tax logic based on settings? For now assume included or 0.
+        // const taxRate = settings ? Number(settings.gst_percent) : 0;
+        // const taxAmount = Math.round(subtotal * (taxRate / 100));
+        const taxAmount = 0;
+
         const totalAmount = subtotal - discountAmount + shippingFee + taxAmount;
-
-        // If the request was unauthenticated, create/find a corresponding user record
-        // so orders.user_id (NOT NULL) can reference a user and admins can link orders.
-        if (!userId && customerData?.email) {
-            const existingUser = await UserModel.findByEmail(customerData.email);
-            if (existingUser) {
-                userId = existingUser.id;
-            } else {
-                const randomPw = crypto.randomBytes(8).toString('hex');
-                const name = `${customerData.firstName || ''} ${customerData.lastName || ''}`.trim() || customerData.email;
-                const newUser = await UserModel.create({ name, email: customerData.email, password: randomPw, phone: customerData.phone, role: 'customer' });
-                userId = newUser.id;
-            }
-        }
-
-        // Ensure customer exists in customers table for admin visibility
-        if (customerData?.email) {
-            const [existing] = await db.query('SELECT id FROM customers WHERE email = ?', [customerData.email]);
-            if (existing.length > 0) {
-                await db.query(
-                    `UPDATE customers 
-                     SET first_name = ?, last_name = ?, phone = ?, 
-                         total_orders = total_orders + 1, 
-                         total_spent = total_spent + ?, 
-                         updated_at = NOW() 
-                     WHERE email = ?`,
-                    [customerData.firstName, customerData.lastName, customerData.phone, totalAmount || 0, customerData.email]
-                );
-            } else {
-                await db.query(
-                    'INSERT INTO customers (first_name, last_name, email, phone, join_date, total_orders, total_spent) VALUES (?, ?, ?, ?, NOW(), 1, ?)',
-                    [customerData.firstName, customerData.lastName, customerData.email, customerData.phone, totalAmount || 0]
-                );
-            }
-        }
 
         // 4. Create Order
         const orderData = {
@@ -167,7 +116,9 @@ exports.createOrder = async (req, res, next) => {
 
         const newOrder = await Order.create(orderData, orderItems);
 
-        // 5. Clear Cart (only if we used the DB cart)
+        // 5. Clear Cart (Only if we used cart items, but effectively safe to try clear anyway or only if bodyItems was empty)
+        // If user bought 'Buy Now' directly, maybe don't clear cart? 
+        // For checkout flow, we usually clear cart.
         if (!bodyItems) {
             await Order.clearCart(userId);
         }
@@ -404,6 +355,15 @@ exports.getOrderById = async (req, res, next) => {
             return res.status(403).json({ success: false, message: 'Not authorized to view this order' });
         }
 
+        // Construct timeline
+        const timeline = [
+            { status: 'placed', label: 'Order Placed', date: order.created_at, completed: true },
+            { status: 'confirmed', label: 'Order Confirmed', date: order.created_at, completed: true },
+            { status: 'processing', label: 'Packing', date: null, completed: ['processing', 'shipped', 'delivered'].includes(order.status) },
+            { status: 'shipped', label: 'Shipped', date: order.shipped_at, completed: ['shipped', 'delivered'].includes(order.status) },
+            { status: 'delivered', label: 'Delivered', date: order.delivered_at, completed: order.status === 'delivered' }
+        ];
+
         // Format response
         const formattedOrder = {
             id: order.id,
@@ -415,7 +375,13 @@ exports.getOrderById = async (req, res, next) => {
                 variantName: item.variant_name,
                 quantity: item.quantity,
                 price: item.price,
-                subtotal: item.subtotal
+                subtotal: item.subtotal,
+                image: item.image // Ensure image is passed if available, though model might not select it if not in order_items. 
+                // Note: order_items table usually doesn't store image, products table does. 
+                // We might need to join/fetch image if frontend needs it. 
+                // Previous code didn't have image in map either, but frontend uses it. 
+                // Frontend has: src={item.image || "/placeholder.svg"}
+                // For now, let's stick to fixing timeline.
             })),
             address: order.address ? {
                 fullName: order.address.full_name,
@@ -434,7 +400,8 @@ exports.getOrderById = async (req, res, next) => {
             },
             trackingNumber: order.tracking_number,
             createdAt: order.created_at,
-            deliveredAt: order.delivered_at
+            deliveredAt: order.delivered_at,
+            timeline: timeline
         };
 
         res.status(200).json({
@@ -456,9 +423,8 @@ exports.getOrderById = async (req, res, next) => {
 exports.updateOrderStatus = async (req, res, next) => {
     try {
         const { status, trackingNumber } = req.body;
-        // Note: trackingNumber update logic needs to be added to model if we want to support it
-        // For now, just status as per model
-        const success = await Order.updateStatus(req.params.id, status);
+
+        const success = await Order.updateStatus(req.params.id, status, trackingNumber);
 
         if (!success) {
             return res.status(404).json({ success: false, message: 'Order not found or update failed' });
@@ -467,6 +433,74 @@ exports.updateOrderStatus = async (req, res, next) => {
         res.status(200).json({
             success: true,
             message: 'Order status updated successfully'
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Track order (Public)
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
+exports.trackOrder = async (req, res, next) => {
+    try {
+        const { orderId, email } = req.body;
+
+        if (!orderId) {
+            return res.status(400).json({ success: false, message: 'Order ID is required' });
+        }
+
+        // Try to find by orderNumber or ID
+        let order;
+        if (orderId.startsWith('ORD-')) {
+            order = await Order.findByOrderNumber(orderId);
+        } else {
+            order = await Order.findById(orderId);
+        }
+
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+
+        // Variable strictness on email check.
+        // Usually tracking pages ask for Email OR Phone to verify ownership if public.
+        // For now, if email is provided, we check it.
+        if (email && order.user_email && order.user_email.toLowerCase() !== email.toLowerCase()) {
+            // If we joined user table we might have email, check findByOrderNumber implementation
+            // findByOrderNumber does join users. findById does not in current implementation above.
+            // Let's rely on findByOrderNumber returns for public tracking if possible, or just return basic info.
+
+            // If findByOrderNumber was used it has user_email.
+            // If findById was used (UUID), it might not have email directly unless we fetched it.
+            // For safety, let's just return what we have if it matches, or 404/403.
+            return res.status(404).json({ success: false, message: 'Order search details do not match records.' });
+        }
+
+        // Construct timeline based on status
+        const timeline = [
+            { status: 'placed', label: 'Order Placed', date: order.created_at, completed: true },
+            { status: 'confirmed', label: 'Order Confirmed', date: order.created_at, completed: true }, // Assumed confirmed immed for now
+            { status: 'processing', label: 'Packing', date: null, completed: ['processing', 'shipped', 'delivered'].includes(order.status) },
+            { status: 'shipped', label: 'Shipped', date: order.shipped_at, completed: ['shipped', 'delivered'].includes(order.status) },
+            { status: 'delivered', label: 'Delivered', date: order.delivered_at, completed: order.status === 'delivered' }
+        ];
+
+        // Format response
+        res.status(200).json({
+            success: true,
+            data: {
+                orderId: order.order_number,
+                status: order.status,
+                trackingNumber: order.tracking_number,
+                carrier: 'Blue Dart', // Placeholder or add to DB
+                estimatedDelivery: new Date(new Date(order.created_at).setDate(new Date(order.created_at).getDate() + 5)), // Mock 5 days
+                currentLocation: order.status === 'delivered' ? 'Delivered' : 'In Transit',
+                timeline
+            }
         });
     } catch (error) {
         next(error);

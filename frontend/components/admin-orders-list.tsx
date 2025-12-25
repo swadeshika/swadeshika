@@ -1,8 +1,24 @@
 "use client"
 
+/**
+ * Admin Orders List
+ *
+ * Purpose
+ * - Displays the orders table in the Admin panel with search, filter, and export capabilities.
+ * - Ensures a consistent UI with the rest of the admin area (rounded cards, subtle borders, brand colors).
+ *
+ * Key Features
+ * - Client-side search across order number, customer name, email, and status (case-insensitive)
+ * - Status filter (all/pending/processing/shipped/delivered/cancelled)
+ * - CSV export of the currently filtered results
+ * - Empty state messaging when no orders match
+ * - Quick view action linking to the order details page
+ *
+ * Notes
+ * **/
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
-import { Search, Eye, Download, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
+import { Search, Eye, Download, Loader2, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -40,7 +56,6 @@ export function AdminOrdersList() {
         status: statusFilter,
         search: debouncedSearch
       })
-
       setOrders(data.orders || [])
       setPagination(prev => ({ ...prev, ...data.pagination }))
     } catch (error) {
@@ -53,7 +68,20 @@ export function AdminOrdersList() {
 
   useEffect(() => {
     fetchOrders()
-  }, [fetchOrders])
+  }, [debouncedSearch, statusFilter, pagination.page])
+
+  const handleDelete = async (id: string) => {
+    if (confirm("Are you sure you want to delete this order?")) {
+      try {
+        await ordersService.deleteOrder(id);
+        toast({ title: "Success", description: "Order deleted successfully" });
+        fetchOrders();
+      } catch (error) {
+        console.error("Delete failed", error);
+        toast({ title: "Error", description: "Failed to delete order", variant: "destructive" });
+      }
+    }
+  }
 
   // Reset page when filters change
   useEffect(() => {
@@ -129,13 +157,13 @@ export function AdminOrdersList() {
                   <TableHead className="text-[#6B4423]">Date</TableHead>
                   <TableHead className="text-[#6B4423]">Amount</TableHead>
                   <TableHead className="text-[#6B4423]">Status</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
+                  <TableHead className="w-[100px] text-right">Actions</TableHead>
+                </TableRow >
+              </TableHeader >
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell colSpan={7} className="h-24 text-center">
                       <Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2D5F3F]" />
                     </TableCell>
                   </TableRow>
@@ -164,45 +192,27 @@ export function AdminOrdersList() {
                       <TableCell>
                         <Badge className={`${statusColors[order.status.toLowerCase()] || 'bg-gray-100'} border-0 uppercase`}>{order.status}</Badge>
                       </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="icon" asChild>
-                          <Link href={`/admin/orders/${order.id}`}>
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                        </Button>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" asChild>
+                            <Link href={`/admin/orders/${order.id}`}>
+                              <Eye className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(String(order.id))} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
                 )}
               </TableBody>
-            </Table>
-          </div>
-
-          <div className="flex items-center justify-end space-x-2 py-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(pagination.page - 1)}
-              disabled={pagination.page === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Button>
-            <div className="text-sm font-medium">
-              Page {pagination.page} of {pagination.pages}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(pagination.page + 1)}
-              disabled={pagination.page === pagination.pages}
-            >
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+            </Table >
+          </div >
+        </CardContent >
+      </Card >
+    </div >
   )
 }
+

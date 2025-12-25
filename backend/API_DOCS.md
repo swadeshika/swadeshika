@@ -2457,9 +2457,9 @@ Auth: Required (Admin)
 
 ---
 
-### 12. Reports Endpoints (Admin)
+### 12. Reports & Analytics Endpoints (Admin)
 
-#### 12.1 Get Dashboard Overview
+#### 12.1 Get Dashboard Overview (Live Stats)
 ```http
 GET /api/v1/admin/dashboard/overview
 Auth: Required (Admin)
@@ -2470,75 +2470,121 @@ Auth: Required (Admin)
 {
   "success": true,
   "data": {
-    "totalRevenue": 125000,
-    "totalOrders": 456,
-    "totalUsers": 1234,
-    "totalProducts": 89,
-    "revenueGrowth": 15.5,
-    "ordersGrowth": 12.3,
-    "lowStockProducts": 5,
-    "pendingOrders": 12,
-    "recentOrders": [
+    "stats": [
       {
-        "id": "uuid",
-        "orderNumber": "ORD-2025-001",
-        "customer": "John Doe",
-        "total": 1500,
-        "status": "processing",
-        "createdAt": "2025-01-16T10:00:00.000Z"
+        "title": "Revenue",
+        "value": "₹1,25,000",
+        "icon": "BarChart3"
+      },
+      {
+        "title": "Orders",
+        "value": "456",
+        "icon": "ShoppingCart"
+      },
+      {
+        "title": "Products",
+        "value": "89",
+        "icon": "Package"
+      },
+      {
+        "title": "Customers",
+        "value": "1234",
+        "icon": "Users"
       }
     ],
-    "topProducts": [
-      {
-        "id": 1,
-        "name": "Pure Desi Cow Ghee",
-        "soldQuantity": 234,
-        "revenue": 45000
-      }
-    ]
+    "recentOrders": [],
+    "topProducts": [],
+    "lowStockProducts": []
   }
 }
 ```
 
-#### 12.2 Get Detailed Reports
+#### 12.2 Get Analytics Data (Live Charts)
 ```http
-GET /api/v1/admin/dashboard/reports
+GET /api/v1/admin/analytics
 Auth: Required (Admin)
 ```
 
 **Query Parameters:**
-- `startDate` (string): Start date (ISO format)
-- `endDate` (string): End date (ISO format)
-- `type` (string): Report type (sales, products, customers)
+- `startDate`, `endDate`, `metric` (revenue, orders), `interval` (day, month)
 
 **Response (200):**
 ```json
 {
   "success": true,
   "data": {
-    "period": {
-      "start": "2025-01-01",
-      "end": "2025-01-31"
-    },
-    "totalRevenue": 250000,
-    "totalOrders": 890,
-    "averageOrderValue": 280.89,
-    "dailyRevenue": [
+    "labels": ["Jan 1", "Jan 2", "Jan 3", "Jan 4", "Jan 5", "Jan 6", "Jan 7"],
+    "datasets": [
       {
-        "date": "2025-01-01",
-        "revenue": 8500,
-        "orders": 32
-      }
-    ],
-    "topCategories": [
-      {
-        "category": "Ghee",
-        "revenue": 125000,
-        "orders": 450
+        "label": "Revenue",
+        "data": [1200, 1500, 1100, 1800, 2000, 1700, 2200],
+        "borderColor": "#4F46E5",
+        "tension": 0.4
       }
     ]
   }
 }
+```
+
+---
+
+### 12.3 Generated Reports Management
+
+#### 12.3.1 Generate New Report
+```http
+POST /api/v1/admin/reports
+Auth: Required (Admin)
+```
+
+**Request Body:**
+```json
+{
+  "reportType": "sales",
+  "name": "January 2025 Sales Report",
+  "format": "pdf",
+  "parameters": {
+    "startDate": "2025-01-01",
+    "endDate": "2025-01-31"
+  }
+}
+```
+
+#### 12.3.2 List Generated Reports
+```http
+GET /api/v1/admin/reports
+Auth: Required (Admin)
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "reports": [
+      {
+        "id": 123,
+        "name": "January 2025 Sales Report",
+        "type": "sales",
+        "status": "completed",
+        "fileUrl": "/uploads/reports/report-123.pdf",
+        "createdAt": "2025-02-01T10:00:00Z"
+      }
+    ],
+    "pagination": { "page": 1, "total": 50 }
+  }
+}
+```
+
+#### 12.3.3 Download Report
+```http
+GET /api/v1/admin/reports/:id/download
+Auth: Required (Admin)
+```
+
+#### 12.3.4 Delete Report
+```http
+DELETE /api/v1/admin/reports/:id
+Auth: Required (Admin)
 ```
 
 ---

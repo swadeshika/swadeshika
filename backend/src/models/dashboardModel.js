@@ -159,6 +159,78 @@ class DashboardModel {
         const [rows] = await db.query(query);
         return rows;
     }
+    /**
+     * Get payment methods usage
+     * @param {string} startDate 
+     * @param {string} endDate 
+     * @returns {Promise<Array>}
+     */
+    static async getPaymentMethods(startDate, endDate) {
+        const query = `
+            SELECT payment_method as name, COUNT(*) as value
+            FROM orders
+            WHERE created_at BETWEEN ? AND ?
+            AND status != 'cancelled'
+            GROUP BY payment_method
+        `;
+        const [rows] = await db.query(query, [startDate, endDate]);
+        return rows;
+    }
+
+    /**
+     * Get coupon performance
+     * @param {string} startDate 
+     * @param {string} endDate 
+     * @returns {Promise<Array>}
+     */
+    static async getCouponPerformance(startDate, endDate) {
+        const query = `
+            SELECT 
+                c.code, 
+                COUNT(cu.id) as 'usage', 
+                c.usage_limit as 'limit', 
+                COALESCE(SUM(o.total_amount), 0) as revenue
+            FROM coupons c
+            LEFT JOIN coupon_usage cu ON c.id = cu.coupon_id
+            LEFT JOIN orders o ON cu.order_id = o.id
+            WHERE cu.used_at BETWEEN ? AND ?
+            GROUP BY c.id
+            ORDER BY revenue DESC
+            LIMIT 5
+        `;
+        const [rows] = await db.query(query, [startDate, endDate]);
+        return rows;
+    }
+
+    /**
+     * Get returns statistics
+     * @param {string} startDate 
+     * @param {string} endDate 
+     * @returns {Promise<Object>}
+     */
+    static async getReturns(startDate, endDate) {
+        // Return Rate
+        const [totalOrders] = await db.query(
+            'SELECT COUNT(*) as count FROM orders WHERE created_at BETWEEN ? AND ?',
+            [startDate, endDate]
+        );
+        const [returnedOrders] = await db.query(
+            'SELECT COUNT(*) as count FROM orders WHERE created_at BETWEEN ? AND ? AND (status = "refunded" OR status = "cancelled")',
+            [startDate, endDate]
+        );
+
+        // Refunded Amount
+        const [refundedAmount] = await db.query(
+            'SELECT COALESCE(SUM(total_amount), 0) as amount FROM orders WHERE created_at BETWEEN ? AND ? AND status = "refunded"',
+            [startDate, endDate]
+        );
+
+        return {
+            total: totalOrders[0].count,
+            returned: returnedOrders[0].count,
+            refundedAmount: refundedAmount[0].amount
+        };
+    }
 }
 
 module.exports = DashboardModel;

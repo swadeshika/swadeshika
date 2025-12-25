@@ -27,6 +27,7 @@ const contactRoutes = require('./contactRoutes');
 const newsletterRoutes = require('./newsletterRoutes');
 const analyticsRoutes = require('./analyticsRoutes');
 const customersRoutes = require('./customers.routes');
+const reportRoutes = require('./reportRoutes');
 
 // Dynamic loading for Order Routes (as it might be fragile or WIP)
 let orderRoutes;
@@ -60,6 +61,8 @@ router.use('/admin/orders', adminOrderRoutes);
 router.use('/admin/blog/authors', adminBlogAuthorRoutes);
 router.use('/admin/blog', adminBlogRoutes);
 router.use('/admin/dashboard', dashboardRoutes);
+router.use('/admin/reports', reportRoutes);
+router.use('/admin/analytics', analyticsRoutes); // Convenience alias
 
 // Health Check
 router.get('/health', (req, res) => {

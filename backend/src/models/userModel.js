@@ -7,6 +7,7 @@ const { hashPassword } = require('../utils/hash');
  * Database interactions for Users.
  */
 const crypto = require('crypto');
+const { v4: uuidv4 } = require('uuid');
 
 /**
  * userModel.js

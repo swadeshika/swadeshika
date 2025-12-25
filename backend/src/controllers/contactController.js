@@ -14,7 +14,7 @@ const ContactModel = require('../models/contactModel');
 exports.submitContactForm = async (req, res, next) => {
     try {
         const { name, email, subject, message } = req.body;
-        
+
         if (!name || !email || !subject || !message) {
             return res.status(400).json({ success: false, message: 'Missing required fields' });
         }
@@ -43,6 +43,56 @@ exports.getAllSubmissions = async (req, res, next) => {
             success: true,
             data: result
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Get submission by ID (Admin)
+ */
+exports.getSubmissionById = async (req, res, next) => {
+    try {
+        const submission = await ContactModel.findById(req.params.id);
+        if (!submission) {
+            return res.status(404).json({ success: false, message: 'Submission not found' });
+        }
+        res.status(200).json({ success: true, data: submission });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Update submission status (Admin)
+ */
+exports.updateSubmissionStatus = async (req, res, next) => {
+    try {
+        const { status } = req.body;
+        const result = await ContactModel.update(req.params.id, { status });
+
+        if (!result) {
+            return res.status(404).json({ success: false, message: 'Submission not found' });
+        }
+
+        res.status(200).json({ success: true, message: 'Status updated successfully' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Delete submission (Admin)
+ */
+exports.deleteSubmission = async (req, res, next) => {
+    try {
+        const result = await ContactModel.delete(req.params.id);
+
+        if (!result) {
+            return res.status(404).json({ success: false, message: 'Submission not found' });
+        }
+
+        res.status(200).json({ success: true, message: 'Submission deleted successfully' });
     } catch (error) {
         next(error);
     }

@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { blogService, BlogCategory } from '@/lib/blogService'
+import { blogService, BlogPost, BlogCategory } from '@/lib/blogService'
+import { blogAuthorService, BlogAuthor } from '@/lib/blogAuthorService'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,28 +18,17 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { RichTextEditor } from "@/components/admin/rich-text-editor"
-
-type BlogPost = {
-  id?: string
-  title: string
-  slug: string
-  excerpt: string
-  content: string
-  author: string
-  authorImage: string
-  category: string
-  status: 'draft' | 'published'
-  publishDate: Date
-  featuredImage: string
-  tags: string[]
-}
+import { useToast } from "@/hooks/use-toast"
 
 export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: Partial<BlogPost>, isNew?: boolean }) {
   const router = useRouter()
+  const { toast } = useToast()
   const [isSaving, setIsSaving] = useState(false)
   const [newTag, setNewTag] = useState('')
+  
   const [categories, setCategories] = useState<BlogCategory[]>([])
-  const [isLoadingCategories, setIsLoadingCategories] = useState(true)
+  const [authors, setAuthors] = useState<BlogAuthor[]>([])
+  const [isLoadingMeta, setIsLoadingMeta] = useState(true)
   
   // Track if slug has been manually modified
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false)
@@ -58,63 +48,59 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
     slug: '',
     excerpt: '',
     content: '',
-    author: 'Admin User',
-    authorImage: '/default-avatar.png',
-    category: '',
+    author_id: undefined,
+    category_id: undefined,
     status: 'draft',
-    publishDate: new Date(),
-    featuredImage: '',
+    published_at: new Date().toISOString(),
+    featured_image: '',
     tags: []
   })
 
-  // Fetch blog categories on component mount
+  // Fetch blog categories and authors
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchMetaData = async () => {
       try {
-        setIsLoadingCategories(true)
-        const data = await blogService.getActiveCategories()
-        setCategories(data)
+        setIsLoadingMeta(true)
+        const [cats, auths] = await Promise.all([
+          blogService.getActiveCategories(),
+          blogAuthorService.getAllAuthors()
+        ])
+        setCategories(cats)
+        setAuthors(auths)
+        
+        // If isNew and no author selected, default to first author or admin
+        if (isNew && !post.author_id && auths.length > 0) {
+            setPost(prev => ({ ...prev, author_id: typeof auths[0].id === 'string' ? parseInt(auths[0].id) : auths[0].id as number }))
+        }
       } catch (error) {
-        console.error('Failed to fetch blog categories:', error)
-        // Optionally show error toast/notification
+        toast({ title: "Failed to load metadata", variant: "destructive" })
       } finally {
-        setIsLoadingCategories(false)
+        setIsLoadingMeta(false)
       }
     }
 
-    fetchCategories()
-  }, [])
+    fetchMetaData()
+  }, [isNew])
 
   // Update post with automatic slug generation
   const updatePost = (updates: Partial<BlogPost>) => {
     setPost(prev => {
       const newPost = { ...prev, ...updates }
-      
-      // Auto-generate slug if title changes and slug wasn't manually edited
       if (updates.title !== undefined && !isSlugManuallyEdited) {
         newPost.slug = generateSlug(updates.title)
       }
-      
       return newPost
     })
   }
 
-  // Handle slug input change
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newSlug = e.target.value
     setPost(prev => ({ ...prev, slug: newSlug }))
-    // Mark as manually edited if not empty
-    if (newSlug.trim() !== '') {
-      setIsSlugManuallyEdited(true)
-    } else {
-      setIsSlugManuallyEdited(false)
-    }
+    setIsSlugManuallyEdited(newSlug.trim() !== '')
   }
 
-  // Handle title change with auto-slug
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTitle = e.target.value
-    updatePost({ title: newTitle })
+    updatePost({ title: e.target.value })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -122,32 +108,33 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
     
     // Validate required fields
     if (!post.title) {
-      alert('Please enter a title for the post')
+        toast({ title: "Title is required", variant: "destructive" })
       return
     }
     
     // Ensure slug is generated if empty
     const finalPost = {
       ...post,
-      slug: post.slug || generateSlug(post.title)
+      slug: post.slug || generateSlug(post.title || ''),
+      // Ensure arrays are arrays? Typescript handles this.
+      // Date handling: Ensure published_at is string ISO
     }
     
     setIsSaving(true)
     
     try {
-      // TODO: Implement actual form submission
-      console.log('Saving post:', finalPost)
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Show success message
-      alert('Post saved successfully!')
-      
-      // Redirect to blog list after successful save
+      if (isNew) {
+        await blogService.createPost(finalPost)
+        toast({ title: "Post created successfully" })
+      } else if (post.id) {
+        await blogService.updatePost(post.id, finalPost)
+        toast({ title: "Post updated successfully" })
+      }
       router.push('/admin/blog')
-    } catch (error) {
-      console.error('Error saving post:', error)
-      alert('Failed to save post. Please try again.')
+    } catch (error: any) {
+        console.error("Save error:", error);
+        const msg = error.message || "Something went wrong";
+        toast({ title: "Failed to save post", description: msg, variant: "destructive" })
     } finally {
       setIsSaving(false)
     }
@@ -156,10 +143,15 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && newTag.trim()) {
       e.preventDefault()
-      if (!post.tags?.includes(newTag.trim())) {
+    //   Handle both string (JSON) or array tags
+    //   Our BlogPost type says tags?: string[] | string
+    //   Let's assume we work with array locally
+      const currentTags = Array.isArray(post.tags) ? post.tags : (typeof post.tags === 'string' ? JSON.parse(post.tags) : [])
+      
+      if (!currentTags.includes(newTag.trim())) {
         setPost({
           ...post,
-          tags: [...(post.tags || []), newTag.trim()]
+          tags: [...currentTags, newTag.trim()]
         })
       }
       setNewTag('')
@@ -167,9 +159,10 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
   }
 
   const removeTag = (tagToRemove: string) => {
+      const currentTags = Array.isArray(post.tags) ? post.tags : (typeof post.tags === 'string' ? JSON.parse(post.tags) : [])
     setPost({
       ...post,
-      tags: post.tags?.filter(tag => tag !== tagToRemove) || []
+      tags: currentTags.filter((tag: string) => tag !== tagToRemove)
     })
   }
 
@@ -180,7 +173,7 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
       reader.onloadend = () => {
         setPost({
           ...post,
-          featuredImage: reader.result as string
+          featured_image: reader.result as string
         })
       }
       reader.readAsDataURL(file)
@@ -211,7 +204,14 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
             />
             <Label htmlFor="publish-status">{post.status === 'published' ? 'Published' : 'Draft'}</Label>
           </div>
-          <Button onClick={handleSubmit} disabled={isSaving} className="w-full md:w-auto mt-2 md:mt-0 bg-[#2D5F3F] hover:bg-[#1e4a30]">
+          <Button 
+            onClick={(e) => {
+              // Manually trigger submit if outside form
+              handleSubmit(e as any)
+            }} 
+            disabled={isSaving} 
+            className="w-full md:w-auto mt-2 md:mt-0 bg-[#2D5F3F] hover:bg-[#1e4a30]"
+          >
             <Save className="mr-2 h-4 w-4" />
             {isSaving ? 'Saving...' : 'Save Post'}
           </Button>
@@ -307,12 +307,12 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
                         variant="outline"
                         className={cn(
                           "w-full justify-start text-left font-normal",
-                          !post.publishDate && "text-muted-foreground"
+                          !post.published_at && "text-muted-foreground"
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {post.publishDate ? (
-                          format(new Date(post.publishDate), "PPP")
+                        {post.published_at ? (
+                          format(new Date(post.published_at), "PPP")
                         ) : (
                           <span>Pick a date</span>
                         )}
@@ -321,8 +321,8 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
                     <PopoverContent className="w-auto p-0">
                       <Calendar
                         mode="single"
-                        selected={new Date(post.publishDate || new Date())}
-                        onSelect={(date) => date && setPost({...post, publishDate: date})}
+                        selected={new Date(post.published_at || new Date())}
+                        onSelect={(date) => date && setPost({...post, published_at: date.toISOString()})}
                         initialFocus
                       />
                     </PopoverContent>
@@ -345,10 +345,10 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer border-[#E8DCC8] hover:bg-[#F5F1E8] transition-colors">
-                  {post.featuredImage ? (
+                  {post.featured_image ? (
                     <div className="relative w-full h-full">
                       <img
-                        src={post.featuredImage}
+                        src={post.featured_image}
                         alt="Featured"
                         className="object-cover w-full h-full rounded-md"
                       />
@@ -358,7 +358,7 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
                         className="absolute top-2 right-2 bg-white/80 hover:bg-white"
                         onClick={(e) => {
                           e.preventDefault()
-                          setPost({...post, featuredImage: ''})
+                          setPost({...post, featured_image: ''})
                         }}
                       >
                         <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -390,19 +390,19 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
               </CardHeader>
               <CardContent>
                 <Select
-                  value={post.category}
-                  onValueChange={(value) => setPost({...post, category: value})}
-                  disabled={isLoadingCategories}
+                  value={post.category_id?.toString()}
+                  onValueChange={(value) => setPost({...post, category_id: parseInt(value)})}
+                  disabled={isLoadingMeta}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={isLoadingCategories ? "Loading categories..." : "Select a category"} />
+                    <SelectValue placeholder={isLoadingMeta ? "Loading categories..." : "Select a category"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.length === 0 && !isLoadingCategories && (
+                    {categories.length === 0 && !isLoadingMeta && (
                       <div className="px-2 py-1.5 text-sm text-muted-foreground">No categories available</div>
                     )}
                     {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.slug}>
+                      <SelectItem key={category.id} value={category.id.toString()}>
                         {category.name}
                       </SelectItem>
                     ))}
@@ -421,7 +421,9 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
               <CardContent>
                 <div className="space-y-2">
                   <div className="flex flex-wrap gap-2 mb-2">
-                    {post.tags?.map((tag) => (
+                    {(() => {
+                        const tags = Array.isArray(post.tags) ? post.tags : (typeof post.tags === 'string' ? JSON.parse(post.tags || '[]') : []);
+                        return tags.map((tag: string) => (
                       <span 
                         key={tag} 
                         className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E8DCC8] text-[#6B4423]"
@@ -441,7 +443,7 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
                           </svg>
                         </button>
                       </span>
-                    ))}
+                    ))})()}
                   </div>
                   <Input 
                     placeholder="Add a tag and press Enter" 
@@ -458,19 +460,25 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
                 <CardTitle className="text-lg">Author</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full overflow-hidden border">
-                    <img
-                      src={post.authorImage}
-                      alt={post.author}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <div>
-                    <p className="font-medium">{post.author}</p>
-                    <p className="text-sm text-muted-foreground">Author</p>
-                  </div>
-                </div>
+                <Select
+                  value={post.author_id?.toString()}
+                  onValueChange={(value) => setPost({...post, author_id: parseInt(value)})}
+                  disabled={isLoadingMeta}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={isLoadingMeta ? "Loading authors..." : "Select an author"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {authors.length === 0 && !isLoadingMeta && (
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">No authors available</div>
+                    )}
+                    {authors.map((author) => (
+                      <SelectItem key={author.id} value={author.id!.toString()}>
+                        {author.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </CardContent>
             </Card>
           </div>

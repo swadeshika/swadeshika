@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Plus, Search, Edit, Trash2, Image as ImageIcon } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { blogAuthorService, BlogAuthor } from "@/lib/blogAuthorService"
 
 type Author = {
   id: string
@@ -28,51 +29,60 @@ type Author = {
 }
 
 export default function BlogAuthorsPage() {
-  // Initial data - replace with API integration later
-  const initialAuthors: Author[] = [
-    {
-      id: '1',
-      name: 'Dr. Priya Sharma',
-      email: 'priya@example.com',
-      bio: 'Ayurvedic Practitioner with 10+ years of experience',
-      avatar: '/default-avatar.png',
-      social: {
-        twitter: 'priyasharma',
-        linkedin: 'in/priyasharma'
-      },
-      createdAt: '2023-11-12'
-    },
-    {
-      id: '2',
-      name: 'Rahul Verma',
-      email: 'rahul@example.com',
-      bio: 'Nutritionist & Wellness Coach',
-      avatar: '/default-avatar.png',
-      social: {
-        instagram: 'rahul_wellness',
-        twitter: 'rahulv'
-      },
-      createdAt: '2023-11-12'
-    }
-  ]
+
 
   const { toast } = useToast()
-  const [authors, setAuthors] = useState<Author[]>(initialAuthors)
+  const [authors, setAuthors] = useState<Author[]>([]) // Use API data
+  const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Author | null>(null)
-  const [form, setForm] = useState<Omit<Author, 'id' | 'createdAt'> & { id?: string }>({
-    id: undefined,
+  
+  // Form State
+  const [form, setForm] = useState<BlogAuthor>({
     name: "",
     email: "",
     bio: "",
     avatar: "",
-    social: {},
+    social_links: { twitter: "", facebook: "", instagram: "", linkedin: "" },
   })
+  
   const [isSaving, setIsSaving] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const [toDeleteId, setToDeleteId] = useState<string | null>(null)
+  const [toDeleteId, setToDeleteId] = useState<string | number | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Fetch Authors
+  const fetchAuthors = async () => {
+    try {
+      setIsLoading(true)
+      const data = await blogAuthorService.getAllAuthors()
+      // Map backend response to component state if needed, or use directly
+      // Backend returns snake_case/camelCase mix. Let's ensure types match.
+      // The BlogAuthor interface matches what we need mostly.
+      // Need to cast or map if backend returns different structure.
+      // Based on my controller, it returns arrays of objects directly from DB.
+      // social_links is stored as JSON string in DB, but `mysql2` driver might auto-parse JSON columns?
+      // Actually, I stored it as JSON string. Depending on driver config, it might return string or object.
+      // Let's assume it might be string and parse if needed.
+      
+      const mapped = data.map((a: any) => ({
+        ...a,
+        // Backend returns social_links which might be JSON string
+        social_links: typeof a.social_links === 'string' ? JSON.parse(a.social_links) : (a.social_links || {}),
+        createdAt: a.created_at // Map snake_case to camelCase
+      }))
+      setAuthors(mapped)
+    } catch (error) {
+      toast({ title: "Failed to load authors", variant: "destructive" })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchAuthors()
+  }, [])
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -80,19 +90,25 @@ export default function BlogAuthorsPage() {
     return authors.filter(a =>
       a.name.toLowerCase().includes(q) ||
       a.email.toLowerCase().includes(q) ||
-      a.bio.toLowerCase().includes(q)
+      (a.bio && a.bio.toLowerCase().includes(q))
     )
   }, [search, authors])
 
   const startCreate = () => {
     setEditing(null)
-    setForm({ id: undefined, name: "", email: "", bio: "", avatar: "", social: {} })
+    setForm({ name: "", email: "", bio: "", avatar: "", social_links: {} })
     setDialogOpen(true)
   }
 
   const startEdit = (author: Author) => {
     setEditing(author)
-    setForm({ id: author.id, name: author.name, email: author.email, bio: author.bio, avatar: author.avatar, social: { ...author.social } })
+    setForm({ 
+        name: author.name, 
+        email: author.email, 
+        bio: author.bio, 
+        avatar: author.avatar, 
+        social_links: { ...author.social_links } // Use social_links
+    })
     setDialogOpen(true)
   }
 
@@ -107,26 +123,31 @@ export default function BlogAuthorsPage() {
   }
 
   const saveAuthor = async () => {
-    if (!form.name.trim()) {
+    if (!form.name?.trim()) {
       toast({ title: "Name required", description: "Please enter a name.", variant: "destructive" })
       return
     }
-    if (!form.email.trim()) {
+    if (!form.email?.trim()) {
       toast({ title: "Email required", description: "Please enter an email.", variant: "destructive" })
       return
     }
     setIsSaving(true)
     try {
-      if (editing) {
-        setAuthors(prev => prev.map(a => a.id === editing.id ? { ...a, name: form.name.trim(), email: form.email.trim(), bio: form.bio, avatar: form.avatar || a.avatar, social: form.social } : a))
+      const payload = {
+        ...form,
+        social_links: form.social_links // backend expects social_links
+      }
+      
+      if (editing && editing.id) {
+        await blogAuthorService.updateAuthor(editing.id, payload)
         toast({ title: "Author updated" })
       } else {
-        const id = Date.now().toString()
-        setAuthors(prev => [...prev, { id, name: form.name.trim(), email: form.email.trim(), bio: form.bio, avatar: form.avatar || '/default-avatar.png', social: form.social, createdAt: new Date().toISOString() }])
+        await blogAuthorService.createAuthor(payload as any)
         toast({ title: "Author added" })
       }
       setDialogOpen(false)
       setEditing(null)
+      fetchAuthors()
     } catch (e) {
       toast({ title: "Save failed", description: "Please try again.", variant: "destructive" })
     } finally {
@@ -143,6 +164,7 @@ export default function BlogAuthorsPage() {
     if (!toDeleteId) return
     setIsDeleting(true)
     try {
+      await blogAuthorService.deleteAuthor(toDeleteId)
       setAuthors(prev => prev.filter(a => a.id !== toDeleteId))
       toast({ title: "Author deleted" })
     } catch (e) {
@@ -207,10 +229,10 @@ export default function BlogAuthorsPage() {
                 <div className="space-y-2">
                   <Label>Social Links</Label>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    <Input placeholder="Twitter username" value={form.social.twitter || ""} onChange={(e) => setForm(p => ({ ...p, social: { ...p.social, twitter: e.target.value || undefined } }))} />
-                    <Input placeholder="LinkedIn path (in/...)" value={form.social.linkedin || ""} onChange={(e) => setForm(p => ({ ...p, social: { ...p.social, linkedin: e.target.value || undefined } }))} />
-                    <Input placeholder="Instagram username" value={form.social.instagram || ""} onChange={(e) => setForm(p => ({ ...p, social: { ...p.social, instagram: e.target.value || undefined } }))} />
-                    <Input placeholder="Facebook username" value={form.social.facebook || ""} onChange={(e) => setForm(p => ({ ...p, social: { ...p.social, facebook: e.target.value || undefined } }))} />
+                    <Input placeholder="Twitter username" value={form.social_links?.twitter || ""} onChange={(e) => setForm(p => ({ ...p, social_links: { ...p.social_links, twitter: e.target.value || undefined } }))} />
+                    <Input placeholder="LinkedIn path (in/...)" value={form.social_links?.linkedin || ""} onChange={(e) => setForm(p => ({ ...p, social_links: { ...p.social_links, linkedin: e.target.value || undefined } }))} />
+                    <Input placeholder="Instagram username" value={form.social_links?.instagram || ""} onChange={(e) => setForm(p => ({ ...p, social_links: { ...p.social_links, instagram: e.target.value || undefined } }))} />
+                    <Input placeholder="Facebook username" value={form.social_links?.facebook || ""} onChange={(e) => setForm(p => ({ ...p, social_links: { ...p.social_links, facebook: e.target.value || undefined } }))} />
                   </div>
                 </div>
               </div>
@@ -264,27 +286,27 @@ export default function BlogAuthorsPage() {
                   <TableCell className="text-[#8B6F47] max-w-xs truncate">{author.bio}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
-                      {author.social.twitter && (
-                        <a href={`https://twitter.com/${author.social.twitter}`} target="_blank" rel="noopener noreferrer">
+                      {author.social_links?.twitter && (
+                        <a href={`https://twitter.com/${author.social_links.twitter}`} target="_blank" rel="noopener noreferrer">
                           <span className="sr-only">Twitter</span>
                           <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
                           </svg>
                         </a>
                       )}
-                      {author.social.linkedin && (
-                        <a href={`https://linkedin.com/${author.social.linkedin}`} target="_blank" rel="noopener noreferrer">
+                      {author.social_links?.linkedin && (
+                        <a href={`https://linkedin.com/${author.social_links.linkedin}`} target="_blank" rel="noopener noreferrer">
                           <span className="sr-only">LinkedIn</span>
                           <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
                           </svg>
                         </a>
                       )}
-                      {author.social.instagram && (
-                        <a href={`https://instagram.com/${author.social.instagram}`} target="_blank" rel="noopener noreferrer">
+                      {author.social_links?.instagram && (
+                        <a href={`https://instagram.com/${author.social_links.instagram}`} target="_blank" rel="noopener noreferrer">
                           <span className="sr-only">Instagram</span>
                           <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
                           </svg>
                         </a>
                       )}

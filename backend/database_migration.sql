@@ -5,14 +5,14 @@
 -- 
 -- SCHEMA OVERVIEW:
 -- ----------------
--- Total Tables: 25
+-- Total Tables: 26
 -- - Users & Auth: users, addresses (2)
 -- - Products: products, categories, product_images, product_variants, 
 --   product_features, product_specifications, product_tags (7)
 -- - Shopping: cart_items, orders, order_items, wishlist (4)
 -- - Discounts: coupons, coupon_usage, coupon_products, coupon_categories (4)
--- - Content: blog_posts, blog_categories, contact_submissions, 
---   newsletter_subscribers (4)
+-- - Content: blog_posts, blog_categories, blog_authors, contact_submissions, 
+--   newsletter_subscribers (5)
 -- - Reviews: reviews (1)
 -- - Admin: admin_settings (1)
 -- - Analytics: site_analytics, visitor_logs (2)
@@ -43,11 +43,19 @@
 -- ✅ Issue 5: Kept simplified cart model (user → cart_items directly)
 -- ✅ Issue 6: Added coupon_products and coupon_categories tables
 -- ✅ Issue 7: Added blog_categories table with proper foreign key
+-- ✅ Issue 8: Added blog_authors table
 -- ============================================================
 
 
 -- Drop existing tables if they exist (in reverse order of dependencies)
+DROP TABLE IF EXISTS visitor_logs;
+DROP TABLE IF EXISTS site_analytics;
+DROP TABLE IF EXISTS newsletter_subscribers;
+DROP TABLE IF EXISTS contact_submissions;
+DROP TABLE IF EXISTS admin_settings;
 DROP TABLE IF EXISTS blog_posts;
+DROP TABLE IF EXISTS blog_categories;
+DROP TABLE IF EXISTS blog_authors;
 DROP TABLE IF EXISTS blog_categories;
 DROP TABLE IF EXISTS coupon_categories;
 DROP TABLE IF EXISTS coupon_products;
@@ -427,7 +435,22 @@ CREATE TABLE coupon_categories (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
--- 18. BLOG CATEGORIES TABLE
+-- 18. BLOG AUTHORS TABLE
+-- ============================================================
+CREATE TABLE blog_authors (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  bio TEXT,
+  avatar LONGTEXT,
+  social_links JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 19. BLOG CATEGORIES TABLE
 -- ✅ ADDED: Proper blog category management
 -- ✅ APIs AVAILABLE: Full CRUD via /api/v1/blog/categories
 --    - GET /api/v1/blog/categories/active (public)
@@ -447,24 +470,25 @@ CREATE TABLE blog_categories (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
--- 19. BLOG POSTS TABLE
--- ✅ FIXED: Now uses category_id foreign key instead of plain VARCHAR
+-- 20. BLOG POSTS TABLE
+-- ✅ FIXED: Now uses category_id foreign key
+-- ✅ FIXED: Now uses author_id foreign key to blog_authors
 -- ============================================================
 CREATE TABLE blog_posts (
   id INT AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
   slug VARCHAR(255) UNIQUE NOT NULL,
   excerpt VARCHAR(500),
-  content TEXT NOT NULL,
-  featured_image VARCHAR(500),
-  author_id VARCHAR(36) NOT NULL,
+  content LONGTEXT NOT NULL,
+  featured_image LONGTEXT,
+  author_id INT,
   category_id INT,
   tags TEXT,
   status ENUM('draft', 'published', 'archived') DEFAULT 'draft',
   published_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (author_id) REFERENCES users(id),
+  FOREIGN KEY (author_id) REFERENCES blog_authors(id) ON DELETE SET NULL,
   FOREIGN KEY (category_id) REFERENCES blog_categories(id) ON DELETE SET NULL,
   INDEX idx_slug (slug),
   INDEX idx_category (category_id),
@@ -570,6 +594,10 @@ INSERT INTO categories (name, slug, parent_id, description, display_order) VALUE
 INSERT INTO categories (name, slug, parent_id, description, display_order) VALUES
 ('Turmeric', 'turmeric', 2, 'Organic turmeric powder', 1),
 ('Chili Powder', 'chili-powder', 2, 'Red chili powder', 2);
+
+-- Insert default blog author
+INSERT INTO blog_authors (name, email, bio, avatar, social_links) VALUES
+('Admin Team', 'admin@swadeshika.com', 'The official editorial team of Swadeshika.', '/images/default-avatar.png', '{"twitter": "", "facebook": "", "instagram": "", "linkedin": ""}');
 
 -- Insert sample blog categories
 INSERT INTO blog_categories (name, slug, description, display_order) VALUES

@@ -48,6 +48,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
     if (!response.ok) {
         console.error(`[API] Error ${response.status}:`, data);
+        if (response.status === 401 && typeof window !== 'undefined') {
+            // Token expired or invalid
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('auth-storage');
+            window.location.href = '/login';
+        }
         throw new Error(data.message || 'API request failed');
     }
 

@@ -11,10 +11,10 @@ class BlogModel {
         const params = [];
 
         let sql = `
-      SELECT b.id, b.title, b.slug, b.excerpt, b.featured_image, b.author_id, b.category_id, b.tags, b.status, b.published_at, b.created_at, b.updated_at, c.name as category_name, c.slug as category_slug, u.name as author_name
+      SELECT b.id, b.title, b.slug, b.excerpt, b.featured_image, b.author_id, b.category_id, b.tags, b.status, b.published_at, b.created_at, b.updated_at, c.name as category_name, c.slug as category_slug, u.name as author_name, u.avatar as author_image
       FROM blog_posts b
       LEFT JOIN blog_categories c ON b.category_id = c.id
-      LEFT JOIN users u ON b.author_id = u.id
+      LEFT JOIN blog_authors u ON b.author_id = u.id
       WHERE 1=1
     `;
 
@@ -66,10 +66,10 @@ class BlogModel {
      */
     static async findBySlug(slug) {
         const sql = `
-      SELECT b.*, c.name as category_name, c.slug as category_slug, u.name as author_name
+      SELECT b.*, c.name as category_name, c.slug as category_slug, u.name as author_name, u.avatar as author_image, u.bio as author_bio
       FROM blog_posts b
       LEFT JOIN blog_categories c ON b.category_id = c.id
-      LEFT JOIN users u ON b.author_id = u.id
+      LEFT JOIN blog_authors u ON b.author_id = u.id
       WHERE b.slug = ?
     `;
 
@@ -96,7 +96,7 @@ class BlogModel {
             data.category_id,
             data.tags,
             data.status || 'draft',
-            data.status === 'published' ? new Date() : null
+            data.published_at ? new Date(data.published_at) : (data.status === 'published' ? new Date() : null)
         ];
 
         const [result] = await db.query(sql, params);
@@ -118,10 +118,13 @@ class BlogModel {
         if (data.featured_image) { fields.push('featured_image = ?'); params.push(data.featured_image); }
         if (data.category_id) { fields.push('category_id = ?'); params.push(data.category_id); }
         if (data.tags) { fields.push('tags = ?'); params.push(data.tags); }
+        if (data.author_id) { fields.push('author_id = ?'); params.push(data.author_id); }
+        if (data.published_at) { fields.push('published_at = ?'); params.push(data.published_at); }
         if (data.status) {
             fields.push('status = ?');
             params.push(data.status);
-            if (data.status === 'published') {
+            // Only auto-update published_at if not explicitly provided AND status becomes published
+            if (data.status === 'published' && !data.published_at) {
                 fields.push('published_at = COALESCE(published_at, NOW())');
             }
         }

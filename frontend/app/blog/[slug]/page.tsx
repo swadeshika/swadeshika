@@ -3,69 +3,15 @@
 import React from 'react'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
-import { Calendar, Clock, Home, ChevronRight, MessageSquare, Facebook, Twitter, Linkedin, ArrowUp, Link as LinkIcon, Bookmark, Heart, Share, Mail } from 'lucide-react'
+import { Home, ChevronRight, MessageSquare, Facebook, Twitter, Linkedin, ArrowUp, Link as LinkIcon, Bookmark, Heart, Share, Mail } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { useEffect, useMemo, useState } from 'react'
 import { BlogSidebar } from '@/components/blog-sidebar'
-
-// This would typically come from your CMS or database
-const blogPosts = [
-  {
-    id: 1,
-    slug: 'health-benefits-pure-desi-ghee',
-    title: 'The Health Benefits of Pure Desi Ghee',
-    content: `
-      <h2 class="text-2xl font-bold text-[#2D5F3F] mt-8 mb-4">Introduction to Desi Ghee</h2>
-      <p class="mb-4 text-[#5A3A1F]">
-        Pure desi ghee has been a staple in Indian households for centuries, revered not just for its rich flavor but also for its numerous health benefits. Made from the milk of grass-fed cows, this golden elixir is packed with essential nutrients and healthy fats.
-      </p>
-      <p class="mb-4 text-[#5A3A1F]">
-        In Ayurveda, ghee is considered a 'yogavahi' - a catalyst that carries the medicinal properties of herbs and spices. Modern science is now catching up with what ancient wisdom has known all along - that high-quality ghee can be a valuable addition to a healthy diet.
-      </p>
-      <h2 class="text-2xl font-bold text-[#2D5F3F] mt-8 mb-4">Nutritional Profile</h2>
-      <p class="mb-4 text-[#5A3A1F]">
-        Desi ghee is rich in fat-soluble vitamins A, D, E, and K, as well as essential fatty acids like conjugated linoleic acid (CLA) and butyric acid. These nutrients play crucial roles in various bodily functions, from supporting immune health to reducing inflammation.
-      </p>
-    `,
-    excerpt: 'Discover why pure desi ghee is considered a superfood in Ayurveda and how it can benefit your health.',
-    image: 'https://images.unsplash.com/photo-1602351444334-90c7cc49824e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-    category: 'Health & Wellness',
-    date: '2025-10-15',
-    readTime: '5 min read',
-    author: 'Dr. Anjali Sharma',
-    authorImage: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
-    tags: ['ayurveda', 'ghee', 'healthy-fats']
-  },
-  {
-    id: 2,
-    slug: 'plant-based-nutrition',
-    title: 'The Power of Plant-Based Nutrition',
-    content: `
-      <h2 class="text-2xl font-bold text-[#2D5F3F] mt-8 mb-4">Embracing a Plant-Based Lifestyle</h2>
-      <p class="mb-4 text-[#5A3A1F]">
-        Plant-based nutrition is more than just a diet—it's a lifestyle that emphasizes foods derived from plant sources. This includes not only fruits and vegetables, but also nuts, seeds, oils, whole grains, legumes, and beans.
-      </p>
-      <p class="mb-4 text-[#5A3A1F]">
-        Research consistently shows that plant-based diets are associated with a lower risk of heart disease, diabetes, and certain cancers. The high fiber content, antioxidants, and phytonutrients in plant foods contribute to better overall health and longevity.
-      </p>
-      <h2 class="text-2xl font-bold text-[#2D5F3F] mt-8 mb-4">Key Benefits</h2>
-      <p class="mb-4 text-[#5A3A1F]">
-        A well-planned plant-based diet provides all the necessary nutrients your body needs, often with fewer calories than a typical Western diet. It's naturally lower in saturated fats and cholesterol while being rich in fiber, vitamins, and minerals.
-      </p>
-    `,
-    excerpt: 'Discover the health benefits of a plant-based diet and how it can transform your wellbeing.',
-    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-    category: 'Nutrition',
-    date: '2025-09-28',
-    readTime: '6 min read',
-    author: 'Dr. Meera Krishnan',
-    authorImage: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
-    tags: ['plant-based', 'nutrition', 'healthy-eating']
-  }
-]
+import { blogService, BlogPost } from '@/lib/blogService'
+import { format } from 'date-fns'
 
 interface BlogPostProps {
   params: {
@@ -73,7 +19,7 @@ interface BlogPostProps {
   }
 }
 
-export default function BlogPost({ params }: BlogPostProps) {
+export default function BlogPostPage({ params }: BlogPostProps) {
   // Use React.use() to unwrap the params Promise
   const unwrappedParams = React.use(params)
   return <BlogPostContent slug={unwrappedParams.slug} />
@@ -89,14 +35,55 @@ function BlogPostContent({ slug }: { slug: string }) {
   const [commenterName, setCommenterName] = useState('')
   const [comments, setComments] = useState<Array<{id: number, text: string, author: string, name: string, date: string}>>([])
   const [showCommentForm, setShowCommentForm] = useState(false)
+
+  // Data state
+  const [post, setPost] = useState<BlogPost | null>(null)
+  const [recentPosts, setRecentPosts] = useState<BlogPost[]>([])
+  const [categories, setCategories] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(false)
   
-  const post = blogPosts.find(post => post.slug === slug)
-  
-  if (!post) {
+  useEffect(() => {
+      const fetchData = async () => {
+          try {
+              setIsLoading(true)
+              const [postData, allPostsData, categoriesData] = await Promise.all([
+                  blogService.getPostBySlug(slug),
+                  blogService.getAllPosts(),
+                  blogService.getActiveCategories()
+              ])
+              
+              if (!postData) {
+                  setError(true)
+              } else {
+                  setPost(postData)
+                  // Filter recent posts (exclude current)
+                  const otherPosts = allPostsData
+                    .filter(p => p.id !== postData.id && p.status === 'published')
+                    .slice(0, 5)
+                  setRecentPosts(otherPosts)
+                  
+                  // Extract categories names
+                  setCategories(categoriesData.map(c => c.name))
+              }
+          } catch (err) {
+              console.error("Error fetching blog post:", err)
+              setError(true)
+          } finally {
+              setIsLoading(false)
+          }
+      }
+      
+      if (slug) {
+          fetchData()
+      }
+  }, [slug])
+
+  if (error) {
     notFound()
   }
   
-  const shareUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/blog/${slug}`
+  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/blog/${slug}` : ''
   
   useEffect(() => {
     const handleScroll = () => {
@@ -106,10 +93,6 @@ function BlogPostContent({ slug }: { slug: string }) {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
-  
-  const handleBack = () => {
-    router.back()
-  }
   
   const handleCopyLink = async () => {
     try {
@@ -131,6 +114,7 @@ function BlogPostContent({ slug }: { slug: string }) {
   }
 
   const handleShare = (platform: string) => {
+    if (!post) return
     const url = encodeURIComponent(shareUrl)
     const title = encodeURIComponent(post.title)
     
@@ -170,15 +154,45 @@ function BlogPostContent({ slug }: { slug: string }) {
     // Add API call to save comment
   }
 
-  // Sidebar data
-  const recentPosts = useMemo(
-    () => blogPosts.filter((p) => p.slug !== post.slug).slice(0, 5),
-    [post.slug]
-  )
-  const categories = useMemo(
-    () => Array.from(new Set(blogPosts.map((p) => p.category))),
-    []
-  )
+  // Helper to format tags
+  const getTags = (): string[] => {
+      if (!post?.tags) return []
+      return Array.isArray(post.tags) ? post.tags : (typeof post.tags === 'string' ? JSON.parse(post.tags) : [])
+  }
+  
+  // Helper to get read time (estimate)
+  const getReadTime = (content: string) => {
+    const wordsPerMinute = 200;
+    const words = content.trim().split(/\s+/).length;
+    const time = Math.ceil(words / wordsPerMinute);
+    return `${time} min read`;
+  }
+
+  // Sidebar props mapping
+  const sidebarRecentPosts = recentPosts.map(p => ({
+      id: p.id!,
+      slug: p.slug,
+      title: p.title,
+      date: p.published_at ? format(new Date(p.published_at), 'MMM d, yyyy') : '',
+      readTime: getReadTime(p.content),
+      image: p.featured_image || '',
+      category: p.category_name
+  }))
+
+
+  if (isLoading) {
+      return (
+        <div className="flex min-h-screen flex-col overflow-hidden">
+             <SiteHeader />
+             <div className="flex-1 flex items-center justify-center">
+                 <div className="w-16 h-16 border-4 border-[#2D5F3F] border-t-transparent rounded-full animate-spin"></div>
+             </div>
+             <SiteFooter />
+        </div>
+      )
+  }
+
+  if (!post) return null // Should be handled by notFound() above
 
   return (
     <div className="flex min-h-screen flex-col overflow-hidden">
@@ -251,9 +265,11 @@ function BlogPostContent({ slug }: { slug: string }) {
           <div className="relative z-10">
             <div className="w-full max-w-4xl mx-auto px-4 py-12 md:py-20">
               <div className="text-center mb-12">
-                <span className="inline-block bg-[#6B4423] text-white text-xs font-medium px-4 py-1.5 rounded-full mb-6 shadow-md">
-                  {post.category}
-                </span>
+                {post.category_name && (
+                    <span className="inline-block bg-[#6B4423] text-white text-xs font-medium px-4 py-1.5 rounded-full mb-6 shadow-md">
+                    {post.category_name}
+                    </span>
+                )}
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-[#2D5F3F] mb-8 leading-tight font-serif">
                   {post.title}
                 </h1>
@@ -263,25 +279,27 @@ function BlogPostContent({ slug }: { slug: string }) {
                 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
                   <div className="flex items-center">
-                    <div className="relative h-12 w-12 rounded-full overflow-hidden mr-3 border-2 border-white shadow-md">
-                      <Image
-                        src={post.authorImage}
-                        alt={post.author}
-                        width={48}
-                        height={48}
-                        className="object-cover"
-                      />
+                    <div className="relative h-12 w-12 rounded-full overflow-hidden mr-3 border-2 border-white shadow-md bg-gray-200">
+                      {post.author_image ? (
+                          <Image
+                            src={post.author_image}
+                            alt={post.author_name || 'Author'}
+                            width={48}
+                            height={48}
+                            className="object-cover"
+                          />
+                      ) : null}
                     </div>
                     <div className="text-left">
-                      <p className="font-medium text-[#2D5F3F]">{post.author}</p>
+                      <p className="font-medium text-[#2D5F3F]">{post.author_name || 'Unknown'}</p>
                       <div className="flex items-center text-sm text-[#8B6F47]">
-                        <span>{new Date(post.date).toLocaleDateString('en-US', { 
+                        <span>{new Date(post.published_at || post.created_at || new Date()).toLocaleDateString('en-US', { 
                           year: 'numeric', 
                           month: 'short', 
                           day: 'numeric' 
                         })}</span>
                         <span className="mx-2">•</span>
-                        <span>{post.readTime}</span>
+                        <span>{getReadTime(post.content)}</span>
                       </div>
                     </div>
                   </div>
@@ -353,19 +371,21 @@ function BlogPostContent({ slug }: { slug: string }) {
               </div>
               
               {/* Featured Image */}
-              <div className="relative w-full h-64 md:h-[500px] rounded-2xl overflow-hidden shadow-2xl mb-16 group mx-auto max-w-4xl">
-                <Image
-                  src={post.image}
-                  alt={post.title}
-                  fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
-                  priority
-                  sizes="(max-width: 768px) 100vw, 80vw"
-                />
-                <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent flex items-end p-8">
-                  <p className="text-white/80 text-sm">Photo by {post.author}</p>
+              {post.featured_image && (
+                <div className="relative w-full h-64 md:h-[500px] rounded-2xl overflow-hidden shadow-2xl mb-16 group mx-auto max-w-4xl">
+                    <Image
+                    src={post.featured_image}
+                    alt={post.title}
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    priority
+                    sizes="(max-width: 768px) 100vw, 80vw"
+                    />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent flex items-end p-8">
+                    <p className="text-white/80 text-sm">Photo by {post.author_name}</p>
+                    </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -383,11 +403,11 @@ function BlogPostContent({ slug }: { slug: string }) {
                 {/* Tags and Share */}
                 <div className="mt-12 pt-8 border-t border-[#E8DCC8]">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-                    {post.tags && post.tags.length > 0 && (
+                    {getTags().length > 0 && (
                       <div>
                         <h3 className="text-sm font-semibold text-[#2D5F3F] uppercase tracking-wider mb-3">Tags</h3>
                         <div className="flex flex-wrap gap-2">
-                          {post.tags.map((tag, index) => (
+                          {getTags().map((tag, index) => (
                             <Link
                               key={index}
                               href={`/blog?tag=${tag}`}
@@ -445,31 +465,23 @@ function BlogPostContent({ slug }: { slug: string }) {
                 {/* Author Bio */}
                 <div className="mt-12 p-8 bg-[#F9F5F0] rounded-xl">
                   <div className="flex flex-col md:flex-row items-start">
-                    <div className="relative h-24 w-24 min-w-24 rounded-full overflow-hidden mb-6 md:mb-0 md:mr-8 border-4 border-white shadow-md shrink-0">
-                      <Image
-                        src={post.authorImage}
-                        alt={post.author}
-                        width={96}
-                        height={96}
-                        className="object-cover w-full h-full"
-                      />
+                    <div className="relative h-24 w-24 min-w-24 rounded-full overflow-hidden mb-6 md:mb-0 md:mr-8 border-4 border-white shadow-md shrink-0 bg-gray-200">
+                      {post.author_image && (
+                          <Image
+                            src={post.author_image}
+                            alt={post.author_name || 'Author'}
+                            width={96}
+                            height={96}
+                            className="object-cover w-full h-full"
+                          />
+                      )}
                     </div>
                     <div className="text-center md:text-left">
-                      <h3 className="text-xl font-bold text-[#2D5F3F]">About {post.author.split(' ')[0]}</h3>
+                      <h3 className="text-xl font-bold text-[#2D5F3F]">About {post.author_name}</h3>
                       <p className="mt-3 text-[#6B4423] leading-relaxed">
-                        {post.author} is a passionate writer and wellness advocate with a deep interest in holistic health and traditional medicine.
-                        With years of experience in the field, they bring valuable insights into the world of natural health and wellness.
+                        {post.author_name} is a contributor to our wellness blog.
                       </p>
-                      <div className="mt-4 flex justify-center md:justify-start space-x-4">
-                        <a href="#" className="text-[#6B4423] hover:text-[#5A3A1F] transition-colors">
-                          <span className="sr-only">Twitter</span>
-                          <Twitter className="h-5 w-5" />
-                        </a>
-                        <a href="#" className="text-[#6B4423] hover:text-[#5A3A1F] transition-colors">
-                          <span className="sr-only">Website</span>
-                          <LinkIcon className="h-5 w-5" />
-                        </a>
-                      </div>
+                      
                     </div>
                   </div>
                 </div>
@@ -565,14 +577,12 @@ function BlogPostContent({ slug }: { slug: string }) {
                   )}
                 </div>
 
-                
-
                 {/* Related Posts */}
+                {recentPosts.length > 0 && (
                 <div className="mt-16">
                   <h2 className="text-2xl font-bold text-[#2D5F3F] mb-8">You Might Also Like</h2>
                   <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                    {blogPosts
-                      .filter((p) => p.slug !== post.slug)
+                    {recentPosts
                       .slice(0, 3)
                       .map((relatedPost) => (
                         <Link
@@ -581,17 +591,21 @@ function BlogPostContent({ slug }: { slug: string }) {
                           className="group block rounded-xl overflow-hidden bg-white border border-[#E8DCC8] hover:shadow-lg transition-all hover:-translate-y-1"
                         >
                           <div className="relative h-48 bg-gray-100">
-                            <Image
-                              src={relatedPost.image}
-                              alt={relatedPost.title}
-                              fill
-                              className="object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
-                            <div className="absolute top-3 right-3">
-                              <span className="inline-block bg-white/90 text-[#6B4423] text-xs font-medium px-2.5 py-1 rounded-full">
-                                {relatedPost.category}
-                              </span>
-                            </div>
+                            {relatedPost.featured_image ? (
+                                <Image
+                                src={relatedPost.featured_image}
+                                alt={relatedPost.title}
+                                fill
+                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                />
+                            ) : null}
+                            {relatedPost.category_name && (
+                                <div className="absolute top-3 right-3">
+                                <span className="inline-block bg-white/90 text-[#6B4423] text-xs font-medium px-2.5 py-1 rounded-full">
+                                    {relatedPost.category_name}
+                                </span>
+                                </div>
+                            )}
                           </div>
                           <div className="p-5">
                             <h3 className="font-bold text-lg text-[#2D5F3F] group-hover:text-[#1E4A2F] transition-colors line-clamp-2 mb-2">
@@ -601,7 +615,7 @@ function BlogPostContent({ slug }: { slug: string }) {
                               {relatedPost.excerpt}
                             </p>
                             <div className="flex items-center justify-between text-sm text-[#6B4423]">
-                              <span>{relatedPost.readTime}</span>
+                              <span>{getReadTime(relatedPost.content)}</span>
                               <span className="text-[#8B6F47]">Read More →</span>
                             </div>
                           </div>
@@ -609,10 +623,11 @@ function BlogPostContent({ slug }: { slug: string }) {
                       ))}
                   </div>
                 </div>
+                )}
               </article>
 
               {/* Sidebar */}
-              <BlogSidebar recentPosts={recentPosts} categories={categories} />
+              <BlogSidebar recentPosts={sidebarRecentPosts} categories={categories} />
             </div>
             
           </div>

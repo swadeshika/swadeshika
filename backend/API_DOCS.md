@@ -423,7 +423,22 @@ CREATE TABLE coupon_categories (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
--- 19. BLOG CATEGORIES TABLE
+-- 19. BLOG AUTHORS TABLE
+-- ============================================================
+CREATE TABLE blog_authors (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  bio TEXT,
+  avatar VARCHAR(500),
+  social_links JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 20. BLOG CATEGORIES TABLE
 -- ✅ ADDED: Proper blog category management
 -- ============================================================
 CREATE TABLE blog_categories (
@@ -440,7 +455,7 @@ CREATE TABLE blog_categories (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
--- 20. BLOG POSTS TABLE
+-- 21. BLOG POSTS TABLE
 -- ✅ FIXED: Now uses category_id foreign key instead of plain VARCHAR
 -- ============================================================
 CREATE TABLE blog_posts (
@@ -457,7 +472,7 @@ CREATE TABLE blog_posts (
   published_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (author_id) REFERENCES users(id),
+  FOREIGN KEY (author_id) REFERENCES blog_authors(id) ON DELETE SET NULL,
   FOREIGN KEY (category_id) REFERENCES blog_categories(id) ON DELETE SET NULL,
   INDEX idx_slug (slug),
   INDEX idx_category (category_id),
@@ -467,7 +482,7 @@ CREATE TABLE blog_posts (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
--- 21. ADMIN SETTINGS TABLE
+-- 22. ADMIN SETTINGS TABLE
 -- ============================================================
 CREATE TABLE admin_settings (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -506,7 +521,7 @@ erDiagram
     USERS ||--o{ ADDRESSES : has
     USERS ||--o{ REVIEWS : writes
     USERS ||--o{ WISHLIST : maintains
-    USERS ||--o{ BLOG_POSTS : authors
+    BLOG_AUTHORS ||--o{ BLOG_POSTS : authors
     
     CATEGORIES ||--o{ CATEGORIES : "parent-child"
     CATEGORIES ||--o{ PRODUCTS : contains
@@ -1594,6 +1609,94 @@ Auth: Required (Admin)
 }
 ```
 
+#### 11.6 Blog Authors (Admin)
+```http
+GET /api/v1/admin/blog/authors
+Auth: Required (Admin)
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Admin Team",
+      "email": "admin@swadeshika.com",
+      "bio": "Official editorial team",
+      "avatar": "/images/default-avatar.png",
+      "social_links": {
+        "twitter": "https://twitter.com/swadeshika",
+        "linkedin": "https://linkedin.com/company/swadeshika"
+      }
+    }
+  ]
+}
+```
+
+#### 11.7 Create Blog Author (Admin)
+```http
+POST /api/v1/admin/blog/authors
+Auth: Required (Admin)
+```
+
+**Request Body:**
+```json
+{
+  "name": "Dr. Ayurveda",
+  "email": "dr.ayurveda@swadeshika.com",
+  "bio": "Expert in Ayurvedic medicine",
+  "avatar": "/images/authors/dr-ayurveda.jpg",
+  "social_links": {
+    "twitter": "@drayu",
+    "instagram": "@drayu_official"
+  }
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Author created successfully",
+  "data": {
+    "id": 2,
+    "name": "Dr. Ayurveda"
+  }
+}
+```
+
+#### 11.8 Update Blog Author (Admin)
+```http
+PUT /api/v1/admin/blog/authors/:id
+Auth: Required (Admin)
+```
+
+**Request Body:** (Same as create)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Author updated successfully"
+}
+```
+
+#### 11.9 Delete Blog Author (Admin)
+```http
+DELETE /api/v1/admin/blog/authors/:id
+Auth: Required (Admin)
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Author deleted successfully"
+}
+```
+
 ---
 
 ### 12. Reports Endpoints (Admin)
@@ -2197,9 +2300,9 @@ Auth: Required (Admin)
 
 ---
 
-### 11.6 Blog Categories Endpoints
+### 11.10 Blog Categories Endpoints
 
-#### 11.6.1 Get Active Categories (Public)
+#### 11.10.1 Get Active Categories (Public)
 ```http
 GET /api/v1/blog/categories/active
 ```
@@ -2222,7 +2325,7 @@ GET /api/v1/blog/categories/active
 }
 ```
 
-#### 11.6.2 Get All Categories (Admin)
+#### 11.10.2 Get All Categories (Admin)
 ```http
 GET /api/v1/blog/categories
 Auth: Required (Admin)
@@ -2247,7 +2350,7 @@ Auth: Required (Admin)
 }
 ```
 
-#### 11.6.3 Get Single Category (Admin)
+#### 11.10.3 Get Single Category (Admin)
 ```http
 GET /api/v1/blog/categories/:id
 Auth: Required (Admin)
@@ -2270,7 +2373,7 @@ Auth: Required (Admin)
 }
 ```
 
-#### 11.6.4 Create Category (Admin)
+#### 11.10.4 Create Category (Admin)
 ```http
 POST /api/v1/blog/categories
 Auth: Required (Admin)
@@ -2305,7 +2408,7 @@ Auth: Required (Admin)
 }
 ```
 
-#### 11.6.5 Update Category (Admin)
+#### 11.10.5 Update Category (Admin)
 ```http
 PUT /api/v1/blog/categories/:id
 Auth: Required (Admin)
@@ -2338,7 +2441,7 @@ Auth: Required (Admin)
 }
 ```
 
-#### 11.6.6 Delete Category (Admin)
+#### 11.10.6 Delete Category (Admin)
 ```http
 DELETE /api/v1/blog/categories/:id
 Auth: Required (Admin)

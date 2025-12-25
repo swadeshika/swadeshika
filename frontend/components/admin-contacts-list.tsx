@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import {
   Table,
   TableBody,
@@ -12,43 +13,24 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Search, Mail, Phone, Calendar, MessageSquare } from "lucide-react"
+import { Search, Mail, Phone, Calendar } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
-import { api } from "@/lib/api"
-
-/**
- * Interface representing a contact form submission.
- * Matches the structure returned by the backend API.
- */
-interface ContactSubmission {
-  id: number
-  name: string
-  email: string
-  phone: string
-  subject: string
-  order_number: string
-  message: string
-  status: 'new' | 'read' | 'replied' | 'archived'
-  created_at: string
-}
+import { contactService, ContactSubmission } from "@/lib/services/contactService"
 
 /**
  * AdminContactsList Component
  * 
  * Displays a paginated/scrollable list of contact form submissions.
  * Features:
- * - Fetches data from /api/v1/contact
+ * - Fetches data using contactService
  * - Search functionality by name, email, subject, or order number
  * - Status badges for quick visual filtering
- * - Responsive table layout
+ * - Navigation to detail view
  */
 export function AdminContactsList() {
   const [submissions, setSubmissions] = useState<ContactSubmission[]>([])
@@ -59,7 +41,7 @@ export function AdminContactsList() {
   const fetchSubmissions = async () => {
     try {
       setLoading(true)
-      const response = await api.get('/contact')
+      const response = await contactService.getAll()
       if (response.data.success) {
         setSubmissions(response.data.data.submissions)
       }
@@ -78,7 +60,7 @@ export function AdminContactsList() {
     fetchSubmissions()
   }, [])
 
-  const filteredSubmissions = submissions.filter(sub => 
+  const filteredSubmissions = submissions.filter(sub =>
     sub.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     sub.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     sub.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -172,9 +154,11 @@ export function AdminContactsList() {
                       </TableCell>
                       <TableCell>{getStatusBadge(sub.status)}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" className="text-[#2D5F3F] hover:text-[#1E4A2F] hover:bg-[#E8F5E9]">
-                          View
-                        </Button>
+                        <Link href={`/admin/contacts/${sub.id}`}>
+                          <Button variant="ghost" size="sm" className="text-[#2D5F3F] hover:text-[#1E4A2F] hover:bg-[#E8F5E9]">
+                            View
+                          </Button>
+                        </Link>
                       </TableCell>
                     </TableRow>
                   ))}

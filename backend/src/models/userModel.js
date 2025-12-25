@@ -9,6 +9,9 @@ const { hashPassword } = require('../utils/hash');
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 
+const { v4: uuidv4 } = require('uuid');
+const { hashPassword } = require('../utils/hash');
+
 /**
  * userModel.js
  * ------------
@@ -18,28 +21,21 @@ class UserModel {
     /**
      * Create a new user
      * 
-     * @param {Object} userData - { name, email, password, phone, role }
+     * @param {Object} userData - User details
      * @returns {Promise<Object>} Created user object
      */
-    static async create({ name, email, password, phone, role = 'customer' }) {
-        // Hash password
-        const hashedPassword = await hashPassword(password);
+    static async create(userData) {
+        const id = uuidv4();
+        const { name, email, password, phone, role = 'customer' } = userData;
 
-        // Generate UUID
-        const id = crypto.randomUUID();
+        const hashedPw = await hashPassword(password);
 
         await db.query(
-            `INSERT INTO users (id, name, email, password, phone, role) VALUES (?, ?, ?, ?, ?, ?)`,
-            [id, name, email, hashedPassword, phone, role]
+            'INSERT INTO users (id, name, email, password, phone, role) VALUES (?, ?, ?, ?, ?, ?)',
+            [id, name, email, hashedPw, phone, role]
         );
 
-        return {
-            id,
-            name,
-            email,
-            phone,
-            role,
-        };
+        return { id, name, email, phone, role };
     }
 
     /**

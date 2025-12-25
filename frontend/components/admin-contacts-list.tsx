@@ -30,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import { contactService, ContactSubmission } from "@/lib/services/contactService"
+import { api } from "@/lib/api"
 
 /**
  * AdminContactsList Component

@@ -1,27 +1,8 @@
 "use client"
 
-/**
- * Admin Orders List
- *
- * Purpose
- * - Displays the orders table in the Admin panel with search, filter, and export capabilities.
- * - Ensures a consistent UI with the rest of the admin area (rounded cards, subtle borders, brand colors).
- *
- * Key Features
- * - Client-side search across order number, customer name, email, and status (case-insensitive)
- * - Status filter (all/pending/processing/shipped/delivered/cancelled)
- * - CSV export of the currently filtered results
- * - Empty state messaging when no orders match
- * - Quick view action linking to the order details page
- *
- * Notes
- * - Data is mocked locally; swap to API integration later while keeping the same UI contract.
- * - Export produces a UTF-8 CSV and downloads it client-side.
- */
-
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
-import { Search, Eye, Download, Loader2 } from "lucide-react"
+import { Search, Eye, Download, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -30,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ordersService, Order } from "@/lib/services/ordersService"
 import { toast } from "@/hooks/use-toast"
-import { useDebounce } from "@/hooks/use-debounce" // Assuming you have this or will implement simple debounce
+import { useDebounce } from "@/hooks/use-debounce"
 
 const statusColors: Record<string, string> = {
   delivered: "bg-[#2D5F3F]/10 text-[#2D5F3F]",
@@ -46,16 +27,11 @@ export function AdminOrdersList() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 1 })
+  const [exporting, setExporting] = useState(false)
 
-  // Simple debounce logic if hook not valid
-  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
+  const [debouncedSearch] = useDebounce(searchQuery, 500)
 
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500)
-    return () => clearTimeout(timer)
-  }, [searchQuery])
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     setLoading(true)
     try {
       const data = await ordersService.getAllOrders({
@@ -64,7 +40,8 @@ export function AdminOrdersList() {
         status: statusFilter,
         search: debouncedSearch
       })
-      setOrders(data.orders || []) // Backend returns { orders: [], pagination: {} }
+
+      setOrders(data.orders || [])
       setPagination(prev => ({ ...prev, ...data.pagination }))
     } catch (error) {
       console.error("Failed to fetch orders:", error)
@@ -72,35 +49,33 @@ export function AdminOrdersList() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [pagination.page, pagination.limit, statusFilter, debouncedSearch])
 
-  // Effect to load data when filters change
   useEffect(() => {
     fetchOrders()
-  }, [debouncedSearch, statusFilter, pagination.page]) // Add pagination.page dependency if implementing page buttons
+  }, [fetchOrders])
 
-  // Export the currently filtered orders as CSV
-  const handleExportCsv = () => {
-    const header = ["Order Number", "Customer ID", "Amount", "Status", "Date"]
-    const rows = orders.map((o) => [
-      o.orderNumber,
-      o.user?.id || "Guest",
-      o.totalAmount,
-      o.status,
-      new Date(o.createdAt || "").toLocaleDateString(),
-    ])
-    const csv = [header, ...rows]
-      .map((r) => r.map((field) => `"${String(field).replace(/"/g, '""')}"`).join(","))
-      .join("\n")
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.href = url
-    link.download = "orders.csv"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+  // Reset page when filters change
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }, [debouncedSearch, statusFilter])
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= pagination.pages) {
+      setPagination(prev => ({ ...prev, page: newPage }))
+    }
+  }
+
+  const handleExportCsv = async () => {
+    try {
+      setExporting(true)
+      await ordersService.exportOrders()
+      toast({ title: "Success", description: "Orders exported successfully" })
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to export orders", variant: "destructive" })
+    } finally {
+      setExporting(false)
+    }
   }
 
   return (
@@ -111,17 +86,17 @@ export function AdminOrdersList() {
           <p className="text-[#8B6F47]">Manage and track customer orders</p>
         </div>
         <div className="w-full sm:w-auto flex justify-center sm:justify-end mt-3 sm:mt-0">
-          <Button onClick={handleExportCsv} variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-accent">
-            <Download className="h-4 w-4" />
-            Export
+          <Button onClick={handleExportCsv} disabled={exporting} variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-accent">
+            {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            Export CSV
           </Button>
         </div>
       </div>
 
       <Card className="rounded-2xl border-2 border-[#E8DCC8]">
         <CardContent className="p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative flex-1 max-w-sm">
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8B6F47]" />
               <Input
                 placeholder="Search orders..."
@@ -131,7 +106,7 @@ export function AdminOrdersList() {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-48 border-2 border-[#E8DCC8] focus:ring-0">
+              <SelectTrigger className="w-[180px] border-2 border-[#E8DCC8] focus:ring-0">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -152,7 +127,6 @@ export function AdminOrdersList() {
                   <TableHead className="text-[#6B4423]">Order Number</TableHead>
                   <TableHead className="text-[#6B4423]">Customer</TableHead>
                   <TableHead className="text-[#6B4423]">Date</TableHead>
-                  {/* <TableHead className="text-[#6B4423]">Items</TableHead> */}
                   <TableHead className="text-[#6B4423]">Amount</TableHead>
                   <TableHead className="text-[#6B4423]">Status</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
@@ -160,14 +134,14 @@ export function AdminOrdersList() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                    <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
-                            <Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2D5F3F]" />
-                        </TableCell>
-                    </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2D5F3F]" />
+                    </TableCell>
+                  </TableRow>
                 ) : orders.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-12 text-center text-[#8B6F47]">
+                    <TableCell colSpan={6} className="py-12 text-center text-[#8B6F47]">
                       No orders found. Adjust filters or search to see results.
                     </TableCell>
                   </TableRow>
@@ -177,12 +151,15 @@ export function AdminOrdersList() {
                       <TableCell className="font-medium text-[#6B4423]">{order.orderNumber}</TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium text-[#6B4423]">User #{order.user?.id || '?'}</p>
-                          {/* <p className="text-sm text-[#8B6F47]">{order.user?.email}</p> */}
+                          <p className="font-medium text-[#6B4423]">
+                            {order.customer?.name || order.user?.name || 'Guest'}
+                          </p>
+                          <p className="text-sm text-[#8B6F47]">
+                            {order.customer?.email || order.user?.email || 'No email'}
+                          </p>
                         </div>
                       </TableCell>
                       <TableCell>{new Date(order.createdAt || "").toLocaleDateString()}</TableCell>
-                      {/* <TableCell>{order.items?.length || 0}</TableCell> */}
                       <TableCell className="font-semibold text-[#2D5F3F]">₹{order.totalAmount}</TableCell>
                       <TableCell>
                         <Badge className={`${statusColors[order.status.toLowerCase()] || 'bg-gray-100'} border-0 uppercase`}>{order.status}</Badge>
@@ -199,6 +176,30 @@ export function AdminOrdersList() {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          <div className="flex items-center justify-end space-x-2 py-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(pagination.page - 1)}
+              disabled={pagination.page === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </Button>
+            <div className="text-sm font-medium">
+              Page {pagination.page} of {pagination.pages}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(pagination.page + 1)}
+              disabled={pagination.page === pagination.pages}
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
         </CardContent>
       </Card>

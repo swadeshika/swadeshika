@@ -6,18 +6,27 @@ import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ordersService } from "@/lib/services/ordersService"
+import { ordersService, Order } from "@/lib/services/ordersService"
+import { Heart, Loader2 } from "lucide-react"
+import { useWishlistStore } from "@/lib/wishlist-store"
+import { toast } from "@/hooks/use-toast"
+import { useAuthStore } from "@/lib/auth-store"
+import { cn } from "@/lib/utils"
 
 const statusClasses: Record<string, string> = {
-	Delivered: "bg-[#2D5F3F]/10 text-[#2D5F3F]",
-	Shipped: "bg-[#FF7E00]/10 text-[#FF7E00]",
-	Processing: "bg-[#8B6F47]/10 text-[#6B4423]",
-	Cancelled: "bg-red-100 text-red-700",
+	delivered: "bg-[#2D5F3F]/10 text-[#2D5F3F]",
+	shipped: "bg-[#FF7E00]/10 text-[#FF7E00]",
+	processing: "bg-[#8B6F47]/10 text-[#6B4423]",
+	pending: "bg-yellow-100 text-yellow-700",
+	cancelled: "bg-red-100 text-red-700",
 }
 
 export function OrdersList() {
-	const [orders, setOrders] = useState<any[]>([]); // Use appropriate type if available or define one locally
+	const [orders, setOrders] = useState<Order[]>([]);
 	const [loading, setLoading] = useState(true);
+	const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlistStore()
+	const { isAuthenticated } = useAuthStore()
+	const [togglingId, setTogglingId] = useState<number | string | null>(null)
 
 	useEffect(() => {
 		const fetchOrders = async () => {
@@ -34,8 +43,30 @@ export function OrdersList() {
 		fetchOrders();
 	}, []);
 
+	const handleWishlistToggle = async (productId: number | string, e: React.MouseEvent) => {
+		e.preventDefault()
+		if (!isAuthenticated) {
+			toast({ title: "Please login", description: "You need to be logged in to manage your wishlist" })
+			return
+		}
+
+		setTogglingId(productId)
+		try {
+			if (isInWishlist(Number(productId))) {
+				await removeFromWishlist(Number(productId))
+			} else {
+				await addToWishlist(Number(productId))
+			}
+		} finally {
+			setTogglingId(null)
+		}
+	}
+
 	if (loading) {
-		return <div className="text-center py-10 text-[#8B6F47]">Loading orders...</div>;
+		return <div className="text-center py-10 text-[#8B6F47] flex items-center justify-center gap-2">
+			<Loader2 className="h-5 w-5 animate-spin" />
+			Loading orders...
+		</div>;
 	}
 
 	if (orders.length === 0) {
@@ -51,35 +82,59 @@ export function OrdersList() {
 						<div className="flex items-start justify-between">
 							<div>
 								<h3 className="font-semibold text-lg mb-1 text-[#6B4423]">{order.orderNumber}</h3>
-								<p className="text-sm text-[#8B6F47]">Placed on {new Date(order.createdAt || '').toLocaleDateString()}</p>
+								<p className="text-sm text-[#8B6F47]">Placed on {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</p>
 							</div>
-							<Badge className={`${statusClasses[order.status] || 'bg-gray-100'} border - 0`}>{order.status}</Badge>
+							<Badge className={cn(statusClasses[order.status] || 'bg-gray-100', "border-0 capitalize")}>{order.status}</Badge>
 						</div>
 
-						{/* Order items would typically need a separate fetch or included in list response. 
-						    For now, list response doesn't include items array in getAll/getMyOrders 
-						    based on controller logic. We might show just summary or fetch details.
-						    The design shows items. I should check if backend returns items in getMyOrders.
-						    Looking at controller getMyOrders -> findAll, it returns orders from `SELECT * FROM orders`.
-						    It DOES NOT join order_items. 
-						    So items are missing. 
-						    For now I will show a summary or "View Details to see items" to be safe, 
-						    OR I should update backend to include items.
-						    Design shows items images... 
-						    Let's stick to View Details for MVP integration to verify API first.
-						*/}
-						<div className="text-sm text-[#8B6F47]">
-							<p>Total Items: {order.items ? order.items.length : 'View details to see items'}</p>
+						{/* Order Items */}
+						<div className="space-y-3">
+							{order.items?.map((item, index) => (
+								<div key={index} className="flex gap-4">
+									<div className="relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-md bg-[#F5F1E8] border-2 border-[#E8DCC8]">
+										<img
+											src={(item as any).image || "/placeholder.svg"}
+											alt={item.productName}
+											className="object-cover w-full h-full"
+										/>
+									</div>
+									<div className="flex-1 flex items-start justify-between">
+										<div>
+											<p className="font-medium text-[#6B4423]">{item.productName}</p>
+											<p className="text-sm text-[#8B6F47]">
+												{item.variantName} × {item.quantity}
+											</p>
+										</div>
+										<button
+											onClick={(e) => handleWishlistToggle((item as any).product_id || (index + 1), e)}
+											className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+											title={isInWishlist(Number((item as any).product_id || (index + 1))) ? "Remove from wishlist" : "Add to wishlist"}
+										>
+											{togglingId === ((item as any).product_id || (index + 1)) ? (
+												<Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+											) : (
+												<Heart
+													className={cn(
+														"h-4 w-4 transition-colors",
+														isInWishlist(Number((item as any).product_id || (index + 1)))
+															? "fill-red-500 text-red-500"
+															: "text-gray-400 hover:text-red-500"
+													)}
+												/>
+											)}
+										</button>
+									</div>
+								</div>
+							))}
 						</div>
 
 						{/* Order Footer */}
 						<div className="flex items-center justify-between pt-4 border-t-2 border-[#E8DCC8]">
 							<div>
 								<p className="text-sm text-[#8B6F47]">Total Amount</p>
-								<p className="font-bold text-lg text-[#2D5F3F]">₹{order.totalAmount}</p>
+								<p className="font-bold text-lg text-[#2D5F3F]">₹{order.totalAmount || order.summary?.total || 0}</p>
 							</div>
 
-							{/* Buttons: stacked on mobile (Write Review under View), inline on sm+ */}
 							<div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
 								<Button
 									variant="outline"
@@ -90,7 +145,7 @@ export function OrdersList() {
 									<Link href={`/account/orders/${order.id}`}>View Details</Link>
 								</Button>
 
-								{order.status === "Delivered" && (
+								{order.status === "delivered" && (
 									<Button
 										size="sm"
 										asChild
@@ -107,4 +162,3 @@ export function OrdersList() {
 		</div >
 	)
 }
-

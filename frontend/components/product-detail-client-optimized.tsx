@@ -266,6 +266,7 @@ export function ProductDetailClientOptimized({
       const price = selectedVariant?.price ?? product.price
       const payload: any = {
         id: product.id,
+        productId: product.id,
         name: product.name,
         price,
         image: product.images[0],

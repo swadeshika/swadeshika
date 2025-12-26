@@ -1,50 +1,43 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect } from "react"
 import Link from "next/link"
-import { Heart, Trash2 } from "lucide-react"
+import { Heart, Trash2, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { useCartStore } from "@/lib/cart-store"
 import { ProductCard } from "@/components/product-card"
-
-// Mock wishlist data
-const initialWishlistItems = [
-  {
-    id: "1",
-    productId: "1",
-    name: "Pure Desi Cow Ghee",
-    slug: "pure-desi-cow-ghee",
-    price: 850,
-    comparePrice: 1000,
-    image: "/golden-ghee-in-glass-jar.jpg",
-    badge: "Bestseller",
-    category: "Ghee",
-    inStock: true,
-  },
-  {
-    id: "3",
-    productId: "3",
-    name: "Premium Kashmiri Almonds",
-    slug: "premium-kashmiri-almonds",
-    price: 650,
-    image: "/kashmiri-almonds.jpg",
-    badge: "Premium",
-    category: "Dry Fruits",
-    inStock: true,
-  },
-]
+import { useWishlistStore } from "@/lib/wishlist-store"
+import { useAuthStore } from "@/lib/auth-store"
 
 export function WishlistContent() {
-  const [wishlistItems, setWishlistItems] = useState(initialWishlistItems)
-  const addItem = useCartStore((state) => state.addItem)
+  const { items, isLoading, fetchWishlist, removeFromWishlist, moveToCart } = useWishlistStore()
+  const { isAuthenticated } = useAuthStore()
 
-  const removeItem = (id: string) => {
-    setWishlistItems(wishlistItems.filter((item) => item.id !== id))
+  useEffect(() => {
+    fetchWishlist()
+  }, [fetchWishlist])
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <Heart className="h-24 w-24 text-muted-foreground/30 mb-4" />
+        <h2 className="font-serif text-2xl font-bold mb-2 text-[#6B4423]">Please Log In</h2>
+        <p className="text-[#8B6F47] mb-6">You need to be logged in to view your wishlist</p>
+        <Button asChild className="bg-[#2D5F3F] hover:bg-[#234A32] text-white">
+          <Link href="/login">Login</Link>
+        </Button>
+      </div>
+    )
   }
 
-  if (wishlistItems.length === 0) {
+  if (isLoading && items.length === 0) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="h-10 w-10 animate-spin text-[#2D5F3F]" />
+      </div>
+    )
+  }
+
+  if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <Heart className="h-24 w-24 text-[#2D5F3F]/70 mb-4" />
@@ -59,24 +52,29 @@ export function WishlistContent() {
 
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      {wishlistItems.map((item) => (
-        <div key={item.id} className="relative">
+      {items.map((item) => (
+        <div key={item.wishlist_id} className="relative group">
           <ProductCard
-            id={Number(item.productId)}
+            id={item.product_id}
             name={item.name}
             slug={item.slug}
             price={item.price}
-            comparePrice={item.comparePrice}
-            image={item.image}
-            badge={item.badge}
-            category={item.category}
+            comparePrice={item.compare_price || undefined}
+            image={item.image_url}
+            // badge={item.badge}
+            category=""
+            showWishlistAction={false}
+            onAddToCart={() => moveToCart(item)}
           />
           <Button
             aria-label="Remove from wishlist"
             variant="ghost"
             size="icon"
-            className="absolute top-2 right-2 bg-background/80 hover:bg-[#F5F1E8]"
-            onClick={() => removeItem(item.id)}
+            className="absolute top-2 right-2 bg-white/80 hover:bg-white hover:text-red-500 shadow-sm z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.preventDefault()
+              removeFromWishlist(item.product_id)
+            }}
           >
             <Trash2 className="h-4 w-4" />
           </Button>

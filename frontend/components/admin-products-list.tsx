@@ -36,15 +36,49 @@ export function AdminProductsList() {
         search: searchQuery
       })
       
-      const mapped = data.products.map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        category: p.category_name || 'Uncategorized',
-        price: p.price,
-        stock: p.stock_quantity,
-        status: p.in_stock ? "Active" : "Out of Stock", // Or use is_active if available
-        image: p.primary_image || p.image || '/placeholder.jpg',
-      }))
+      
+      // Debug logging
+      console.log('[AdminProductsList] Raw API Response:', data.products);
+      
+      const mapped = data.products.map((p: any) => {
+        const isInStock = p.in_stock === 1 || p.in_stock === true;
+        const hasStock = p.stock_quantity > 0;
+        const status = isInStock && hasStock ? "Active" : "Out of Stock";
+        
+        // Debug each product
+        console.log(`[Product: ${p.name}]`, {
+          in_stock: p.in_stock,
+          in_stock_type: typeof p.in_stock,
+          stock_quantity: p.stock_quantity,
+          isInStock,
+          hasStock,
+          finalStatus: status
+        });
+        
+        return {
+          id: p.id,
+          name: p.name,
+          category: p.category_name || 'Uncategorized',
+          price: p.price,
+          stock: p.stock_quantity,
+          /**
+           * CRITICAL FIX: Stock Status Display
+           * ===================================
+           * 
+           * PROBLEM:
+           * - in_stock field from database is 1/0 (TINYINT)
+           * - Need to properly convert to boolean
+           * - Also check stock_quantity > 0
+           * 
+           * SOLUTION:
+           * - Convert in_stock to boolean: !!p.in_stock or p.in_stock === 1
+           * - Check if stock_quantity > 0
+           * - Both conditions must be true for "Active" status
+           */
+          status,
+          image: p.primary_image || p.image || '/placeholder.jpg',
+        };
+      })
       setItems(mapped)
     } catch (error) {
       console.error("Failed to fetch products", error)

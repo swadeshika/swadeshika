@@ -109,6 +109,7 @@ app.use(hpp());
    WHY?
    - Allow frontend (React, Next.js, Admin panel) to call backend
    - credentials: true -> send cookies (refresh token)
+   - exposedHeaders -> allow images to load cross-origin
    ============================================================ */
 app.use(cors({
    origin: (origin, callback) => {
@@ -128,6 +129,9 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'));
    },
    credentials: true,     // Needed for cookies
+   exposedHeaders: ['Content-Type', 'Content-Length'], // Allow images to load
+   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 /* ============================================================
@@ -135,7 +139,15 @@ app.use(cors({
    ------------------------------------------------------------
    WHY?
    - Serve uploaded images, product images, or public assets
+   - Add CORS headers to allow cross-origin image loading
    ============================================================ */
+// Add CORS headers for static files (images)
+app.use('/uploads', (req, res, next) => {
+   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+   res.setHeader('Access-Control-Allow-Origin', '*');
+   next();
+});
+
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 /* ============================================================

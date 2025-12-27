@@ -28,6 +28,7 @@ const newsletterRoutes = require('./newsletterRoutes');
 const analyticsRoutes = require('./analyticsRoutes');
 const customersRoutes = require('./customers.routes');
 const reportRoutes = require('./reportRoutes');
+const uploadRoutes = require('./uploadRoutes'); // File upload routes
 
 // Dynamic loading for Order Routes (as it might be fragile or WIP)
 const orderRoutes = require('./orderRoutes');
@@ -51,6 +52,7 @@ router.use('/contact', contactRoutes);
 router.use('/newsletter', newsletterRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/customers', customersRoutes);
+router.use('/upload', uploadRoutes); // File upload endpoints
 
 // Admin Routes
 router.use('/admin/settings', adminSettingsRoutes);

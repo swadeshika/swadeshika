@@ -59,6 +59,30 @@ export default async function AdminEditProductPage({
     ? Object.entries(product.specifications).map(([key, value]) => ({ key, value: String(value) }))
     : []
 
+  /**
+   * CRITICAL FIX: Image Loading on Edit Page
+   * =========================================
+   * 
+   * PROBLEM:
+   * - Primary image was being included in gallery images
+   * - This caused duplicate images to show
+   * - User added 2 images but 3 were showing
+   * - No proper separation between primary and gallery
+   * 
+   * SOLUTION:
+   * - Find the primary image (is_primary = true)
+   * - Filter it out from gallery images
+   * - Only non-primary images go to gallery
+   * 
+   * WHY THIS MATTERS:
+   * - Correct image count
+   * - Proper preview display
+   * - No duplicate images
+   */
+  const productImages = (product as any).images || [];
+  const primaryImage = productImages.find((img: any) => img.is_primary);
+  const galleryImages = productImages.filter((img: any) => !img.is_primary);
+
   return (
     <AdminLayout>
       <AdminProductForm
@@ -68,8 +92,8 @@ export default async function AdminEditProductPage({
         initialVariants={initialVariants}
         initialFeatures={initialFeatures}
         initialSpecs={initialSpecs}
-        initialPrimaryImageUrl={product.primary_image || (product as any).images?.[0]?.image_url}
-        initialGalleryUrls={(product as any).images?.map((img: any) => img.image_url) || []}
+        initialPrimaryImageUrl={primaryImage?.image_url || product.primary_image || null}
+        initialGalleryUrls={galleryImages.map((img: any) => img.image_url)}
       />
     </AdminLayout>
   )

@@ -12,10 +12,25 @@ class ProductModel {
     const params = [];
 
     // Whitelist of allowed columns to prevent SQL injection
+    /**
+     * CRITICAL FIX: Missing in_stock Field
+     * =====================================
+     * 
+     * PROBLEM:
+     * - in_stock field was not in allowedColumns list
+     * - API was not returning in_stock field
+     * - Frontend couldn't determine stock status
+     * - All products showed "Out of Stock"
+     * 
+     * SOLUTION:
+     * - Added 'in_stock' to allowedColumns
+     * - Added 'is_active' for future use
+     * - Now API will return these fields
+     */
     const allowedColumns = [
       'id', 'name', 'slug', 'description', 'short_description', 'sku',
       'price', 'compare_price', 'cost_price', 'weight', 'weight_unit',
-      'stock_quantity', 'is_featured', 'review_count', 'average_rating',
+      'stock_quantity', 'in_stock', 'is_active', 'is_featured', 'review_count', 'average_rating',
       'created_at', 'updated_at'
     ];
 
@@ -189,8 +204,32 @@ class ProductModel {
       const productId = res.insertId;
 
       // 2. Insert Images
+      /**
+       * CRITICAL FIX: Image Field Name Compatibility
+       * =============================================
+       * 
+       * PROBLEM:
+       * - Frontend sends: { url: "...", alt_text: "...", is_primary: true }
+       * - Backend expects: image_url column in database
+       * - Mismatch caused images not to save
+       * 
+       * SOLUTION:
+       * - Accept both 'url' and 'image_url' from frontend
+       * - Map to correct database column name
+       * 
+       * WHY THIS MATTERS:
+       * - Product images now save correctly
+       * - Works with both old and new frontend code
+       * - Prevents data loss during product creation/editing
+       */
       if (data.images && data.images.length) {
-        const imageValues = data.images.map(img => [productId, img.url, img.alt_text, img.is_primary || false, img.display_order || 0]);
+        const imageValues = data.images.map(img => [
+          productId, 
+          img.image_url || img.url,  // Accept both field names
+          img.alt_text, 
+          img.is_primary || false, 
+          img.display_order || 0
+        ]);
         await conn.query(
           `INSERT INTO product_images (product_id, image_url, alt_text, is_primary, display_order) VALUES ?`,
           [imageValues]
@@ -273,7 +312,18 @@ class ProductModel {
       if (data.images) {
         await conn.query(`DELETE FROM product_images WHERE product_id = ?`, [id]);
         if (data.images.length) {
-          const imageValues = data.images.map(img => [id, img.url, img.alt_text, img.is_primary || false, img.display_order || 0]);
+          /**
+           * CRITICAL FIX: Image Field Name Compatibility (UPDATE)
+           * ======================================================
+           * Same fix as in CREATE method - accept both 'url' and 'image_url'
+           */
+          const imageValues = data.images.map(img => [
+            id, 
+            img.image_url || img.url,  // Accept both field names
+            img.alt_text, 
+            img.is_primary || false, 
+            img.display_order || 0
+          ]);
           await conn.query(`INSERT INTO product_images (product_id, image_url, alt_text, is_primary, display_order) VALUES ?`, [imageValues]);
         }
       }

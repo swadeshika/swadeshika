@@ -53,75 +53,91 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
     if (!response.ok) {
         /**
-         * CRITICAL FIX: Token Expiration Handling
-         * ========================================
+         * CRITICAL FIX: Automatic Token Refresh
+         * ======================================
          * 
          * PROBLEM (Before):
-         * - Used window.location.href for hard redirect
-         * - Lost all unsaved form data
-         * - Didn't clear Zustand stores properly
-         * - No user notification
+         * - User logged out immediately when access token expired (15 min)
+         * - Lost all unsaved work
+         * - Poor user experience
          * 
          * SOLUTION (Now):
-         * - Use soft navigation (preserves React state during transition)
-         * - Clear all stores properly (auth + cart)
-         * - Show toast notification to inform user
-         * - Graceful cleanup sequence
+         * - Detect 401 error (token expired)
+         * - Automatically call refresh endpoint
+         * - Get new access token using refresh token
+         * - Retry original request with new token
+         * - Only logout if refresh token also expired (30 days)
          * 
          * WHY THIS MATTERS:
-         * - Better UX: Users don't lose unsaved work
-         * - Proper cleanup: No stale data in memory
-         * - User awareness: Toast explains what happened
+         * - User stays logged in for 30 days (as long as they're active)
+         * - No interruption every 15 minutes
+         * - Seamless experience
+         * - Refresh token rotates on each use (security)
          */
-        if (data.message?.toLowerCase().includes('token') && (data.message?.toLowerCase().includes('expire') || response.status === 401)) {
-            // Only handle token expiration in browser context
-            if (typeof window !== 'undefined') {
-                // Run cleanup asynchronously to avoid blocking
-                // Use IIFE (Immediately Invoked Function Expression) to handle async operations
-                (async () => {
-                    try {
-                        // Step 1: Clear localStorage tokens
-                        // This prevents any pending requests from using expired token
-                        localStorage.removeItem('accessToken');
-                        localStorage.removeItem('user');
+        if (response.status === 401 && typeof window !== 'undefined') {
+            // Check if this is a token expiration (not login failure)
+            const isTokenExpired = data.message?.toLowerCase().includes('token') &&
+                data.message?.toLowerCase().includes('expire');
 
-                        // Step 2: Clear Zustand stores
-                        // Import stores dynamically to avoid circular dependencies
-                        const { useAuthStore } = await import('./auth-store');
-                        const { useCartStore } = await import('./cart-store');
+            // Don't try to refresh on login/register endpoints
+            const isAuthEndpoint = endpoint.includes('/auth/login') ||
+                endpoint.includes('/auth/register') ||
+                endpoint.includes('/auth/refresh-token');
 
-                        // Clear auth store (sets user to null, isAuthenticated to false)
-                        useAuthStore.getState().logout();
+            if (isTokenExpired && !isAuthEndpoint) {
+                console.log('[API] Access token expired, attempting refresh...');
 
-                        // Clear cart store (removes all items)
-                        await useCartStore.getState().clearCart();
+                try {
+                    // Call refresh token endpoint
+                    const refreshResponse = await fetch(`${BASE_URL}/auth/refresh-token`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'include', // Important: sends cookies (refresh token)
+                    });
 
-                        // Step 3: Clear Zustand persistence
-                        // This ensures localStorage keys are removed
-                        (useAuthStore as any).persist?.clearStorage?.();
-                        (useCartStore as any).persist?.clearStorage?.();
+                    if (refreshResponse.ok) {
+                        const refreshData = await refreshResponse.json();
+                        const newAccessToken = refreshData.data.accessToken;
 
-                        // Step 4: Show user-friendly notification
-                        // Dynamic import to avoid dependency issues
-                        const { toast } = await import('@/hooks/use-toast');
-                        toast({
-                            title: 'Session Expired',
-                            description: 'Your session has expired. Please login again to continue.',
-                            variant: 'destructive',
+                        // Save new access token
+                        localStorage.setItem('accessToken', newAccessToken);
+                        console.log('[API] Token refreshed successfully, retrying request...');
+
+                        // Retry original request with new token
+                        headers['Authorization'] = `Bearer ${newAccessToken}`;
+                        const retryResponse = await fetch(url, {
+                            ...options,
+                            headers,
                         });
 
-                        // Step 5: Navigate to login
-                        // NOTE: Cannot use useRouter() here - it's a React hook and can only be called in components
-                        // Using window.location is acceptable since session is expired and user needs to re-authenticate
-                        setTimeout(() => {
-                            window.location.href = '/login';
-                        }, 1000);
-                    } catch (cleanupError) {
-                        // Fallback: If cleanup fails, redirect immediately
-                        console.error('[API] Cleanup failed, redirecting immediately:', cleanupError);
-                        window.location.href = '/login';
+                        const retryData = await retryResponse.json();
+
+                        if (retryResponse.ok) {
+                            return { data: retryData };
+                        } else {
+                            // Retry failed, throw error
+                            const error: any = new Error(retryData.message || 'API request failed');
+                            error.status = retryResponse.status;
+                            error.errors = retryData.errors;
+                            throw error;
+                        }
+                    } else {
+                        // Refresh token also expired or invalid
+                        console.log('[API] Refresh token expired, logging out...');
+                        await handleLogout();
                     }
-                })();
+                } catch (refreshError) {
+                    console.error('[API] Token refresh failed:', refreshError);
+                    await handleLogout();
+                }
+            } else if (!isAuthEndpoint) {
+                // 401 but not token expiration (e.g., wrong credentials)
+                const error: any = new Error(data.message || 'Unauthorized');
+                error.status = response.status;
+                error.errors = data.errors;
+                throw error;
             }
         }
 
@@ -133,6 +149,46 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     }
 
     return { data };
+}
+
+/**
+ * Handle user logout when refresh token expires
+ */
+async function handleLogout() {
+    if (typeof window === 'undefined') return;
+
+    try {
+        // Clear localStorage tokens
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+
+        // Clear Zustand stores
+        const { useAuthStore } = await import('./auth-store');
+        const { useCartStore } = await import('./cart-store');
+
+        useAuthStore.getState().logout();
+        await useCartStore.getState().clearCart();
+
+        // Clear Zustand persistence
+        (useAuthStore as any).persist?.clearStorage?.();
+        (useCartStore as any).persist?.clearStorage?.();
+
+        // Show notification
+        const { toast } = await import('@/hooks/use-toast');
+        toast({
+            title: 'Session Expired',
+            description: 'Your session has expired. Please login again to continue.',
+            variant: 'destructive',
+        });
+
+        // Redirect to login
+        setTimeout(() => {
+            window.location.href = '/login';
+        }, 1000);
+    } catch (error) {
+        console.error('[API] Logout cleanup failed:', error);
+        window.location.href = '/login';
+    }
 }
 
 /**

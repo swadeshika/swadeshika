@@ -15,10 +15,10 @@ const TOKEN_TYPES = {
 // (in seconds)
 // ------------------------------
 const TOKEN_EXPIRATION = {
-  [TOKEN_TYPES.ACCESS]: 15 * 60,           // 15 minutes (very secure)
-  [TOKEN_TYPES.REFRESH]: 7 * 24 * 60 * 60, // 7 days
-  [TOKEN_TYPES.RESET_PASSWORD]: 60 * 60,   // 1 hour
-  [TOKEN_TYPES.VERIFY_EMAIL]: 24 * 60 * 60,// 24 hours
+  [TOKEN_TYPES.ACCESS]: 15 * 60,            // 15 minutes (short-lived for security)
+  [TOKEN_TYPES.REFRESH]: 30 * 24 * 60 * 60, // 30 days (changed from 7 days - keeps user logged in)
+  [TOKEN_TYPES.RESET_PASSWORD]: 60 * 60,    // 1 hour
+  [TOKEN_TYPES.VERIFY_EMAIL]: 24 * 60 * 60, // 24 hours
 };
 
 // ------------------------------
@@ -40,7 +40,7 @@ const COOKIE_OPTIONS = {
   httpOnly: true,                             // JavaScript cannot access cookie (prevents XSS)
   secure: process.env.NODE_ENV === 'production', // Send only over HTTPS in production
   sameSite: 'strict',                         // Prevent CSRF by not sending cookie cross-site
-  maxAge: 7 * 24 * 60 * 60 * 1000,            // Cookie expiry = 7 days
+  maxAge: 30 * 24 * 60 * 60 * 1000,           // Cookie expiry = 30 days (changed from 7)
   path: '/',                                  // Cookie valid for entire domain
 };
 

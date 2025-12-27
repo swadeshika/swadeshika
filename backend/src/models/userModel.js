@@ -1,4 +1,13 @@
 const db = require('../config/db');
+const { hashPassword } = require('../utils/hash');
+
+/**
+ * userModel.js
+ * ------------
+ * Database interactions for Users.
+ */
+const crypto = require('crypto');
+const { v4: uuidv4 } = require('uuid');
 
 /**
  * userModel.js
@@ -6,6 +15,27 @@ const db = require('../config/db');
  * Database interactions for Users.
  */
 class UserModel {
+    /**
+     * Create a new user
+     * 
+     * @param {Object} userData - User details
+     * @returns {Promise<Object>} Created user object
+     */
+    static async create(userData) {
+        const id = uuidv4();
+        const { name, email, password, phone, role: rawRole = 'customer' } = userData;
+        const role = rawRole.toLowerCase().trim();
+
+        const hashedPw = await hashPassword(password);
+
+        await db.query(
+            'INSERT INTO users (id, name, email, password, phone, role) VALUES (?, ?, ?, ?, ?, ?)',
+            [id, name, email, hashedPw, phone, role]
+        );
+
+        return { id, name, email, phone, role };
+    }
+
     /**
      * Find all users with pagination
      * 
@@ -66,7 +96,7 @@ class UserModel {
     }
 
     /**
-     * Update user
+     * Update user (for admin/profile)
      * 
      * @param {number|string} id - User ID
      * @param {Object} data - Update data
@@ -78,14 +108,26 @@ class UserModel {
 
         if (data.name) { updates.push('name = ?'); params.push(data.name); }
         if (data.phone) { updates.push('phone = ?'); params.push(data.phone); }
+        // Add more fields if needed, but NOT password here (use specific method)
 
         if (updates.length === 0) return false;
 
         params.push(id);
         const sql = `UPDATE users SET ${updates.join(', ')}, updated_at = NOW() WHERE id = ?`;
-        
+
         const [result] = await db.query(sql, params);
         return result.affectedRows > 0;
+    }
+
+    /**
+     * Update password (force set)
+     * 
+     * @param {number|string} id - User ID
+     * @param {string} newPassword - Plain text password (will be hashed)
+     */
+    static async forceSetPassword(id, newPassword) {
+        const hashedPassword = await hashPassword(newPassword);
+        await db.query(`UPDATE users SET password = ? WHERE id = ?`, [hashedPassword, id]);
     }
 
     /**

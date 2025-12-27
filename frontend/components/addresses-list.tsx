@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import { Plus, MapPin, Edit, Trash2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Plus, MapPin, Edit, Trash2, Loader2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,27 +10,26 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
-
-type Address = {
-  id: string
-  name: string
-  phone: string
-  addressLine1: string
-  addressLine2: string
-  city: string
-  state: string
-  postalCode: string
-  isDefault: boolean
-}
-
-const STORAGE_KEY = "account_addresses"
+import { addressService, type Address } from "@/lib/services/addressService"
 
 export function AddressesList() {
   const { toast } = useToast()
   const [items, setItems] = useState<Address[]>([])
+  const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Address | null>(null)
-  const [form, setForm] = useState<Omit<Address, "id">>({
+
+  // Form state matches the fields we support editing in the UI
+  const [form, setForm] = useState<{
+    name: string
+    phone: string
+    addressLine1: string
+    addressLine2: string
+    city: string
+    state: string
+    postalCode: string
+    isDefault: boolean
+  }>({
     name: "",
     phone: "",
     addressLine1: "",
@@ -41,20 +40,22 @@ export function AddressesList() {
     isDefault: false,
   })
 
-  // Load from localStorage
-  useEffect(() => {
+  const fetchAddresses = async () => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) setItems(JSON.parse(raw))
-    } catch {}
-  }, [])
-
-  const persist = (next: Address[]) => {
-    setItems(next)
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-    } catch {}
+      setLoading(true)
+      const data = await addressService.getAddresses()
+      setItems(data)
+    } catch (error) {
+      console.error("Failed to fetch addresses:", error)
+      toast({ title: "Error", description: "Failed to load addresses", variant: "destructive" })
+    } finally {
+      setLoading(false)
+    }
   }
+
+  useEffect(() => {
+    fetchAddresses()
+  }, [])
 
   const hasAny = items.length > 0
 
@@ -66,8 +67,16 @@ export function AddressesList() {
 
   const startEdit = (addr: Address) => {
     setEditing(addr)
-    const { id, ...rest } = addr
-    setForm(rest)
+    setForm({
+      name: addr.name,
+      phone: addr.phone,
+      addressLine1: addr.addressLine1,
+      addressLine2: addr.addressLine2 || "",
+      city: addr.city,
+      state: addr.state,
+      postalCode: addr.postalCode,
+      isDefault: addr.isDefault
+    })
     setOpen(true)
   }
 
@@ -81,50 +90,70 @@ export function AddressesList() {
     return null
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const err = validate()
     if (err) {
       toast({ title: "Invalid details", description: err, variant: "destructive" })
       return
     }
 
-    const normalized: Address = {
-      id: editing?.id || String(Date.now()),
-      ...form,
+    try {
+      if (editing) {
+        await addressService.updateAddress(editing.id, {
+          ...form,
+          country: editing.country || "India", // Preserve or default
+          addressType: editing.addressType || "home"
+        })
+        toast({ title: "Address updated" })
+      } else {
+        // New address
+        await addressService.createAddress({
+          ...form,
+          country: "India",
+          addressType: "home",
+        })
+        toast({ title: "Address added" })
+      }
+      await fetchAddresses()
+      setOpen(false)
+      setEditing(null)
+    } catch (error: any) {
+      console.error("Operation failed:", error)
+      toast({ title: "Error", description: error.message || "Operation failed", variant: "destructive" })
     }
-
-    let next = [...items]
-
-    // If set default, clear others
-    if (normalized.isDefault) {
-      next = next.map((a) => ({ ...a, isDefault: false }))
-    }
-
-    if (editing) {
-      next = next.map((a) => (a.id === editing.id ? normalized : a))
-      toast({ title: "Address updated" })
-    } else {
-      next.unshift(normalized)
-      toast({ title: "Address added" })
-    }
-
-    persist(next)
-    setOpen(false)
-    setEditing(null)
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const confirm = window.confirm("Delete this address?")
     if (!confirm) return
-    const next = items.filter((a) => a.id !== id)
-    persist(next)
-    toast({ title: "Address deleted" })
+
+    try {
+      await addressService.deleteAddress(id)
+      toast({ title: "Address deleted" })
+      await fetchAddresses()
+    } catch (error: any) {
+      console.error("Delete failed:", error)
+      toast({ title: "Error", description: "Failed to delete address", variant: "destructive" })
+    }
   }
 
-  const setDefault = (id: string) => {
-    const next = items.map((a) => ({ ...a, isDefault: a.id === id }))
-    persist(next)
-    toast({ title: "Default address updated" })
+  const setDefault = async (id: string) => {
+    try {
+      await addressService.updateAddress(id, { isDefault: true })
+      toast({ title: "Default address updated" })
+      await fetchAddresses()
+    } catch (error: any) {
+      console.error("Set default failed:", error)
+      toast({ title: "Error", description: "Failed to set default address", variant: "destructive" })
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-[#2D5F3F]" />
+      </div>
+    )
   }
 
   return (

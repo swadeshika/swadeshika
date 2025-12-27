@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { CartButton } from "@/components/cart-button"
 import { AnnouncementBar } from "@/components/announcement-bar"
+import { useAuthStore } from "@/lib/auth-store"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,6 +60,12 @@ export function SiteHeader() {
   const [mobileSearchValue, setMobileSearchValue] = useState("")
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const router = useRouter()
+  const { user, isAuthenticated, logout } = useAuthStore()
+
+  const handleLogout = async () => {
+    await logout()
+    router.push("/")
+  }
 
   const handleSearch = (e: React.FormEvent, isMobile = false) => {
     e.preventDefault()
@@ -171,43 +178,60 @@ export function SiteHeader() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuItem asChild>
-                      <Link href="/login" className="w-full cursor-pointer">
-                        <LogIn className="mr-2 h-4 w-4 hover:text-white" />
-                        <span>Sign In</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/signup" className="w-full cursor-pointer">
-                        <UserPlus className="mr-2 h-4 w-4 hover:text-white" />
-                        <span>Create Account</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/account" className="w-full cursor-pointer">
-                        <User className="mr-2 h-4 w-4 hover:text-white" />
-                        <span>My Account</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/account/orders" className="w-full cursor-pointer">
-                        <Package2 className="mr-2 h-4 w-4 hover:text-white" />
-                        <span>My Orders</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/account/wishlist" className="w-full cursor-pointer">
-                        <Heart className="mr-2 h-4 w-4 hover:text-white" />
-                        <span>Wishlist</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="cursor-pointer text-red-600 hover:bg-red-600">
-                      <LogOut className="mr-2 h-4 w-4 hover:text-white" />
-                      <span>Logout</span>
-                    </DropdownMenuItem>
+                    {isAuthenticated ? (
+                      <>
+                        <div className="flex items-center justify-start p-2">
+                          <div className="flex flex-col space-y-1">
+                            <p className="text-sm font-medium leading-none">{user?.name}</p>
+                            <p className="text-xs leading-none text-muted-foreground">
+                              {user?.email}
+                            </p>
+                          </div>
+                        </div>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link href="/account" className="w-full cursor-pointer">
+                            <User className="mr-2 h-4 w-4" />
+                            <span>My Account</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/account/orders" className="w-full cursor-pointer">
+                            <Package2 className="mr-2 h-4 w-4" />
+                            <span>My Orders</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/account/wishlist" className="w-full cursor-pointer">
+                            <Heart className="mr-2 h-4 w-4" />
+                            <span>Wishlist</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                          onClick={handleLogout}
+                        >
+                          <LogOut className="mr-2 h-4 w-4" />
+                          <span>Logout</span>
+                        </DropdownMenuItem>
+                      </>
+                    ) : (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link href="/login" className="w-full cursor-pointer">
+                            <LogIn className="mr-2 h-4 w-4" />
+                            <span>Sign In</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/signup" className="w-full cursor-pointer">
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            <span>Create Account</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -333,14 +357,60 @@ export function SiteHeader() {
                         {item.name}
                       </Link>
                     ))}
-                    <Link
-                      href="/account"
-                      className="flex items-center text-base font-medium text-gray-900 hover:text-primary cursor-pointer"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <User className="mr-2 h-5 w-5" />
-                      My Account
-                    </Link>
+                    
+                    {isAuthenticated ? (
+                      <>
+                        <div className="py-2 px-1">
+                          <p className="text-sm font-semibold text-gray-900">{user?.name}</p>
+                          <p className="text-xs text-gray-500">{user?.email}</p>
+                        </div>
+                        <Link
+                          href="/account"
+                          className="flex items-center text-base font-medium text-gray-900 hover:text-primary cursor-pointer"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <User className="mr-2 h-5 w-5" />
+                          My Account
+                        </Link>
+                        <Link
+                          href="/account/orders"
+                          className="flex items-center text-base font-medium text-gray-900 hover:text-primary cursor-pointer"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <Package2 className="mr-2 h-5 w-5" />
+                          My Orders
+                        </Link>
+                        <button
+                          className="flex items-center w-full text-left text-base font-medium text-red-600 hover:text-red-700 cursor-pointer"
+                          onClick={() => {
+                            handleLogout()
+                            setMobileMenuOpen(false)
+                          }}
+                        >
+                          <LogOut className="mr-2 h-5 w-5" />
+                          Logout
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          href="/login"
+                          className="flex items-center text-base font-medium text-gray-900 hover:text-primary cursor-pointer"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <LogIn className="mr-2 h-5 w-5" />
+                          Sign In
+                        </Link>
+                        <Link
+                          href="/signup"
+                          className="flex items-center text-base font-medium text-gray-900 hover:text-primary cursor-pointer"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <UserPlus className="mr-2 h-5 w-5" />
+                          Create Account
+                        </Link>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

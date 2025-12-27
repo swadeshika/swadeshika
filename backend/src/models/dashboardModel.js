@@ -23,7 +23,7 @@ class DashboardModel {
         const [orderStats] = await db.query(query, [startDate, endDate]);
 
         const [productStats] = await db.query('SELECT COUNT(*) as products FROM products WHERE is_active = TRUE');
-        
+
         const [customerStats] = await db.query(
             'SELECT COUNT(*) as customers FROM users WHERE role = "customer" AND created_at BETWEEN ? AND ?',
             [startDate, endDate]
@@ -85,12 +85,13 @@ class DashboardModel {
      */
     static async getTopCustomers(startDate, endDate) {
         const query = `
-            SELECT u.name, SUM(o.total_amount) as spent, COUNT(o.id) as orders
+            SELECT COALESCE(CONCAT(c.first_name, ' ', COALESCE(c.last_name, '')), u.name) as name, SUM(o.total_amount) as spent, COUNT(o.id) as orders
             FROM orders o
             JOIN users u ON o.user_id = u.id
+            LEFT JOIN customers c ON u.email COLLATE utf8mb4_unicode_ci = c.email COLLATE utf8mb4_unicode_ci
             WHERE o.created_at BETWEEN ? AND ?
             AND o.status != 'cancelled'
-            GROUP BY u.id, u.name
+            GROUP BY u.id, u.name, c.first_name
             ORDER BY spent DESC
             LIMIT 5
         `;
@@ -126,9 +127,12 @@ class DashboardModel {
      */
     static async getRecentOrders() {
         const query = `
-            SELECT o.id, o.order_number, u.name as customer, o.total_amount as amount, o.status, o.created_at
+            SELECT o.id, o.order_number, 
+                   COALESCE(CONCAT(c.first_name, ' ', COALESCE(c.last_name, '')), u.name) as customer, 
+                   o.total_amount as amount, o.status, o.created_at
             FROM orders o
             JOIN users u ON o.user_id = u.id
+            LEFT JOIN customers c ON u.email COLLATE utf8mb4_unicode_ci = c.email COLLATE utf8mb4_unicode_ci
             ORDER BY o.created_at DESC
             LIMIT 5
         `;
@@ -154,6 +158,82 @@ class DashboardModel {
         `;
         const [rows] = await db.query(query);
         return rows;
+    }
+    /**
+     * Get payment methods usage
+     * @param {string} startDate 
+     * @param {string} endDate 
+     * @returns {Promise<Array>}
+     */
+    static async getPaymentMethods(startDate, endDate) {
+        const query = `
+            SELECT payment_method as name, COUNT(*) as value
+            FROM orders
+            WHERE created_at BETWEEN ? AND ?
+            AND status != 'cancelled'
+            GROUP BY payment_method
+        `;
+        const [rows] = await db.query(query, [startDate, endDate]);
+        return rows;
+    }
+
+    /**
+     * Get coupon performance
+     * @param {string} startDate 
+     * @param {string} endDate 
+     * @returns {Promise<Array>}
+     */
+    static async getCouponPerformance(startDate, endDate) {
+        const query = `
+            SELECT 
+                c.code, 
+                COUNT(cu.id) as 'usage', 
+                c.usage_limit as 'limit', 
+                COALESCE(SUM(o.total_amount), 0) as revenue
+            FROM coupons c
+            LEFT JOIN coupon_usage cu ON c.id = cu.coupon_id
+            LEFT JOIN orders o ON cu.order_id = o.id
+            WHERE cu.used_at BETWEEN ? AND ?
+            GROUP BY c.id
+            ORDER BY revenue DESC
+            LIMIT 5
+        `;
+        const [rows] = await db.query(query, [startDate, endDate]);
+        return rows;
+    }
+
+    static async getReturns(startDate, endDate) {
+        // Return Rate
+        const [totalOrders] = await db.query(
+            'SELECT COUNT(*) as count FROM orders WHERE created_at BETWEEN ? AND ?',
+            [startDate, endDate]
+        );
+        const [returnedOrders] = await db.query(
+            'SELECT COUNT(*) as count FROM orders WHERE created_at BETWEEN ? AND ? AND (status = "refunded" OR status = "cancelled")',
+            [startDate, endDate]
+        );
+
+        // Refunded Amount
+        const [refundedAmount] = await db.query(
+            'SELECT COALESCE(SUM(total_amount), 0) as amount FROM orders WHERE created_at BETWEEN ? AND ? AND status = "refunded"',
+            [startDate, endDate]
+        );
+
+        // Avg Resolution Time (for delivered orders)
+        const [resolutionTime] = await db.query(
+            `SELECT COALESCE(AVG(TIMESTAMPDIFF(SECOND, created_at, delivered_at)), 0) as avg_seconds 
+             FROM orders 
+             WHERE created_at BETWEEN ? AND ? 
+             AND status = "delivered" AND delivered_at IS NOT NULL`,
+            [startDate, endDate]
+        );
+
+        return {
+            total: totalOrders[0].count,
+            returned: returnedOrders[0].count,
+            refundedAmount: refundedAmount[0].amount,
+            avgResolutionSeconds: resolutionTime[0].avg_seconds
+        };
     }
 }
 

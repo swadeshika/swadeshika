@@ -24,6 +24,39 @@ const { hasRole, hasPermission, ROLES } = require('../constants/roles');
 
 
 /**
+ * optionalAuthenticate()
+ * -----------------------
+ * If an Authorization header/token is present, try to authenticate and attach `req.user`.
+ * If no token is present or verification fails, do NOT block the request — just continue
+ * with `req.user` undefined. This is useful for guest-friendly routes like checkout.
+ */
+const optionalAuthenticate = async (req, res, next) => {
+  try {
+    const header = req.headers.authorization || req.headers.Authorization;
+    const token = extractTokenFromHeader(header);
+
+    if (!token) {
+      req.user = null;
+      return next();
+    }
+
+    // Try verifying token. If it fails, don't block the request.
+    try {
+      const decoded = verifyToken(token, TOKEN_TYPES.ACCESS);
+      const user = await UserModel.findById(decoded.id);
+      req.user = user || null;
+    } catch (err) {
+      req.user = null;
+    }
+
+    return next();
+  } catch (err) {
+    req.user = null;
+    return next();
+  }
+};
+
+/**
  * 🔐 authenticate()
  * -----------------
  * Checks if the request contains a valid Access Token.
@@ -63,6 +96,9 @@ const authenticate = async (req, res, next) => {
 
     // Attach user to request for future middlewares/controllers
     req.user = user;
+
+    // DIAGNOSTIC LOGGING: Log user role for debugging
+    console.log(`[AUTH] User Authenticated: ${user.email}, Role: ${user.role}`);
 
     next();
   } catch (err) {
@@ -108,11 +144,17 @@ const authorize = (allowedRoles = []) => {
       });
 
     // Check if user's role is allowed
-    if (!hasRole(req.user.role, roles))
+    // Normalize user role and allowed roles for case-insensitive comparison
+    const userRole = req.user.role ? req.user.role.toLowerCase().trim() : '';
+    const normalizedAllowedRoles = roles.map(r => r.toLowerCase().trim());
+
+    if (!hasRole(userRole, normalizedAllowedRoles)) {
+      console.warn(`[AUTH] Access Denied: User role '${userRole}' not in allowed roles [${normalizedAllowedRoles.join(', ')}]`);
       return res.status(403).json({
         success: false,
         message: getMessage('FORBIDDEN'),
       });
+    }
 
     next();
   };
@@ -232,4 +274,5 @@ module.exports = {
   hasPermissions,
   guest,
   selfOrAdmin,
+  optionalAuthenticate,
 };

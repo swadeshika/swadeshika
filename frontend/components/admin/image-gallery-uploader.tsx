@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { uploadService } from "@/lib/services/uploadService"
+import { Loader2 } from "lucide-react"
 
-// Multi-image uploader with client-side previews.
-// - Supports initial URLs for edit flows
-// - Emits selected File[] and preview URLs to parent via onChange
-// - No backend upload here; parent decides when/where to upload
+// Multi-image uploader with real file upload
+// - Uploads files to backend when selected
+// - Returns real URLs instead of blob URLs
+// - Shows upload progress
 interface FilePreview {
   file?: File
   url: string
@@ -18,10 +20,11 @@ interface ImageGalleryUploaderProps {
   initialUrls?: string[]
 }
 
-// Renders an "Upload" button and a grid of previews with remove action shown by default.
 export function ImageGalleryUploader({ label = "Upload gallery images", onChange, initialUrls }: ImageGalleryUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [items, setItems] = useState<FilePreview[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   // Initialize from provided initialUrls (useful in edit mode)
   useEffect(() => {
@@ -35,31 +38,87 @@ export function ImageGalleryUploader({ label = "Upload gallery images", onChange
 
   const pick = () => inputRef.current?.click()
 
-  // Handle files selected via the hidden input and append to current list
-  const handle = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle files selected and upload them
+  const handle = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files ? Array.from(e.target.files) : []
     if (files.length === 0) return
-    const next = [
-      ...items,
-      ...files.map((f) => ({ file: f, url: URL.createObjectURL(f) })),
-    ]
-    setItems(next)
-    onChange(next.map((i) => i.file!).filter(Boolean) as File[], next.map((i) => i.url))
+    
+    setUploading(true)
+    setUploadError(null)
+    
+    try {
+      // Upload all files to backend
+      const uploadedUrls = await uploadService.uploadImages(files)
+      
+      // Add to existing items
+      const next = [
+        ...items,
+        ...uploadedUrls.map((url) => ({ url })),
+      ]
+      setItems(next)
+      // Only pass actual File objects, not URL-only items
+      const filesWithData = next.filter((i): i is FilePreview & { file: File } => !!i.file);
+      onChange(filesWithData.map((i) => i.file), next.map((i) => i.url))
+      
+      // Clear input
+      if (inputRef.current) inputRef.current.value = ""
+    } catch (error: any) {
+      console.error('Upload failed:', error)
+      setUploadError(error.message || 'Upload failed')
+    } finally {
+      setUploading(false)
+    }
   }
 
   // Remove a preview at index and emit the updated files/URLs
-  const removeAt = (idx: number) => {
-    const next = items.filter((_, i) => i !== idx)
-    setItems(next)
-    onChange(next.map((i) => i.file!).filter(Boolean) as File[], next.map((i) => i.url))
+  const removeAt = async (idx: number) => {
+    const item = items[idx];
+    
+    // Delete file from server if it's an uploaded file
+    if (item.url && item.url.startsWith('http://127.0.0.1:5000/uploads/')) {
+      try {
+        await uploadService.deleteImage(item.url);
+        console.log('[ImageGalleryUploader] File deleted from server');
+      } catch (error) {
+        console.error('[ImageGalleryUploader] Failed to delete file:', error);
+        // Continue anyway - file might already be deleted or not exist
+      }
+    }
+    
+    const next = items.filter((_, i) => i !== idx);
+    setItems(next);
+    // Only pass actual File objects, not URL-only items
+    const filesWithData = next.filter((i): i is FilePreview & { file: File } => !!i.file);
+    onChange(filesWithData.map((i) => i.file), next.map((i) => i.url));
   }
 
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <Button type="button" variant="outline" className="border-2 border-[#E8DCC8]" onClick={pick}>{label}</Button>
+        <Button 
+          type="button" 
+          variant="outline" 
+          className="border-2 border-[#E8DCC8]" 
+          onClick={pick}
+          disabled={uploading}
+        >
+          {uploading ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Uploading...
+            </>
+          ) : (
+            label
+          )}
+        </Button>
       </div>
-      <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={handle} />
+      <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={handle} disabled={uploading} />
+      
+      {/* Upload error */}
+      {uploadError && (
+        <p className="text-sm text-red-600">{uploadError}</p>
+      )}
+      
       {items.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {items.map((it, idx) => (
@@ -68,7 +127,8 @@ export function ImageGalleryUploader({ label = "Upload gallery images", onChange
               <button
                 type="button"
                 onClick={() => removeAt(idx)}
-                className="absolute top-2 right-2 px-2 py-1 text-xs rounded-md bg-white/95 border-2 border-[#E8DCC8]"
+                disabled={uploading}
+                className="absolute top-2 right-2 px-2 py-1 text-xs rounded-md bg-white/95 border-2 border-[#E8DCC8] disabled:opacity-50"
               >
                 Remove
               </button>

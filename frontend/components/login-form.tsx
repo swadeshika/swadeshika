@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -41,7 +41,7 @@ export function LoginForm() {
     setIsLoading(true)
 
     try {
-      const { success, role } = await login(email, password)
+      const { success, role, error } = await login(email, password)
 
       if (success) {
         toast({
@@ -57,7 +57,7 @@ export function LoginForm() {
       } else {
         toast({
           title: "Login Failed",
-          description: "Invalid email or password. Please try again.",
+          description: error || "Invalid email or password. Please try again.",
           variant: "destructive",
         })
       }

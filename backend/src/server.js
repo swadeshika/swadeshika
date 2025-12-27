@@ -31,6 +31,20 @@ const PORT = process.env.PORT || 5000;
       console.log(`🚀 Server running on port ${PORT}`);
     });
 
+    // Handle server 'error' events (eg. port already in use)
+    server.on('error', (err) => {
+      if (err && err.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use.\n` +
+          `- Ensure no other process is listening on this port.\n` +
+          `- Or set a different PORT in your .env file or environment.`);
+        // Give a short delay to ensure logs flush, then exit
+        setTimeout(() => process.exit(1), 100);
+      } else {
+        // If it's a different error, rethrow to be handled by uncaughtException
+        throw err;
+      }
+    });
+
     /**
      * GLOBAL ERROR HANDLING
      * -----------------------

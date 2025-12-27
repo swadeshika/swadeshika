@@ -13,41 +13,141 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { User, MapPin, FileText, CreditCard, CheckCircle, Loader2 } from "lucide-react"
+import { ordersService } from "@/lib/services/ordersService"
+import { useToast } from "@/hooks/use-toast"
 
-// Mock cart data
-const cartItems = [
-  {
-    id: "1",
-    name: "Pure Desi Cow Ghee",
-    variant: "1kg",
-    price: 850,
-    quantity: 2,
-  },
-  {
-    id: "2",
-    name: "Organic Turmeric Powder",
-    variant: "250g",
-    price: 180,
-    quantity: 1,
-  },
-]
+import { useCartStore } from "@/lib/cart-store"
+import { useAuthStore } from "@/lib/auth-store"
+import { addressService, Address } from "@/lib/services/addressService"
+import { settingsService, AppSettings } from "@/lib/services/settingsService"
+import { useEffect } from "react"
 
 export function CheckoutForm() {
   const router = useRouter()
+  const { toast } = useToast()
+
+  // Stores
+  const { items: cartItems, getTotalPrice } = useCartStore()
+  const { user } = useAuthStore()
+
+  // State
   const [sameAsBilling, setSameAsBilling] = useState(true)
   const [paymentMethod, setPaymentMethod] = useState("cod")
   const [placing, setPlacing] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const shipping = 0
-  const total = subtotal + shipping
+  // Data
+  const [addresses, setAddresses] = useState<Address[]>([])
+  const [settings, setSettings] = useState<AppSettings | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Derived state
+  const defaultAddress = addresses.find(a => a.isDefault) || addresses[0]
+
+  // Calculate Totals
+  const subtotal = getTotalPrice()
+  const shippingThreshold = settings?.free_shipping_threshold ?? 500
+  const flatRate = settings?.flat_rate ?? 50
+
+  const shipping = subtotal > 0
+    ? (subtotal >= shippingThreshold ? 0 : flatRate)
+    : 0
+
+  // Tax logic (can be enhanced later based on settings)
+  const gstPercent = settings?.gst_percent ?? 0
+  const tax = Math.round(subtotal * (gstPercent / 100))
+
+  const total = subtotal + shipping + tax;
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [fetchedAddresses, fetchedSettings] = await Promise.all([
+          addressService.getAddresses().catch(() => []),
+          settingsService.getSettings().catch(() => null)
+        ])
+        setAddresses(fetchedAddresses || [])
+        setSettings(fetchedSettings)
+      } catch (error) {
+        console.error("Failed to load checkout data", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setPlacing(true)
-    // Simulate processing and ensure spinner visible
-    await new Promise((r) => setTimeout(r, 600))
-    router.push("/order-confirmation")
+
+    const formData = new FormData(e.currentTarget)
+
+    // Construct Address Objects
+    const shippingAddress = {
+      fullName: formData.get("fullName"),
+      phone: formData.get("phone"),
+      addressLine1: formData.get("address1"),
+      addressLine2: formData.get("address2"),
+      city: formData.get("city"),
+      state: formData.get("state"),
+      postalCode: formData.get("pincode"),
+    }
+
+    const billingAddress = sameAsBilling ? shippingAddress : {
+      fullName: formData.get("billingName"),
+      phone: formData.get("phone"),
+      addressLine1: formData.get("billingAddress1"),
+      addressLine2: formData.get("billingAddress2"),
+      city: formData.get("billingCity"),
+      state: formData.get("billingState"),
+      postalCode: formData.get("billingPincode"),
+    }
+
+    const orderData = {
+      items: [], // Backend fetches from cart
+      shippingAddress,
+      billingAddress,
+      paymentMethod,
+      subtotal,
+      tax,
+      shippingCost: shipping,
+      totalAmount: total,
+      phone: formData.get("phone"),
+      email: formData.get("email"),
+      couponCode: null,
+      notes: formData.get("notes")
+    }
+
+    try {
+      const response = await ordersService.createOrder(orderData as any);
+      toast({
+        title: "Order Placed Successfully",
+        description: "Thank you for your purchase!",
+      })
+      // response is the data payload from ordersService
+      // which returns res.data.
+      // And backend returns { success: true, message:..., data: { orderId ... } }
+      // Wait, ordersService code:
+      // const res = await api.post...
+      // return res.data;
+      // Backend returns: { success: true, data: { orderId ... } }
+      // So response.data.orderId
+
+      router.push(`/order-confirmation/${response.data.orderId}`)
+    } catch (error: any) {
+      console.error("Order creation failed", error);
+      toast({
+        title: "Order Failed",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setPlacing(false)
+    }
+  }
+
+  if (loading) {
+    return <div className="flex justify-center p-10"><Loader2 className="h-8 w-8 animate-spin text-[#6B4423]" /></div>
   }
 
   return (
@@ -64,11 +164,25 @@ export function CheckoutForm() {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email *</Label>
-                  <Input id="email" type="email" placeholder="your@email.com" required />
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="your@email.com"
+                    required
+                    defaultValue={user?.email || ""}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number *</Label>
-                  <Input id="phone" type="tel" placeholder="+91 1234567890" required />
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    placeholder="+91 1234567890"
+                    required
+                    defaultValue={user?.phone || defaultAddress?.phone || ""}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -82,31 +196,66 @@ export function CheckoutForm() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="fullName">Full Name *</Label>
-                <Input id="fullName" placeholder="John Doe" required />
+                <Input
+                  id="fullName"
+                  name="fullName"
+                  placeholder="John Doe"
+                  required
+                  defaultValue={defaultAddress?.name || user?.name || ""}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="address1">Address Line 1 *</Label>
-                <Input id="address1" placeholder="Street address" required />
+                <Input
+                  id="address1"
+                  name="address1"
+                  placeholder="Street address"
+                  required
+                  defaultValue={defaultAddress?.addressLine1 || ""}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="address2">Address Line 2</Label>
-                <Input id="address2" placeholder="Apartment, suite, etc. (optional)" />
+                <Input
+                  id="address2"
+                  name="address2"
+                  placeholder="Apartment, suite, etc. (optional)"
+                  defaultValue={defaultAddress?.addressLine2 || ""}
+                />
               </div>
 
               <div className="grid sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="city">City *</Label>
-                  <Input id="city" placeholder="Mumbai" required />
+                  <Input
+                    id="city"
+                    name="city"
+                    placeholder="Mumbai"
+                    required
+                    defaultValue={defaultAddress?.city || ""}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="state">State *</Label>
-                  <Input id="state" placeholder="Maharashtra" required />
+                  <Input
+                    id="state"
+                    name="state"
+                    placeholder="Maharashtra"
+                    required
+                    defaultValue={defaultAddress?.state || ""}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pincode">PIN Code *</Label>
-                  <Input id="pincode" placeholder="400001" required />
+                  <Input
+                    id="pincode"
+                    name="pincode"
+                    placeholder="400001"
+                    required
+                    defaultValue={defaultAddress?.postalCode || ""}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -133,31 +282,31 @@ export function CheckoutForm() {
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="billingName">Full Name *</Label>
-                    <Input id="billingName" placeholder="John Doe" required />
+                    <Input id="billingName" name="billingName" placeholder="John Doe" required />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="billingAddress1">Address Line 1 *</Label>
-                    <Input id="billingAddress1" placeholder="Street address" required />
+                    <Input id="billingAddress1" name="billingAddress1" placeholder="Street address" required />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="billingAddress2">Address Line 2</Label>
-                    <Input id="billingAddress2" placeholder="Apartment, suite, etc. (optional)" />
+                    <Input id="billingAddress2" name="billingAddress2" placeholder="Apartment, suite, etc. (optional)" />
                   </div>
 
                   <div className="grid sm:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="billingCity">City *</Label>
-                      <Input id="billingCity" placeholder="Mumbai" required />
+                      <Input id="billingCity" name="billingCity" placeholder="Mumbai" required />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="billingState">State *</Label>
-                      <Input id="billingState" placeholder="Maharashtra" required />
+                      <Input id="billingState" name="billingState" placeholder="Maharashtra" required />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="billingPincode">PIN Code *</Label>
-                      <Input id="billingPincode" placeholder="400001" required />
+                      <Input id="billingPincode" name="billingPincode" placeholder="400001" required />
                     </div>
                   </div>
                 </>
@@ -197,7 +346,7 @@ export function CheckoutForm() {
               <CardTitle className="text-[#6B4423]">Order Notes (Optional)</CardTitle>
             </CardHeader>
             <CardContent>
-              <Textarea placeholder="Any special instructions for your order?" rows={4} />
+              <Textarea name="notes" placeholder="Any special instructions for your order?" rows={4} />
             </CardContent>
           </Card>
         </div>
@@ -216,7 +365,7 @@ export function CheckoutForm() {
                     <div className="flex-1">
                       <p className="font-medium text-sm">{item.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {item.variant} × {item.quantity}
+                        Qty: {item.quantity}
                       </p>
                     </div>
                     <p className="font-medium">₹{item.price * item.quantity}</p>

@@ -12,10 +12,25 @@ class ProductModel {
     const params = [];
 
     // Whitelist of allowed columns to prevent SQL injection
+    /**
+     * CRITICAL FIX: Missing in_stock Field
+     * =====================================
+     * 
+     * PROBLEM:
+     * - in_stock field was not in allowedColumns list
+     * - API was not returning in_stock field
+     * - Frontend couldn't determine stock status
+     * - All products showed "Out of Stock"
+     * 
+     * SOLUTION:
+     * - Added 'in_stock' to allowedColumns
+     * - Added 'is_active' for future use
+     * - Now API will return these fields
+     */
     const allowedColumns = [
       'id', 'name', 'slug', 'description', 'short_description', 'sku',
       'price', 'compare_price', 'cost_price', 'weight', 'weight_unit',
-      'stock_quantity', 'is_featured', 'review_count', 'average_rating',
+      'stock_quantity', 'in_stock', 'is_active', 'is_featured', 'review_count', 'average_rating',
       'created_at', 'updated_at'
     ];
 
@@ -111,9 +126,34 @@ class ProductModel {
 
   /**
    * Find product by ID or Slug with all details
+   * 
+   * CRITICAL FIX: Proper ID vs Slug Detection
+   * ==========================================
+   * 
+   * PROBLEM (Before):
+   * - Used !isNaN(identifier) which doesn't work correctly
+   * - isNaN("123") returns false, so !isNaN("123") returns true ✓
+   * - isNaN("pure-desi-cow-ghee") returns true, so !isNaN() returns false ✓
+   * - BUT: isNaN() has edge cases with empty strings, whitespace, etc.
+   * 
+   * SOLUTION (Now):
+   * - Check if identifier is a string that contains only digits
+   * - Use Number.isInteger(Number(identifier)) for robust detection
+   * - This correctly identifies "123" as ID and "pure-desi-cow-ghee" as slug
+   * 
+   * WHY THIS MATTERS:
+   * - Product details pages use slugs in URLs (/products/pure-desi-cow-ghee)
+   * - Admin panel uses IDs (/admin/products/123)
+   * - Wrong detection = 404 errors for all product pages
    */
   static async findByIdOrSlug(identifier) {
-    const isId = !isNaN(identifier);
+    // Robust check: Is this a numeric ID or a string slug?
+    // Number.isInteger(Number(x)) correctly handles:
+    // - "123" → true (numeric ID)
+    // - "pure-desi-cow-ghee" → false (string slug)
+    // - 123 → true (numeric ID)
+    const isId = Number.isInteger(Number(identifier)) && String(identifier) === String(Number(identifier));
+    
     const sql = `
       SELECT p.*, c.name as category_name, c.slug as category_slug
       FROM products p
@@ -164,8 +204,32 @@ class ProductModel {
       const productId = res.insertId;
 
       // 2. Insert Images
+      /**
+       * CRITICAL FIX: Image Field Name Compatibility
+       * =============================================
+       * 
+       * PROBLEM:
+       * - Frontend sends: { url: "...", alt_text: "...", is_primary: true }
+       * - Backend expects: image_url column in database
+       * - Mismatch caused images not to save
+       * 
+       * SOLUTION:
+       * - Accept both 'url' and 'image_url' from frontend
+       * - Map to correct database column name
+       * 
+       * WHY THIS MATTERS:
+       * - Product images now save correctly
+       * - Works with both old and new frontend code
+       * - Prevents data loss during product creation/editing
+       */
       if (data.images && data.images.length) {
-        const imageValues = data.images.map(img => [productId, img.url, img.alt_text, img.is_primary || false, img.display_order || 0]);
+        const imageValues = data.images.map(img => [
+          productId, 
+          img.image_url || img.url,  // Accept both field names
+          img.alt_text, 
+          img.is_primary || false, 
+          img.display_order || 0
+        ]);
         await conn.query(
           `INSERT INTO product_images (product_id, image_url, alt_text, is_primary, display_order) VALUES ?`,
           [imageValues]
@@ -174,9 +238,9 @@ class ProductModel {
 
       // 3. Insert Variants
       if (data.variants && data.variants.length) {
-        const variantValues = data.variants.map(v => [productId, v.name, v.sku, v.price, v.stock_quantity || 0]);
+        const variantValues = data.variants.map(v => [productId, v.name, v.sku, v.price, v.compare_price || null, v.stock_quantity || 0]);
         await conn.query(
-          `INSERT INTO product_variants (product_id, name, sku, price, stock_quantity) VALUES ?`,
+          `INSERT INTO product_variants (product_id, name, sku, price, compare_price, stock_quantity) VALUES ?`,
           [variantValues]
         );
       }
@@ -248,7 +312,18 @@ class ProductModel {
       if (data.images) {
         await conn.query(`DELETE FROM product_images WHERE product_id = ?`, [id]);
         if (data.images.length) {
-          const imageValues = data.images.map(img => [id, img.url, img.alt_text, img.is_primary || false, img.display_order || 0]);
+          /**
+           * CRITICAL FIX: Image Field Name Compatibility (UPDATE)
+           * ======================================================
+           * Same fix as in CREATE method - accept both 'url' and 'image_url'
+           */
+          const imageValues = data.images.map(img => [
+            id, 
+            img.image_url || img.url,  // Accept both field names
+            img.alt_text, 
+            img.is_primary || false, 
+            img.display_order || 0
+          ]);
           await conn.query(`INSERT INTO product_images (product_id, image_url, alt_text, is_primary, display_order) VALUES ?`, [imageValues]);
         }
       }
@@ -260,8 +335,8 @@ class ProductModel {
         // TODO: Handle referential integrity if variants are used.
         await conn.query(`DELETE FROM product_variants WHERE product_id = ?`, [id]);
         if (data.variants.length) {
-          const variantValues = data.variants.map(v => [id, v.name, v.sku, v.price, v.stock_quantity || 0]);
-          await conn.query(`INSERT INTO product_variants (product_id, name, sku, price, stock_quantity) VALUES ?`, [variantValues]);
+          const variantValues = data.variants.map(v => [id, v.name, v.sku, v.price, v.compare_price || null, v.stock_quantity || 0]);
+          await conn.query(`INSERT INTO product_variants (product_id, name, sku, price, compare_price, stock_quantity) VALUES ?`, [variantValues]);
         }
       }
 

@@ -13,7 +13,20 @@ class ProductService {
         if (view === 'list') {
             selectedFields = ['name', 'price', 'primary_image', 'average_rating', 'weight'];
         } else if (view === 'admin') {
-            selectedFields = ['name', 'sku', 'stock_quantity', 'price', 'category_id', 'is_featured'];
+            /**
+             * CRITICAL FIX: Missing in_stock in Admin View
+             * =============================================
+             * 
+             * PROBLEM:
+             * - Admin view was not selecting in_stock field
+             * - Frontend couldn't determine stock status
+             * - All products showed "Out of Stock"
+             * 
+             * SOLUTION:
+             * - Added 'in_stock' to admin view fields
+             * - Now admin panel can show correct stock status
+             */
+            selectedFields = ['name', 'sku', 'stock_quantity', 'in_stock', 'price', 'category_id', 'is_featured'];
         }
 
         // 2. Handle 'fields' query param (overrides or appends to view)

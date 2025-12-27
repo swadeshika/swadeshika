@@ -19,25 +19,26 @@ const adminOrderRoutes = require('./adminOrderRoutes');
 const blogRoutes = require('./blogRoutes');
 const adminBlogRoutes = require('./adminBlogRoutes');
 const blogCategoryRoutes = require('./blogCategoryRoutes');
+const adminBlogAuthorRoutes = require('./adminBlogAuthorRoutes');
 const couponRoutes = require('./couponRoutes');
 const reviewRoutes = require('./reviewRoutes');
 const dashboardRoutes = require('./dashboardRoutes');
 const contactRoutes = require('./contactRoutes');
 const newsletterRoutes = require('./newsletterRoutes');
 const analyticsRoutes = require('./analyticsRoutes');
+const customersRoutes = require('./customers.routes');
+const reportRoutes = require('./reportRoutes');
+const uploadRoutes = require('./uploadRoutes'); // File upload routes
 
 // Dynamic loading for Order Routes (as it might be fragile or WIP)
-let orderRoutes;
-try {
-    orderRoutes = require('./orderRoutes');
-} catch (e) {
-    orderRoutes = express.Router().get('/', (req, res) => res.json({ msg: 'orders route placeholder' }));
-}
+const orderRoutes = require('./orderRoutes');
+const settingsRoutes = require('./settingsRoutes'); // Public settings
 
 // Mount Routes
 router.use('/auth', authRoutes);
+router.use('/settings', settingsRoutes); // Public settings endpoint
+router.use('/users/addresses', addressRoutes); // Address routes mounted BEFORE /users to prevent collision with /users/:id
 router.use('/users', userRoutes);
-router.use('/users/addresses', addressRoutes); // Address routes mounted under /users/addresses
 router.use('/products', productRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/cart', cartRoutes);
@@ -45,17 +46,22 @@ router.use('/wishlist', wishlistRoutes);
 router.use('/orders', orderRoutes);
 router.use('/coupons', couponRoutes);
 router.use('/reviews', reviewRoutes);
-router.use('/blog', blogRoutes);
 router.use('/blog/categories', blogCategoryRoutes);
+router.use('/blog', blogRoutes);
 router.use('/contact', contactRoutes);
 router.use('/newsletter', newsletterRoutes);
 router.use('/analytics', analyticsRoutes);
+router.use('/customers', customersRoutes);
+router.use('/upload', uploadRoutes); // File upload endpoints
 
 // Admin Routes
 router.use('/admin/settings', adminSettingsRoutes);
 router.use('/admin/orders', adminOrderRoutes);
+router.use('/admin/blog/authors', adminBlogAuthorRoutes);
 router.use('/admin/blog', adminBlogRoutes);
 router.use('/admin/dashboard', dashboardRoutes);
+router.use('/admin/reports', reportRoutes);
+router.use('/admin/analytics', analyticsRoutes); // Convenience alias
 
 // Health Check
 router.get('/health', (req, res) => {

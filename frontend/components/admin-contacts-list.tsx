@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import {
   Table,
   TableBody,
@@ -12,54 +13,47 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Search, Mail, Phone, Calendar, MessageSquare } from "lucide-react"
+import { Search, Mail, Phone, Calendar, MessageSquare, Trash2, X } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
+import { contactService, ContactSubmission } from "@/lib/services/contactService"
 import { api } from "@/lib/api"
-
-/**
- * Interface representing a contact form submission.
- * Matches the structure returned by the backend API.
- */
-interface ContactSubmission {
-  id: number
-  name: string
-  email: string
-  phone: string
-  subject: string
-  order_number: string
-  message: string
-  status: 'new' | 'read' | 'replied' | 'archived'
-  created_at: string
-}
 
 /**
  * AdminContactsList Component
  * 
  * Displays a paginated/scrollable list of contact form submissions.
  * Features:
- * - Fetches data from /api/v1/contact
+ * - Fetches data using contactService
  * - Search functionality by name, email, subject, or order number
  * - Status badges for quick visual filtering
- * - Responsive table layout
+ * - Navigation to detail view
  */
 export function AdminContactsList() {
   const [submissions, setSubmissions] = useState<ContactSubmission[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [selectedSubmission, setSelectedSubmission] = useState<ContactSubmission | null>(null)
+  const [isViewOpen, setIsViewOpen] = useState(false)
   const { toast } = useToast()
 
   const fetchSubmissions = async () => {
     try {
       setLoading(true)
-      const response = await api.get('/contact')
+      const response = await contactService.getAll()
       if (response.data.success) {
         setSubmissions(response.data.data.submissions)
       }
@@ -74,11 +68,38 @@ export function AdminContactsList() {
     }
   }
 
+  const handleUpdateStatus = async (id: number, status: string) => {
+    try {
+      const response = await api.put(`/contact/${id}`, { status })
+      if (response.data.success) {
+        setSubmissions(submissions.map(sub => sub.id === id ? { ...sub, status: status as any } : sub))
+        toast({ title: "Status updated" })
+        if (selectedSubmission) setSelectedSubmission({ ...selectedSubmission, status: status as any })
+      }
+    } catch (error) {
+      toast({ title: "Error updating status", variant: "destructive" })
+    }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this submission?")) return
+    try {
+      const response = await api.delete(`/contact/${id}`)
+      if (response.data.success) {
+        setSubmissions(submissions.filter(sub => sub.id !== id))
+        toast({ title: "Submission deleted" })
+        setIsViewOpen(false)
+      }
+    } catch (error) {
+      toast({ title: "Error deleting submission", variant: "destructive" })
+    }
+  }
+
   useEffect(() => {
     fetchSubmissions()
   }, [])
 
-  const filteredSubmissions = submissions.filter(sub => 
+  const filteredSubmissions = submissions.filter(sub =>
     sub.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     sub.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     sub.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -172,7 +193,15 @@ export function AdminContactsList() {
                       </TableCell>
                       <TableCell>{getStatusBadge(sub.status)}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" className="text-[#2D5F3F] hover:text-[#1E4A2F] hover:bg-[#E8F5E9]">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-[#2D5F3F] hover:text-[#1E4A2F] hover:bg-[#E8F5E9]"
+                          onClick={() => {
+                            setSelectedSubmission(sub)
+                            setIsViewOpen(true)
+                          }}
+                        >
                           View
                         </Button>
                       </TableCell>
@@ -184,6 +213,84 @@ export function AdminContactsList() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+        <DialogContent className="max-w-2xl bg-[#F9F7F2] border-[#E8DCC8]">
+          <DialogHeader>
+            <DialogTitle className="text-[#6B4423] font-serif text-2xl">Submission Details</DialogTitle>
+            <DialogDescription>
+              Received on {selectedSubmission && format(new Date(selectedSubmission.created_at), 'PPP p')}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedSubmission && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <div className="text-sm font-medium text-[#8B6F47]">Customer Name</div>
+                  <div className="text-[#6B4423] font-medium">{selectedSubmission.name}</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-sm font-medium text-[#8B6F47]">Email Address</div>
+                  <div className="text-[#6B4423]">{selectedSubmission.email}</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-sm font-medium text-[#8B6F47]">Phone Number</div>
+                  <div className="text-[#6B4423]">{selectedSubmission.phone || 'N/A'}</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-sm font-medium text-[#8B6F47]">Order Number</div>
+                  <div className="text-[#6B4423]">{selectedSubmission.order_number || 'N/A'}</div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-[#8B6F47]">Subject</div>
+                <div className="p-2 rounded bg-white border border-[#E8DCC8] text-[#6B4423]">
+                  {selectedSubmission.subject}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-[#8B6F47]">Message</div>
+                <div className="p-4 rounded-lg bg-white border border-[#E8DCC8] text-[#6B4423] whitespace-pre-wrap">
+                  {selectedSubmission.message}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t border-[#E8DCC8]">
+                <div className="flex items-center gap-4">
+                  <div className="text-sm font-medium text-[#8B6F47]">Status:</div>
+                  <Select
+                    value={selectedSubmission.status}
+                    onValueChange={(val) => handleUpdateStatus(selectedSubmission.id, val)}
+                  >
+                    <SelectTrigger className="w-[180px] border-[#E8DCC8]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">New</SelectItem>
+                      <SelectItem value="read">Read</SelectItem>
+                      <SelectItem value="replied">Replied</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleDelete(selectedSubmission.id)}
+                  className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Submission
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

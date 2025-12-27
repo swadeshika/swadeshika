@@ -19,6 +19,14 @@ class DashboardService {
         const salesByCategory = await DashboardModel.getSalesByCategory(startStr, endStr);
         const topCustomers = await DashboardModel.getTopCustomers(startStr, endStr);
         const topProducts = await DashboardModel.getTopProducts(startStr, endStr);
+        const paymentMethods = await DashboardModel.getPaymentMethods(startStr, endStr);
+        const couponPerformance = await DashboardModel.getCouponPerformance(startStr, endStr);
+        const returnStats = await DashboardModel.getReturns(startStr, endStr);
+
+        // Calculate Return Rate
+        const returnRate = returnStats.total > 0
+            ? ((returnStats.returned / returnStats.total) * 100).toFixed(1)
+            : "0.0";
 
         // Format for frontend
         return {
@@ -35,14 +43,30 @@ class DashboardService {
             })),
             salesByCategory,
             topCustomers,
-            topProducts
+            topProducts,
+            paymentMethods: paymentMethods.map(p => ({
+                icon: "CreditCard", // Default icon
+                name: p.name || 'Unknown',
+                value: kpis.orders > 0 ? Math.round((p.value / kpis.orders) * 100) : 0
+            })),
+            coupons: couponPerformance,
+            returns: [
+                { label: "Return Rate", value: `${returnRate}%` },
+                { 
+                    label: "Avg. Resolution Time", 
+                    value: returnStats.avgResolutionSeconds > 0 
+                        ? `${(returnStats.avgResolutionSeconds / 86400).toFixed(1)} days` 
+                        : "N/A" 
+                },
+                { label: "Refunded Amount", value: `₹${returnStats.refundedAmount.toLocaleString('en-IN')}` }
+            ]
         };
     }
 
     static async getDashboardOverview() {
         const recentOrders = await DashboardModel.getRecentOrders();
         const lowStockProducts = await DashboardModel.getLowStockProducts();
-        
+
         // Reuse getStats logic for 30 days default
         const stats = await this.getStats('30');
 

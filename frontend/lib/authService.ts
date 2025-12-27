@@ -88,9 +88,9 @@ export const authService = {
      * Change password
      */
     async changePassword(currentPassword: string, newPassword: string): Promise<void> {
-        await api.post('/auth/change-password', {
-            currentPassword,
-            newPassword
+        await api.put('/auth/change-password', {
+            old_password: currentPassword,
+            new_password: newPassword
         });
     },
 
@@ -105,7 +105,10 @@ export const authService = {
      * Reset password
      */
     async resetPassword(token: string, newPassword: string): Promise<void> {
-        await api.post(`/auth/reset-password/${token}`, { newPassword });
+        await api.post(`/auth/reset-password/${token}`, {
+            password: newPassword,
+            confirmPassword: newPassword
+        });
     },
 
     /**

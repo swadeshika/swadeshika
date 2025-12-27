@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Search, Edit, Trash2, MoreVertical } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -11,31 +11,45 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
-import { BLOGS } from "@/lib/blogs-data"
-
-// Data moved to shared module for reuse in edit page
+import { blogService, BlogPost } from "@/lib/blogService"
 
 export function AdminBlogList() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [selectedPost, setSelectedPost] = useState<string | null>(null)
+  const [selectedPost, setSelectedPost] = useState<number | null>(null)
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all")
-  const [postsData, setPostsData] = useState(BLOGS)
+  const [postsData, setPostsData] = useState<BlogPost[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
   const { toast } = useToast()
+
+  const fetchPosts = async () => {
+    try {
+      setIsLoading(true)
+      const data = await blogService.getAllPosts()
+      setPostsData(data)
+    } catch (error) {
+      toast({ title: "Failed to load posts", variant: "destructive" })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchPosts()
+  }, [])
 
   const filteredPosts = postsData.filter((post) => {
     const matchesSearch =
     post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.category.toLowerCase().includes(searchQuery.toLowerCase())
+    (post.author_name && post.author_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (post.category_name && post.category_name.toLowerCase().includes(searchQuery.toLowerCase()))
     const matchesFilter =
     filter === "all" ? true : post.status === filter
   return matchesSearch && matchesFilter
   })
 
-
-  const handleDeleteClick = (postId: string) => {
+  const handleDeleteClick = (postId: number) => {
     setSelectedPost(postId)
     setShowDeleteDialog(true)
   }
@@ -47,10 +61,7 @@ export function AdminBlogList() {
     }
     try {
       setIsDeleting(true)
-      // Optional: Call your backend API here
-      // await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/admin/blogs/${selectedPost}`, { method: "DELETE" })
-
-      // Update UI optimistically
+      await blogService.deletePost(selectedPost)
       setPostsData((prev) => prev.filter((p) => p.id !== selectedPost))
       toast({ title: "Post deleted", description: "The blog post was removed successfully." })
     } catch (err) {
@@ -134,13 +145,17 @@ export function AdminBlogList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPosts.map((post) => (
+                {isLoading ? (
+                    <TableRow>
+                        <TableCell colSpan={6} className="h-24 text-center">Loading posts...</TableCell>
+                    </TableRow>
+                ) : filteredPosts.map((post) => (
                   <TableRow key={post.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border">
                           <img
-                            src={post.image}
+                            src={post.featured_image || 'https://placehold.co/600x400'}
                             alt={post.title}
                             className="h-full w-full object-cover"
                           />
@@ -148,8 +163,8 @@ export function AdminBlogList() {
                         <span className="line-clamp-1">{post.title}</span>
                       </div>
                     </TableCell>
-                    <TableCell>{post.author}</TableCell>
-                    <TableCell>{post.category}</TableCell>
+                    <TableCell>{post.author_name || 'Admin Team'}</TableCell>
+                    <TableCell>{post.category_name}</TableCell>
                     <TableCell>
                       <Badge
                         variant={post.status === 'published' ? 'default' : 'secondary'}
@@ -159,7 +174,7 @@ export function AdminBlogList() {
                       </Badge>
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      {new Date(post.date).toLocaleDateString()}
+                      {new Date(post.created_at || Date.now()).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end">
@@ -179,7 +194,7 @@ export function AdminBlogList() {
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               className="text-red-600 "
-                              onClick={() => handleDeleteClick(post.id)}
+                              onClick={() => handleDeleteClick(post.id!)}
                             >
                               <Trash2 className="mr-2 h-4 w-4 hover:text-white hover:bg-[#FF7E00]" />
                               Delete
@@ -190,7 +205,7 @@ export function AdminBlogList() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {filteredPosts.length === 0 && (
+                {!isLoading && filteredPosts.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center">
                       No posts found.

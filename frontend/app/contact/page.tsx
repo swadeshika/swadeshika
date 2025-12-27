@@ -125,7 +125,7 @@ export default function ContactPage() {
                 <CardContent>
                   <div className="flex gap-4">
                     <a 
-                      href="https://instagram.com/swadeshika" 
+                      href="https://www.instagram.com/swadeshika.official?igsh=MzU3YTd0aWxkMHZy" 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-[#8B6F47] hover:text-[#6B4423] transition-colors"
@@ -143,7 +143,7 @@ export default function ContactPage() {
                       <Twitter className="h-6 w-6" />
                     </a>
                     <a 
-                      href="https://facebook.com/swadeshika" 
+                      href="https://www.facebook.com/share/19ZcPQy7N5/" 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-[#8B6F47] hover:text-[#6B4423] transition-colors"

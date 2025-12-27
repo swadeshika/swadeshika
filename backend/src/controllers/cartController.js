@@ -131,6 +131,87 @@ class CartController {
             next(error);
         }
     }
+
+    /**
+     * CRITICAL FIX: Merge Cart (Batch Operation)
+     * ===========================================
+     * 
+     * PURPOSE:
+     * Merges local cart items (from guest session) into user's cart
+     * after login. Uses a single database transaction to prevent
+     * race conditions.
+     * 
+     * PROBLEM (Before):
+     * - Frontend looped through items one by one
+     * - Race condition between add and fetch
+     * - No duplicate detection
+     * - Partial failures left cart in inconsistent state
+     * 
+     * SOLUTION (Now):
+     * - Single batch endpoint
+     * - Database transaction for atomicity
+     * - Duplicate detection and quantity merging
+     * - Returns merged cart in single response
+     * 
+     * WHY THIS MATTERS:
+     * - Prevents cart items from being lost
+     * - Ensures data consistency
+     * - Better performance (1 request vs N requests)
+     * - Proper error handling
+     * 
+     * @param {Object} req - Express request object
+     * @param {Object} req.body.items - Array of cart items to merge
+     * @param {Object} res - Express response object
+     * @param {Function} next - Express next middleware function
+     */
+    static async mergeCart(req, res, next) {
+        try {
+            const userId = req.user.id;
+            const { items } = req.body;
+
+            // Validate items array
+            if (!Array.isArray(items) || items.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Items array is required and must not be empty'
+                });
+            }
+
+            // Validate each item has required fields
+            for (const item of items) {
+                if (!item.productId || !item.quantity) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Each item must have productId and quantity'
+                    });
+                }
+            }
+
+            /**
+             * TRANSACTION LOGIC:
+             * ==================
+             * 1. Begin transaction
+             * 2. Get existing cart items
+             * 3. For each new item:
+             *    - Check if already in cart (same product + variant)
+             *    - If exists: Add quantities
+             *    - If new: Insert new row
+             * 4. Commit transaction
+             * 5. Return merged cart
+             * 
+             * If ANY step fails → Rollback entire operation
+             */
+            const mergedCart = await CartService.mergeCart(userId, items);
+
+            res.status(200).json({
+                success: true,
+                message: `Successfully merged ${items.length} item(s) into cart`,
+                data: mergedCart
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = CartController;

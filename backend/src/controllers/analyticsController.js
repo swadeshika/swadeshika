@@ -14,7 +14,7 @@ const AnalyticsModel = require('../models/analyticsModel');
  */
 exports.trackVisitor = async (req, res, next) => {
     try {
-        const ip = req.ip || req.connection.remoteAddress;
+        const ip = req.ip || (req.socket ? req.socket.remoteAddress : (req.connection ? req.connection.remoteAddress : '127.0.0.1'));
         const userAgent = req.headers['user-agent'];
         const path = req.body.path || '/';
 
@@ -42,6 +42,47 @@ exports.getVisitorCount = async (req, res, next) => {
         res.status(200).json({
             success: true,
             data: { count }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+     * Get Admin Analytics Data (Charts)
+     * @param {Object} req 
+     * @param {Object} res 
+     * @param {Function} next 
+     */
+exports.getAdminAnalytics = async (req, res, next) => {
+    try {
+        const { startDate, endDate, metric, range = 7 } = req.query;
+        
+        // Fetch real data from DB
+        const stats = await AnalyticsModel.getDailyRevenue(parseInt(range));
+
+        const labels = stats.map(s => {
+            const date = new Date(s.date);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+        const data = stats.map(s => s.revenue);
+
+        // If no data, provide empty but valid structure
+        const finalData = {
+            labels: labels.length > 0 ? labels : ["No Data"],
+            datasets: [
+                {
+                    label: metric || "Revenue",
+                    data: data.length > 0 ? data : [0],
+                    borderColor: "#4F46E5",
+                    tension: 0.4
+                }
+            ]
+        };
+
+        res.status(200).json({
+            success: true,
+            data: finalData
         });
     } catch (error) {
         next(error);

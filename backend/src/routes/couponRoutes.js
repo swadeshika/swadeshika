@@ -1,26 +1,29 @@
 const express = require('express');
 const router = express.Router();
-const { body } = require('express-validator');
 const CouponController = require('../controllers/couponController');
 const { authenticate, authorize } = require('../middlewares/authMiddleware');
-const { validate } = require('../middlewares/validationMiddleware');
+
+/**
+ * CRITICAL FIX: Input Validation for Coupons
+ * ===========================================
+ * 
+ * WHAT CHANGED:
+ * - Replaced basic inline validation with comprehensive validator
+ * - Added validation for discount percentages (max 100%)
+ * - Validates date ranges (validUntil > validFrom)
+ * - Prevents invalid usage limits
+ * 
+ * WHY THIS MATTERS:
+ * - Prevents > 100% discounts
+ * - Ensures valid date ranges
+ * - Catches configuration errors
+ */
+const couponValidator = require('../validators/couponValidator');
 
 /**
  * Coupon Routes
  * Base URL: /api/v1/coupons
  */
-
-// Validation
-const couponValidation = [
-    body('code').notEmpty().withMessage('Code is required').toUpperCase(),
-    body('discount_type').isIn(['percentage', 'fixed']).withMessage('Invalid discount type'),
-    body('discount_value').isFloat({ min: 0 }).withMessage('Invalid discount value'),
-    body('min_order_amount').optional().isFloat({ min: 0 }),
-    body('max_discount_amount').optional().isFloat({ min: 0 }),
-    body('usage_limit').optional().isInt({ min: 0 }),
-    body('valid_from').optional().isISO8601(),
-    body('valid_until').optional().isISO8601()
-];
 
 // Public/User routes
 /**
@@ -28,7 +31,7 @@ const couponValidation = [
  * @desc Validate a coupon code
  * @access Private (User)
  */
-router.post('/validate', authenticate, CouponController.validateCoupon);
+router.post('/validate', authenticate, couponValidator.validate, CouponController.validateCoupon);
 
 // Admin routes
 router.use(authenticate, authorize('admin'));
@@ -45,27 +48,27 @@ router.get('/', CouponController.getAllCoupons);
  * @desc Get a single coupon
  * @access Admin
  */
-router.get('/:id', CouponController.getCoupon);
+router.get('/:id', couponValidator.getById, CouponController.getCoupon);
 
 /**
  * @route POST /
  * @desc Create a new coupon
  * @access Admin
  */
-router.post('/', couponValidation, validate, CouponController.createCoupon);
+router.post('/', couponValidator.create, CouponController.createCoupon);
 
 /**
  * @route PUT /:id
  * @desc Update a coupon
  * @access Admin
  */
-router.put('/:id', couponValidation, validate, CouponController.updateCoupon);
+router.put('/:id', couponValidator.update, CouponController.updateCoupon);
 
 /**
  * @route DELETE /:id
  * @desc Delete a coupon
  * @access Admin
  */
-router.delete('/:id', CouponController.deleteCoupon);
+router.delete('/:id', couponValidator.delete, CouponController.deleteCoupon);
 
 module.exports = router;

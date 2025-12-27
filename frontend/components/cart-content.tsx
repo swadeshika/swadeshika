@@ -1,22 +1,95 @@
 "use client"
 
 import Link from "next/link"
-import { Trash2, Plus, Minus, ShoppingBag } from "lucide-react"
+import { Trash2, Plus, Minus, ShoppingBag, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { useCartStore } from "@/lib/cart-store"
-import { useState } from "react"
+import { couponService } from "@/lib/couponService"
+import { useToast } from "@/components/ui/use-toast"
+import { useState, useEffect } from "react"
+import { settingsService, AppSettings } from "@/lib/services/settingsService"
 
 export function CartContent() {
   const { items, updateQuantity, removeItem } = useCartStore()
   const [couponCode, setCouponCode] = useState("")
+  const [isValidating, setIsValidating] = useState(false)
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discountAmount: number;
+  } | null>(null)
+  const { toast } = useToast()
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return
+
+    setIsValidating(true)
+    try {
+      const result = await couponService.validateCoupon(couponCode, subtotal, items)
+
+      if (result.isValid) {
+        setAppliedCoupon({
+          code: couponCode,
+          discountAmount: result.discountAmount
+        })
+        toast({
+          title: "Coupon Applied!",
+          description: `You saved ₹${result.discountAmount}`,
+        })
+      } else {
+        setAppliedCoupon(null)
+        toast({
+          title: "Invalid Coupon",
+          description: result.message || "This coupon code is not valid.",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      setAppliedCoupon(null)
+      toast({
+        title: "Error",
+        description: "Failed to validate coupon. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsValidating(false)
+    }
+  }
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null)
+    setCouponCode("")
+    toast({
+      title: "Coupon Removed",
+      description: " The coupon has been removed from your order."
+    })
+  }
+  const [settings, setSettings] = useState<AppSettings | null>(null)
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const data = await settingsService.getSettings()
+        setSettings(data)
+      } catch (error) {
+        console.error("Failed to fetch settings", error)
+      }
+    }
+    fetchSettings()
+  }, [])
+
+  const shippingThreshold = settings?.free_shipping_threshold ?? 500
+  const flatRate = settings?.flat_rate ?? 50
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const shipping = subtotal >= 999 ? 0 : 50
+  const shipping = subtotal >= shippingThreshold ? 0 : flatRate
   const discount = 0
   const total = subtotal + shipping - discount
+
+  // Calculate amount needed for free shipping
+  const amountForFreeShipping = shippingThreshold - subtotal
 
   if (items.length === 0) {
     return (
@@ -108,12 +181,12 @@ export function CartContent() {
               </div>
               {discount > 0 && (
                 <div className="flex items-center justify-between text-green-600">
-                  <span>Discount</span>
+                  <span>Discount {appliedCoupon && `(${appliedCoupon.code})`}</span>
                   <span className="font-medium">-₹{discount}</span>
                 </div>
               )}
-              {subtotal < 999 && (
-                <p className="text-sm text-[#8B6F47]">Add ₹{999 - subtotal} more for free shipping</p>
+              {amountForFreeShipping > 0 && (
+                <p className="text-sm text-[#8B6F47]">Add ₹{amountForFreeShipping} more for free shipping</p>
               )}
             </div>
 
@@ -133,17 +206,37 @@ export function CartContent() {
             {/* Coupon Code */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Have a coupon code?</label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Enter code"
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value)}
-                  className="flex-1"
-                />
-                <Button variant="outline" className="bg-transparent border-2 border-[#E8DCC8] cursor-pointer">
-                  Apply
-                </Button>
-              </div>
+
+              {appliedCoupon ? (
+                <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <span className="text-sm font-bold text-green-700">{appliedCoupon.code}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRemoveCoupon}
+                    className="h-auto p-1 text-green-600 hover:text-green-800 hover:bg-green-100"
+                  >
+                    <span className="text-xs">Remove</span>
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter code"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="outline"
+                    className="bg-transparent border-2 border-[#E8DCC8] cursor-pointer min-w-[80px]"
+                    onClick={handleApplyCoupon}
+                    disabled={!couponCode.trim() || isValidating}
+                  >
+                    {isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

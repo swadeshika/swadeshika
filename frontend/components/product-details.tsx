@@ -10,48 +10,24 @@ import { Separator } from "@/components/ui/separator"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import useEmblaCarousel from 'embla-carousel-react'
+import { productService, Product } from "@/lib/services/productService"
+import { toast } from "sonner"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface ProductDetailsProps {
   slug: string
 }
 
-// Mock product data
-const productData: Record<string, any> = {
-  "pure-desi-cow-ghee": {
-    id: "1",
-    name: "Pure Desi Cow Ghee",
-    price: 850,
-    comparePrice: 1000,
-    rating: 4.8,
-    reviews: 124,
-    category: "Ghee",
-    badge: "Bestseller",
-    inStock: true,
-    images: ["/golden-ghee-in-glass-jar.jpg", "/traditional-ghee.jpg", "/golden-ghee-in-glass-jar.jpg"],
-    description:
-      "Made from the milk of grass-fed cows using traditional bilona method. Rich in vitamins A, D, E, and K. Perfect for cooking, baking, and Ayurvedic remedies. Our ghee is prepared in small batches to ensure the highest quality and authentic taste.",
-    variants: [
-      { id: "1", name: "500g", price: 450, inStock: true },
-      { id: "2", name: "1kg", price: 850, inStock: true },
-      { id: "3", name: "2kg", price: 1600, inStock: true },
-    ],
-    features: [
-      "100% Pure Desi Cow Ghee",
-      "Traditional Bilona Method",
-      "Rich in Vitamins A, D, E, K",
-      "No Preservatives or Additives",
-      "Grass-Fed Cow Milk",
-      "Small Batch Production",
-    ],
-  },
-}
+
 
 export function ProductDetails({ slug }: ProductDetailsProps) {
-  const product = productData[slug] || productData["pure-desi-cow-ghee"]
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(0)
-  const [selectedVariant, setSelectedVariant] = useState(product.variants[1].id)
+  const [selectedVariant, setSelectedVariant] = useState<string | number>("")
   const [quantity, setQuantity] = useState(1)
   const [currentSlide, setCurrentSlide] = useState(0)
+  
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: 'start',
     slidesToScroll: 1,
@@ -59,7 +35,26 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
     dragFree: true
   })
 
-  const currentVariant = product.variants.find((v: any) => v.id === selectedVariant)
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setLoading(true)
+        const data = await productService.getProduct(slug)
+        setProduct(data)
+        if (data.variants && data.variants.length > 0) {
+          setSelectedVariant(data.variants[0].id)
+        }
+      } catch (error) {
+        console.error("Failed to fetch product:", error)
+        toast.error("Failed to load product details")
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchProduct()
+  }, [slug])
+
+  const currentVariant = product?.variants?.find((v: any) => v.id === selectedVariant) || { price: product?.price }
 
   useEffect(() => {
     if (emblaApi) {
@@ -101,8 +96,23 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
         </Link>
       </Button>
 
-      {/* Product Info */}
-      <div className="grid lg:grid-cols-2 gap-6 sm:gap-12">
+      {loading ? (
+        <div className="grid lg:grid-cols-2 gap-6 sm:gap-12">
+          <Skeleton className="aspect-square rounded-lg" />
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-6 w-1/4" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        </div>
+      ) : !product ? (
+        <div className="text-center py-12">
+           <h2 className="text-2xl font-bold">Product Not Found</h2>
+           <Button asChild className="mt-4"><Link href="/shop">Back to Shop</Link></Button>
+        </div>
+      ) : (
+        <div className="grid lg:grid-cols-2 gap-6 sm:gap-12">
         {/* Images */}
         <div className="space-y-4">
           <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
@@ -346,6 +356,7 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
           <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">{product.description}</p>
         </CardContent>
       </Card>
+      )}
     </div>
   )
 }

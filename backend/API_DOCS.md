@@ -423,7 +423,22 @@ CREATE TABLE coupon_categories (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
--- 19. BLOG CATEGORIES TABLE
+-- 19. BLOG AUTHORS TABLE
+-- ============================================================
+CREATE TABLE blog_authors (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  bio TEXT,
+  avatar VARCHAR(500),
+  social_links JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 20. BLOG CATEGORIES TABLE
 -- ✅ ADDED: Proper blog category management
 -- ============================================================
 CREATE TABLE blog_categories (
@@ -440,7 +455,7 @@ CREATE TABLE blog_categories (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
--- 20. BLOG POSTS TABLE
+-- 21. BLOG POSTS TABLE
 -- ✅ FIXED: Now uses category_id foreign key instead of plain VARCHAR
 -- ============================================================
 CREATE TABLE blog_posts (
@@ -457,7 +472,7 @@ CREATE TABLE blog_posts (
   published_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (author_id) REFERENCES users(id),
+  FOREIGN KEY (author_id) REFERENCES blog_authors(id) ON DELETE SET NULL,
   FOREIGN KEY (category_id) REFERENCES blog_categories(id) ON DELETE SET NULL,
   INDEX idx_slug (slug),
   INDEX idx_category (category_id),
@@ -467,7 +482,7 @@ CREATE TABLE blog_posts (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
--- 21. ADMIN SETTINGS TABLE
+-- 22. ADMIN SETTINGS TABLE
 -- ============================================================
 CREATE TABLE admin_settings (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -495,6 +510,48 @@ CREATE TABLE admin_settings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
+-- ============================================================
+-- 23. CUSTOMERS TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS customers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  first_name VARCHAR(255) NOT NULL,
+  last_name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  phone VARCHAR(20),
+  status ENUM('Active', 'Inactive', 'Blocked') DEFAULT 'Active',
+  join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  total_orders INT DEFAULT 0,
+  total_spent DECIMAL(10, 2) DEFAULT 0.00,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_email (email),
+  INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 24. REPORTS TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS reports (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  report_type ENUM('sales', 'inventory', 'customers', 'financial', 'custom') NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  parameters JSON,
+  data_snapshot JSON,
+  file_url VARCHAR(500),
+  format ENUM('json', 'pdf', 'csv', 'excel') DEFAULT 'json',
+  status ENUM('pending', 'processing', 'completed', 'failed') DEFAULT 'pending',
+  error_message TEXT,
+  generated_by VARCHAR(36) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  completed_at TIMESTAMP NULL,
+  FOREIGN KEY (generated_by) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_type (report_type),
+  INDEX idx_status (status),
+  INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
 ---
 
 ## Entity Relationship Diagram
@@ -506,7 +563,7 @@ erDiagram
     USERS ||--o{ ADDRESSES : has
     USERS ||--o{ REVIEWS : writes
     USERS ||--o{ WISHLIST : maintains
-    USERS ||--o{ BLOG_POSTS : authors
+    BLOG_AUTHORS ||--o{ BLOG_POSTS : authors
     
     CATEGORIES ||--o{ CATEGORIES : "parent-child"
     CATEGORIES ||--o{ PRODUCTS : contains
@@ -531,6 +588,9 @@ erDiagram
     ORDERS ||--o{ COUPON_USAGE : uses
     
     COUPONS ||--o{ COUPON_USAGE : "used in"
+    
+    USERS ||--o| CUSTOMERS : extends
+    USERS ||--o{ REPORTS : generates
 ```
 
 ---
@@ -1594,6 +1654,94 @@ Auth: Required (Admin)
 }
 ```
 
+#### 11.6 Blog Authors (Admin)
+```http
+GET /api/v1/admin/blog/authors
+Auth: Required (Admin)
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Admin Team",
+      "email": "admin@swadeshika.com",
+      "bio": "Official editorial team",
+      "avatar": "/images/default-avatar.png",
+      "social_links": {
+        "twitter": "https://twitter.com/swadeshika",
+        "linkedin": "https://linkedin.com/company/swadeshika"
+      }
+    }
+  ]
+}
+```
+
+#### 11.7 Create Blog Author (Admin)
+```http
+POST /api/v1/admin/blog/authors
+Auth: Required (Admin)
+```
+
+**Request Body:**
+```json
+{
+  "name": "Dr. Ayurveda",
+  "email": "dr.ayurveda@swadeshika.com",
+  "bio": "Expert in Ayurvedic medicine",
+  "avatar": "/images/authors/dr-ayurveda.jpg",
+  "social_links": {
+    "twitter": "@drayu",
+    "instagram": "@drayu_official"
+  }
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Author created successfully",
+  "data": {
+    "id": 2,
+    "name": "Dr. Ayurveda"
+  }
+}
+```
+
+#### 11.8 Update Blog Author (Admin)
+```http
+PUT /api/v1/admin/blog/authors/:id
+Auth: Required (Admin)
+```
+
+**Request Body:** (Same as create)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Author updated successfully"
+}
+```
+
+#### 11.9 Delete Blog Author (Admin)
+```http
+DELETE /api/v1/admin/blog/authors/:id
+Auth: Required (Admin)
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Author deleted successfully"
+}
+```
+
 ---
 
 ### 12. Reports Endpoints (Admin)
@@ -1998,9 +2146,9 @@ class ProductModel {
     if (variants && variants.length) {
       for (const variant of variants) {
         await db.query(
-          `INSERT INTO product_variants (id, product_id, name, sku, price, stock_quantity)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [uuidv4(), productId, variant.name, variant.sku, variant.price, variant.stockQuantity]
+          `INSERT INTO product_variants (product_id, name, sku, price, stock_quantity)
+           VALUES (?, ?, ?, ?, ?)`,
+          [productId, variant.name, variant.sku, variant.price, variant.stockQuantity]
         );
       }
     }
@@ -2197,9 +2345,9 @@ Auth: Required (Admin)
 
 ---
 
-### 11.6 Blog Categories Endpoints
+### 11.10 Blog Categories Endpoints
 
-#### 11.6.1 Get Active Categories (Public)
+#### 11.10.1 Get Active Categories (Public)
 ```http
 GET /api/v1/blog/categories/active
 ```
@@ -2222,7 +2370,7 @@ GET /api/v1/blog/categories/active
 }
 ```
 
-#### 11.6.2 Get All Categories (Admin)
+#### 11.10.2 Get All Categories (Admin)
 ```http
 GET /api/v1/blog/categories
 Auth: Required (Admin)
@@ -2247,7 +2395,7 @@ Auth: Required (Admin)
 }
 ```
 
-#### 11.6.3 Get Single Category (Admin)
+#### 11.10.3 Get Single Category (Admin)
 ```http
 GET /api/v1/blog/categories/:id
 Auth: Required (Admin)
@@ -2270,7 +2418,7 @@ Auth: Required (Admin)
 }
 ```
 
-#### 11.6.4 Create Category (Admin)
+#### 11.10.4 Create Category (Admin)
 ```http
 POST /api/v1/blog/categories
 Auth: Required (Admin)
@@ -2305,7 +2453,7 @@ Auth: Required (Admin)
 }
 ```
 
-#### 11.6.5 Update Category (Admin)
+#### 11.10.5 Update Category (Admin)
 ```http
 PUT /api/v1/blog/categories/:id
 Auth: Required (Admin)
@@ -2338,7 +2486,7 @@ Auth: Required (Admin)
 }
 ```
 
-#### 11.6.6 Delete Category (Admin)
+#### 11.10.6 Delete Category (Admin)
 ```http
 DELETE /api/v1/blog/categories/:id
 Auth: Required (Admin)
@@ -2354,9 +2502,9 @@ Auth: Required (Admin)
 
 ---
 
-### 12. Reports Endpoints (Admin)
+### 12. Reports & Analytics Endpoints (Admin)
 
-#### 12.1 Get Dashboard Overview
+#### 12.1 Get Dashboard Overview (Live Stats)
 ```http
 GET /api/v1/admin/dashboard/overview
 Auth: Required (Admin)
@@ -2367,75 +2515,121 @@ Auth: Required (Admin)
 {
   "success": true,
   "data": {
-    "totalRevenue": 125000,
-    "totalOrders": 456,
-    "totalUsers": 1234,
-    "totalProducts": 89,
-    "revenueGrowth": 15.5,
-    "ordersGrowth": 12.3,
-    "lowStockProducts": 5,
-    "pendingOrders": 12,
-    "recentOrders": [
+    "stats": [
       {
-        "id": "uuid",
-        "orderNumber": "ORD-2025-001",
-        "customer": "John Doe",
-        "total": 1500,
-        "status": "processing",
-        "createdAt": "2025-01-16T10:00:00.000Z"
+        "title": "Revenue",
+        "value": "₹1,25,000",
+        "icon": "BarChart3"
+      },
+      {
+        "title": "Orders",
+        "value": "456",
+        "icon": "ShoppingCart"
+      },
+      {
+        "title": "Products",
+        "value": "89",
+        "icon": "Package"
+      },
+      {
+        "title": "Customers",
+        "value": "1234",
+        "icon": "Users"
       }
     ],
-    "topProducts": [
-      {
-        "id": 1,
-        "name": "Pure Desi Cow Ghee",
-        "soldQuantity": 234,
-        "revenue": 45000
-      }
-    ]
+    "recentOrders": [],
+    "topProducts": [],
+    "lowStockProducts": []
   }
 }
 ```
 
-#### 12.2 Get Detailed Reports
+#### 12.2 Get Analytics Data (Live Charts)
 ```http
-GET /api/v1/admin/dashboard/reports
+GET /api/v1/admin/analytics
 Auth: Required (Admin)
 ```
 
 **Query Parameters:**
-- `startDate` (string): Start date (ISO format)
-- `endDate` (string): End date (ISO format)
-- `type` (string): Report type (sales, products, customers)
+- `startDate`, `endDate`, `metric` (revenue, orders), `interval` (day, month)
 
 **Response (200):**
 ```json
 {
   "success": true,
   "data": {
-    "period": {
-      "start": "2025-01-01",
-      "end": "2025-01-31"
-    },
-    "totalRevenue": 250000,
-    "totalOrders": 890,
-    "averageOrderValue": 280.89,
-    "dailyRevenue": [
+    "labels": ["Jan 1", "Jan 2", "Jan 3", "Jan 4", "Jan 5", "Jan 6", "Jan 7"],
+    "datasets": [
       {
-        "date": "2025-01-01",
-        "revenue": 8500,
-        "orders": 32
-      }
-    ],
-    "topCategories": [
-      {
-        "category": "Ghee",
-        "revenue": 125000,
-        "orders": 450
+        "label": "Revenue",
+        "data": [1200, 1500, 1100, 1800, 2000, 1700, 2200],
+        "borderColor": "#4F46E5",
+        "tension": 0.4
       }
     ]
   }
 }
+```
+
+---
+
+### 12.3 Generated Reports Management
+
+#### 12.3.1 Generate New Report
+```http
+POST /api/v1/admin/reports
+Auth: Required (Admin)
+```
+
+**Request Body:**
+```json
+{
+  "reportType": "sales",
+  "name": "January 2025 Sales Report",
+  "format": "pdf",
+  "parameters": {
+    "startDate": "2025-01-01",
+    "endDate": "2025-01-31"
+  }
+}
+```
+
+#### 12.3.2 List Generated Reports
+```http
+GET /api/v1/admin/reports
+Auth: Required (Admin)
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "reports": [
+      {
+        "id": 123,
+        "name": "January 2025 Sales Report",
+        "type": "sales",
+        "status": "completed",
+        "fileUrl": "/uploads/reports/report-123.pdf",
+        "createdAt": "2025-02-01T10:00:00Z"
+      }
+    ],
+    "pagination": { "page": 1, "total": 50 }
+  }
+}
+```
+
+#### 12.3.3 Download Report
+```http
+GET /api/v1/admin/reports/:id/download
+Auth: Required (Admin)
+```
+
+#### 12.3.4 Delete Report
+```http
+DELETE /api/v1/admin/reports/:id
+Auth: Required (Admin)
 ```
 
 ---

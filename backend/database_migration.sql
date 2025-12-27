@@ -5,14 +5,14 @@
 -- 
 -- SCHEMA OVERVIEW:
 -- ----------------
--- Total Tables: 25
+-- Total Tables: 26
 -- - Users & Auth: users, addresses (2)
 -- - Products: products, categories, product_images, product_variants, 
 --   product_features, product_specifications, product_tags (7)
 -- - Shopping: cart_items, orders, order_items, wishlist (4)
 -- - Discounts: coupons, coupon_usage, coupon_products, coupon_categories (4)
--- - Content: blog_posts, blog_categories, contact_submissions, 
---   newsletter_subscribers (4)
+-- - Content: blog_posts, blog_categories, blog_authors, contact_submissions, 
+--   newsletter_subscribers (5)
 -- - Reviews: reviews (1)
 -- - Admin: admin_settings (1)
 -- - Analytics: site_analytics, visitor_logs (2)
@@ -43,11 +43,19 @@
 -- ✅ Issue 5: Kept simplified cart model (user → cart_items directly)
 -- ✅ Issue 6: Added coupon_products and coupon_categories tables
 -- ✅ Issue 7: Added blog_categories table with proper foreign key
+-- ✅ Issue 8: Added blog_authors table
 -- ============================================================
 
 
 -- Drop existing tables if they exist (in reverse order of dependencies)
+DROP TABLE IF EXISTS visitor_logs;
+DROP TABLE IF EXISTS site_analytics;
+DROP TABLE IF EXISTS newsletter_subscribers;
+DROP TABLE IF EXISTS contact_submissions;
+DROP TABLE IF EXISTS admin_settings;
 DROP TABLE IF EXISTS blog_posts;
+DROP TABLE IF EXISTS blog_categories;
+DROP TABLE IF EXISTS blog_authors;
 DROP TABLE IF EXISTS blog_categories;
 DROP TABLE IF EXISTS coupon_categories;
 DROP TABLE IF EXISTS coupon_products;
@@ -76,10 +84,30 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(255) NOT NULL,
   phone VARCHAR(20),
   role ENUM('customer', 'admin') DEFAULT 'customer',
+  deleted_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_email (email),
   INDEX idx_role (role)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 1.1 CUSTOMERS TABLE (CRM)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS customers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  first_name VARCHAR(255) NOT NULL,
+  last_name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  phone VARCHAR(20),
+  status ENUM('Active', 'Inactive', 'Blocked') DEFAULT 'Active',
+  join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  total_orders INT DEFAULT 0,
+  total_spent DECIMAL(10, 2) DEFAULT 0.00,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_email (email),
+  INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
@@ -427,7 +455,22 @@ CREATE TABLE coupon_categories (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
--- 18. BLOG CATEGORIES TABLE
+-- 18. BLOG AUTHORS TABLE
+-- ============================================================
+CREATE TABLE blog_authors (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  bio TEXT,
+  avatar LONGTEXT,
+  social_links JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 19. BLOG CATEGORIES TABLE
 -- ✅ ADDED: Proper blog category management
 -- ✅ APIs AVAILABLE: Full CRUD via /api/v1/blog/categories
 --    - GET /api/v1/blog/categories/active (public)
@@ -447,24 +490,25 @@ CREATE TABLE blog_categories (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
--- 19. BLOG POSTS TABLE
--- ✅ FIXED: Now uses category_id foreign key instead of plain VARCHAR
+-- 20. BLOG POSTS TABLE
+-- ✅ FIXED: Now uses category_id foreign key
+-- ✅ FIXED: Now uses author_id foreign key to blog_authors
 -- ============================================================
 CREATE TABLE blog_posts (
   id INT AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
   slug VARCHAR(255) UNIQUE NOT NULL,
   excerpt VARCHAR(500),
-  content TEXT NOT NULL,
-  featured_image VARCHAR(500),
-  author_id VARCHAR(36) NOT NULL,
+  content LONGTEXT NOT NULL,
+  featured_image LONGTEXT,
+  author_id INT,
   category_id INT,
   tags TEXT,
   status ENUM('draft', 'published', 'archived') DEFAULT 'draft',
   published_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (author_id) REFERENCES users(id),
+  FOREIGN KEY (author_id) REFERENCES blog_authors(id) ON DELETE SET NULL,
   FOREIGN KEY (category_id) REFERENCES blog_categories(id) ON DELETE SET NULL,
   INDEX idx_slug (slug),
   INDEX idx_category (category_id),
@@ -527,14 +571,13 @@ CREATE TABLE newsletter_subscribers (
   is_active BOOLEAN DEFAULT TRUE,
   subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   unsubscribed_at TIMESTAMP NULL,
-  INDEX idx_email (email),
-  INDEX idx_active (is_active)
+  INDEX idx_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
 -- 23. SITE ANALYTICS TABLE (Simple Counters)
 -- ============================================================
-CREATE TABLE site_analytics (
+CREATE TABLE IF NOT EXISTS site_analytics (
   id INT AUTO_INCREMENT PRIMARY KEY,
   metric_key VARCHAR(100) UNIQUE NOT NULL,
   metric_value BIGINT DEFAULT 0,
@@ -544,7 +587,7 @@ CREATE TABLE site_analytics (
 -- ============================================================
 -- 24. VISITOR LOGS TABLE (Detailed Tracking)
 -- ============================================================
-CREATE TABLE visitor_logs (
+CREATE TABLE IF NOT EXISTS visitor_logs (
   id INT AUTO_INCREMENT PRIMARY KEY,
   ip_address VARCHAR(45),
   user_agent VARCHAR(500),
@@ -553,6 +596,30 @@ CREATE TABLE visitor_logs (
   INDEX idx_ip (ip_address),
   INDEX idx_date (visited_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 25. REPORTS TABLE
+-- ✅ ADDED: For storing generated reports and analytics snapshots
+-- ============================================================
+CREATE TABLE IF NOT EXISTS reports (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  report_type ENUM('sales', 'inventory', 'customers', 'financial', 'custom') NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  parameters JSON COMMENT 'Filters used: date range, category, etc.',
+  data_snapshot JSON COMMENT 'Stores the summary data for quick retrieval',
+  file_url VARCHAR(500) COMMENT 'URL to downloadable PDF/CSV if generated',
+  format ENUM('json', 'pdf', 'csv', 'excel') DEFAULT 'json',
+  status ENUM('pending', 'processing', 'completed', 'failed') DEFAULT 'pending',
+  error_message TEXT,
+  generated_by VARCHAR(36) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  completed_at TIMESTAMP NULL,
+  FOREIGN KEY (generated_by) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_type (report_type),
+  INDEX idx_status (status),
+  INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- ============================================================
 -- SAMPLE DATA (Optional - for testing)
@@ -570,6 +637,10 @@ INSERT INTO categories (name, slug, parent_id, description, display_order) VALUE
 INSERT INTO categories (name, slug, parent_id, description, display_order) VALUES
 ('Turmeric', 'turmeric', 2, 'Organic turmeric powder', 1),
 ('Chili Powder', 'chili-powder', 2, 'Red chili powder', 2);
+
+-- Insert default blog author
+INSERT INTO blog_authors (name, email, bio, avatar, social_links) VALUES
+('Admin Team', 'admin@swadeshika.com', 'The official editorial team of Swadeshika.', '/images/default-avatar.png', '{"twitter": "", "facebook": "", "instagram": "", "linkedin": ""}');
 
 -- Insert sample blog categories
 INSERT INTO blog_categories (name, slug, description, display_order) VALUES
@@ -665,3 +736,73 @@ INSERT INTO site_analytics (metric_key, metric_value) VALUES ('visitor_count', 1
 -- ============================================================
 -- END OF MIGRATION SCRIPT
 -- ============================================================
+
+-- ============================================================
+-- 23. HERO SLIDES TABLE
+-- ============================================================
+CREATE TABLE hero_slides (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  subtitle VARCHAR(255),
+  image_url VARCHAR(500) NOT NULL,
+  button_text VARCHAR(50) DEFAULT 'ORDER NOW',
+  button_link VARCHAR(255) DEFAULT '/shop',
+  display_order INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO hero_slides (title, subtitle, image_url, button_text, button_link, display_order) VALUES
+('Pure Forest Honey', 'Directly from the tribes of Central India', '/hero-slide-1.jpg', 'SHOP HONEY', '/shop/honey', 1),
+('Organic Cold Pressed Oils', 'Nutritious & flavorful for healthy cooking', '/hero-slide-2-spices.jpg', 'EXPLORE OILS', '/shop/oils', 2);
+
+
+-- ============================================================
+-- 24. QUICK LINKS TABLE
+-- ============================================================
+CREATE TABLE quick_links (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  icon VARCHAR(50) NOT NULL,
+  href VARCHAR(255) NOT NULL,
+  display_order INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO quick_links (name, icon, href, display_order) VALUES
+('Festival Specials', '', '/shop/festival', 1),
+('Membership Deals', '', '/membership', 2),
+('New Launches', '', '/shop/new', 3),
+('Under ?499', '', '/shop/under-499', 4),
+('Under ?999', '', '/shop/under-999', 5),
+('All Products', '', '/shop', 6);
+
+
+-- ============================================================
+-- 25. HOME BANNERS TABLE
+-- ============================================================
+CREATE TABLE home_banners (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  type ENUM('big', 'small') NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  subtitle VARCHAR(255),
+  image_url VARCHAR(500) NOT NULL,
+  button_text VARCHAR(50) DEFAULT 'ORDER NOW',
+  button_link VARCHAR(255) DEFAULT '/shop',
+  display_order INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO home_banners (type, title, subtitle, image_url, button_text, button_link, display_order) VALUES
+('big', 'Festival Special Offers', 'Pure Desi Ghee at Best Prices', 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-Ex8VxC2U7ANMfELBQuhxanzrVb8gEz.png', 'ORDER NOW', '/shop/festival', 1),
+('small', 'A2 Ghee from Free-Grazing Gir Cows', 'Pure & Authentic', '/hero-slide-2-spices.jpg', 'Shop Now', '/shop/a2-ghee', 2),
+('small', 'Farmers to get more back to Your Roots', NULL, '/pattern-leaves.jpg', 'ORDER NOW', '/about/farmers', 3);
+
+
+COMMIT;
+

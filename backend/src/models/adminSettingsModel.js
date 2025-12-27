@@ -31,15 +31,21 @@ class AdminSettingsModel {
         low_stock_threshold, 
         allow_backorders, 
         two_factor_enabled, 
-        enabled_gateways,
-        gateway_configs,
         updated_at
       FROM admin_settings
       LIMIT 1
     `;
 
     const [rows] = await db.query(query);
-    return rows[0] || null;
+    
+    if (rows.length === 0) {
+      // Bootstrap with default values
+      await db.query('INSERT INTO admin_settings (id, store_name, updated_at) VALUES (1, "Swadeshika Store", NOW())');
+      const [newRows] = await db.query(query);
+      return newRows[0];
+    }
+
+    return rows[0];
   }
 
   /**
@@ -70,15 +76,13 @@ class AdminSettingsModel {
       'units',
       'low_stock_threshold',
       'allow_backorders',
-      'two_factor_enabled',
-      'enabled_gateways',
-      'gateway_configs'
+      'two_factor_enabled'
     ];
 
     // 1. Get existing settings to find the correct ID
     // WHY? We cannot assume ID=1 because auto-increment might have skipped it or user might have deleted/re-created rows.
     const existing = await this.getSettings();
-    
+
     // If no settings exist, create them with ID 1
     if (!existing) {
       const insertFields = ['id'];
@@ -117,7 +121,7 @@ class AdminSettingsModel {
     }
 
     updates.push('updated_at = NOW()');
-    
+
     // Add ID to values array for WHERE clause
     // This ensures we update the ACTUAL row found in step 1, not just "ID=1"
     values.push(existing.id);

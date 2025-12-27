@@ -1,48 +1,78 @@
+
+"use client"
+
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-
-const orders = [
-	{
-		id: "1",
-		orderNumber: "ORD-20250116-1234",
-		date: "January 16, 2025",
-		status: "Delivered",
-		total: 1880,
-		items: [
-			{ name: "Pure Desi Cow Ghee", variant: "1kg", quantity: 2, image: "/golden-ghee-in-glass-jar.jpg" },
-			{ name: "Organic Turmeric Powder", variant: "250g", quantity: 1, image: "/turmeric-powder-in-bowl.jpg" },
-		],
-	},
-	{
-		id: "2",
-		orderNumber: "ORD-20250110-5678",
-		date: "January 10, 2025",
-		status: "Shipped",
-		total: 650,
-		items: [{ name: "Premium Kashmiri Almonds", variant: "500g", quantity: 1, image: "/kashmiri-almonds.jpg" }],
-	},
-	{
-		id: "3",
-		orderNumber: "ORD-20250105-9012",
-		date: "January 5, 2025",
-		status: "Processing",
-		total: 320,
-		items: [
-			{ name: "Cold Pressed Coconut Oil", variant: "1L", quantity: 1, image: "/coconut-oil-in-glass-bottle.jpg" },
-		],
-	},
-]
+import { ordersService, Order } from "@/lib/services/ordersService"
+import { Heart, Loader2 } from "lucide-react"
+import { useWishlistStore } from "@/lib/wishlist-store"
+import { toast } from "@/hooks/use-toast"
+import { useAuthStore } from "@/lib/auth-store"
+import { cn } from "@/lib/utils"
 
 const statusClasses: Record<string, string> = {
-	Delivered: "bg-[#2D5F3F]/10 text-[#2D5F3F]",
-	Shipped: "bg-[#FF7E00]/10 text-[#FF7E00]",
-	Processing: "bg-[#8B6F47]/10 text-[#6B4423]",
-	Cancelled: "bg-red-100 text-red-700",
+	delivered: "bg-[#2D5F3F]/10 text-[#2D5F3F]",
+	shipped: "bg-[#FF7E00]/10 text-[#FF7E00]",
+	processing: "bg-[#8B6F47]/10 text-[#6B4423]",
+	pending: "bg-yellow-100 text-yellow-700",
+	cancelled: "bg-red-100 text-red-700",
 }
 
 export function OrdersList() {
+	const [orders, setOrders] = useState<Order[]>([]);
+	const [loading, setLoading] = useState(true);
+	const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlistStore()
+	const { isAuthenticated } = useAuthStore()
+	const [togglingId, setTogglingId] = useState<number | string | null>(null)
+
+	useEffect(() => {
+		const fetchOrders = async () => {
+			try {
+				const data = await ordersService.getMyOrders();
+				setOrders(data.orders);
+			} catch (error) {
+				console.error("Failed to fetch orders:", error);
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		fetchOrders();
+	}, []);
+
+	const handleWishlistToggle = async (productId: number | string, e: React.MouseEvent) => {
+		e.preventDefault()
+		if (!isAuthenticated) {
+			toast({ title: "Please login", description: "You need to be logged in to manage your wishlist" })
+			return
+		}
+
+		setTogglingId(productId)
+		try {
+			if (isInWishlist(Number(productId))) {
+				await removeFromWishlist(Number(productId))
+			} else {
+				await addToWishlist(Number(productId))
+			}
+		} finally {
+			setTogglingId(null)
+		}
+	}
+
+	if (loading) {
+		return <div className="text-center py-10 text-[#8B6F47] flex items-center justify-center gap-2">
+			<Loader2 className="h-5 w-5 animate-spin" />
+			Loading orders...
+		</div>;
+	}
+
+	if (orders.length === 0) {
+		return <div className="text-center py-10 text-[#8B6F47]">No orders found.</div>;
+	}
+
 	return (
 		<div className="space-y-6">
 			{orders.map((order) => (
@@ -52,27 +82,47 @@ export function OrdersList() {
 						<div className="flex items-start justify-between">
 							<div>
 								<h3 className="font-semibold text-lg mb-1 text-[#6B4423]">{order.orderNumber}</h3>
-								<p className="text-sm text-[#8B6F47]">Placed on {order.date}</p>
+								<p className="text-sm text-[#8B6F47]">Placed on {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</p>
 							</div>
-							<Badge className={`${statusClasses[order.status]} border-0`}>{order.status}</Badge>
+							<Badge className={cn(statusClasses[order.status] || 'bg-gray-100', "border-0 capitalize")}>{order.status}</Badge>
 						</div>
 
 						{/* Order Items */}
 						<div className="space-y-3">
-							{order.items.map((item, index) => (
+							{order.items?.map((item, index) => (
 								<div key={index} className="flex gap-4">
 									<div className="relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-md bg-[#F5F1E8] border-2 border-[#E8DCC8]">
 										<img
-											src={item.image || "/placeholder.svg"}
-											alt={item.name}
+											src={(item as any).image || "/placeholder.svg"}
+											alt={item.productName}
 											className="object-cover w-full h-full"
 										/>
 									</div>
-									<div className="flex-1">
-										<p className="font-medium text-[#6B4423]">{item.name}</p>
-										<p className="text-sm text-[#8B6F47]">
-											{item.variant} × {item.quantity}
-										</p>
+									<div className="flex-1 flex items-start justify-between">
+										<div>
+											<p className="font-medium text-[#6B4423]">{item.productName}</p>
+											<p className="text-sm text-[#8B6F47]">
+												{item.variantName} × {item.quantity}
+											</p>
+										</div>
+										<button
+											onClick={(e) => handleWishlistToggle((item as any).product_id || (index + 1), e)}
+											className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+											title={isInWishlist(Number((item as any).product_id || (index + 1))) ? "Remove from wishlist" : "Add to wishlist"}
+										>
+											{togglingId === ((item as any).product_id || (index + 1)) ? (
+												<Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+											) : (
+												<Heart
+													className={cn(
+														"h-4 w-4 transition-colors",
+														isInWishlist(Number((item as any).product_id || (index + 1)))
+															? "fill-red-500 text-red-500"
+															: "text-gray-400 hover:text-red-500"
+													)}
+												/>
+											)}
+										</button>
 									</div>
 								</div>
 							))}
@@ -82,10 +132,9 @@ export function OrdersList() {
 						<div className="flex items-center justify-between pt-4 border-t-2 border-[#E8DCC8]">
 							<div>
 								<p className="text-sm text-[#8B6F47]">Total Amount</p>
-								<p className="font-bold text-lg text-[#2D5F3F]">₹{order.total}</p>
+								<p className="font-bold text-lg text-[#2D5F3F]">₹{order.totalAmount || order.summary?.total || 0}</p>
 							</div>
 
-							{/* Buttons: stacked on mobile (Write Review under View), inline on sm+ */}
 							<div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
 								<Button
 									variant="outline"
@@ -96,20 +145,20 @@ export function OrdersList() {
 									<Link href={`/account/orders/${order.id}`}>View Details</Link>
 								</Button>
 
-								{order.status === "Delivered" && (
+								{order.status === "delivered" && (
 									<Button
 										size="sm"
 										asChild
 										className="bg-[#2D5F3F] hover:bg-[#234A32] text-white"
 									>
 										<Link href={`/account/orders/${order.id}/review`}>Write Review</Link>
-									</Button>
+									</Button >
 								)}
-							</div>
-						</div>
-					</CardContent>
-				</Card>
+							</div >
+						</div >
+					</CardContent >
+				</Card >
 			))}
-		</div>
+		</div >
 	)
 }

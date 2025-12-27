@@ -104,6 +104,131 @@ class CartService {
     static async clearCart(userId) {
         return await CartModel.clearCart(userId);
     }
+
+    /**
+     * CRITICAL FIX: Merge Cart with Transaction Support
+     * ==================================================
+     * 
+     * PURPOSE:
+     * Merges multiple items into user's cart in a single atomic operation.
+     * Uses database transaction to ensure all-or-nothing behavior.
+     * 
+     * TRANSACTION FLOW:
+     * =================
+     * 1. BEGIN TRANSACTION
+     * 2. Get all existing cart items for user
+     * 3. For each item to merge:
+     *    a. Check if item already exists (same product + variant)
+     *    b. If exists: UPDATE quantity (add to existing)
+     *    c. If new: INSERT new cart item
+     * 4. COMMIT TRANSACTION
+     * 5. Return complete merged cart
+     * 
+     * ERROR HANDLING:
+     * ===============
+     * - If ANY operation fails → ROLLBACK entire transaction
+     * - Cart remains in original state (no partial updates)
+     * - Error is thrown to controller for proper response
+     * 
+     * WHY TRANSACTION IS CRITICAL:
+     * ============================
+     * - Prevents partial merges (some items added, some failed)
+     * - Ensures data consistency
+     * - Handles concurrent requests safely
+     * - Allows atomic rollback on error
+     * 
+     * @param {number|string} userId - User ID
+     * @param {Array} items - Array of items to merge [{productId, variantId, quantity}]
+     * @returns {Promise<Object>} Complete merged cart with totals
+     */
+    static async mergeCart(userId, items) {
+        const db = require('../config/db');
+        const conn = await db.getConnection();
+        
+        try {
+            // Step 1: Begin Transaction
+            // This ensures all operations succeed or fail together
+            await conn.beginTransaction();
+
+            // Step 2: Get existing cart items
+            // We need this to detect duplicates
+            const [existingItems] = await conn.query(
+                'SELECT * FROM cart_items WHERE user_id = ?',
+                [userId]
+            );
+
+            // Create a map for quick lookup
+            // Key: "productId-variantId" (variantId can be null)
+            // Value: existing cart item
+            const existingMap = new Map();
+            existingItems.forEach(item => {
+                const key = `${item.product_id}-${item.variant_id || 'null'}`;
+                existingMap.set(key, item);
+            });
+
+            // Step 3: Process each item to merge
+            for (const item of items) {
+                const { productId, variantId, quantity } = item;
+                const key = `${productId}-${variantId || 'null'}`;
+                const existing = existingMap.get(key);
+
+                if (existing) {
+                    /**
+                     * DUPLICATE FOUND: Update quantity
+                     * =================================
+                     * Add new quantity to existing quantity
+                     * Example: Cart has 2, merging 3 → Result: 5
+                     */
+                    const newQuantity = existing.quantity + quantity;
+                    await conn.query(
+                        'UPDATE cart_items SET quantity = ? WHERE id = ?',
+                        [newQuantity, existing.id]
+                    );
+                } else {
+                    /**
+                     * NEW ITEM: Insert into cart
+                     * ===========================
+                     * Add as new cart item
+                     */
+                    await conn.query(
+                        'INSERT INTO cart_items (user_id, product_id, variant_id, quantity) VALUES (?, ?, ?, ?)',
+                        [userId, productId, variantId || null, quantity]
+                    );
+                }
+            }
+
+            // Step 4: Commit Transaction
+            // All operations succeeded, make changes permanent
+            await conn.commit();
+
+            // Step 5: Return merged cart
+            // Use existing getCart method to get complete cart with totals
+            return await this.getCart(userId);
+
+        } catch (error) {
+            /**
+             * ERROR HANDLING: Rollback Transaction
+             * ====================================
+             * 
+             * If ANY operation failed:
+             * - Rollback all changes
+             * - Cart remains in original state
+             * - Throw error to controller
+             * 
+             * COMMON ERRORS:
+             * - Invalid product ID (foreign key constraint)
+             * - Database connection lost
+             * - Concurrent modification
+             */
+            await conn.rollback();
+            console.error('[CartService] Merge cart transaction failed:', error);
+            throw new Error(`Failed to merge cart: ${error.message}`);
+        } finally {
+            // Always release connection back to pool
+            // This prevents connection leaks
+            conn.release();
+        }
+    }
 }
 
 module.exports = CartService;

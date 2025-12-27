@@ -25,25 +25,112 @@ class ContactModel {
      * @param {Object} options - { page, limit, status }
      * @returns {Promise<Object>} { submissions, total, page, limit, pages }
      */
-    static async findAll({ page = 1, limit = 20, status }) {
+    static async findAll({ page = 1, limit = 20, status, search }) {
         const offset = (page - 1) * limit;
         let query = 'SELECT * FROM contact_submissions';
         const params = [];
 
+        // Dynamic filtering
+        const conditions = [];
         if (status) {
-            query += ' WHERE status = ?';
+            conditions.push('status = ?');
             params.push(status);
+        }
+        if (search) {
+            conditions.push('(name LIKE ? OR email LIKE ? OR subject LIKE ?)');
+            params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+        }
+        // Soft-delete filter (optional, if archiving hides them by default, but admin likely wants to see them if status='archived' is filtered)
+        // For now, allow seeing all statuses unless filtered.
+
+        if (conditions.length > 0) {
+            query += ' WHERE ' + conditions.join(' AND ');
         }
 
         query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
         params.push(parseInt(limit), parseInt(offset));
 
         const [submissions] = await db.query(query, params);
-        
-        const [countResult] = await db.query('SELECT COUNT(*) as total FROM contact_submissions');
+
+        // Count query
+        let countQuery = 'SELECT COUNT(*) as total FROM contact_submissions';
+        // Reuse conditions for count
+        if (conditions.length > 0) {
+            countQuery += ' WHERE ' + conditions.join(' AND ');
+        }
+        // Slice params to match count query (remove limit/offset)
+        const countParams = params.slice(0, params.length - 2);
+
+        const [countResult] = await db.query(countQuery, countParams);
         const total = countResult[0].total;
 
-        return { submissions, total, page, limit, pages: Math.ceil(total / limit) };
+        return { submissions, total, page, limit: parseInt(limit), pages: Math.ceil(total / limit) };
+    }
+
+    /**
+     * Find submission by ID
+     * @param {number} id 
+     */
+    static async findById(id) {
+        const [rows] = await db.query('SELECT * FROM contact_submissions WHERE id = ?', [id]);
+        return rows[0];
+    }
+
+    /**
+     * Update submission (status, etc.)
+     * @param {number} id 
+     * @param {Object} data 
+     */
+    static async update(id, data) {
+        const { status, message } = data; // message here might be used for something else, but main update is status
+        // Usually we only update status. 
+        if (!status) return false;
+
+        await db.query('UPDATE contact_submissions SET status = ? WHERE id = ?', [status, id]);
+        return true;
+    }
+
+    /**
+     * Delete (Soft delete/Archive)
+     * @param {number} id 
+     */
+    static async delete(id) {
+        await db.query("UPDATE contact_submissions SET status = 'archived' WHERE id = ?", [id]);
+        return true;
+    }
+
+    /**
+     * Find submission by ID
+     * @param {number} id - Submission ID
+     * @returns {Promise<Object>} Submission object
+     */
+    static async findById(id) {
+        const [rows] = await db.query('SELECT * FROM contact_submissions WHERE id = ?', [id]);
+        return rows[0];
+    }
+
+    /**
+     * Update submission status
+     * @param {number} id - Submission ID
+     * @param {string} status - New status
+     * @returns {Promise<boolean>} True if updated
+     */
+    static async update(id, { status }) {
+        const [result] = await db.query(
+            'UPDATE contact_submissions SET status = ? WHERE id = ?',
+            [status, id]
+        );
+        return result.affectedRows > 0;
+    }
+
+    /**
+     * Delete submission
+     * @param {number} id - Submission ID
+     * @returns {Promise<boolean>} True if deleted
+     */
+    static async delete(id) {
+        const [result] = await db.query('DELETE FROM contact_submissions WHERE id = ?', [id]);
+        return result.affectedRows > 0;
     }
 }
 

@@ -14,7 +14,7 @@ const AnalyticsModel = require('../models/analyticsModel');
  */
 exports.trackVisitor = async (req, res, next) => {
     try {
-        const ip = req.ip || req.connection.remoteAddress;
+        const ip = req.ip || (req.socket ? req.socket.remoteAddress : (req.connection ? req.connection.remoteAddress : '127.0.0.1'));
         const userAgent = req.headers['user-agent'];
         const path = req.body.path || '/';
 
@@ -56,16 +56,24 @@ exports.getVisitorCount = async (req, res, next) => {
      */
 exports.getAdminAnalytics = async (req, res, next) => {
     try {
-        const { startDate, endDate, metric, interval } = req.query;
-        // In a real implementation, call AnalyticsService or OrderService to aggregate data
-        // For now, returning mock data to satisfy the frontend/docs contract
+        const { startDate, endDate, metric, range = 7 } = req.query;
+        
+        // Fetch real data from DB
+        const stats = await AnalyticsModel.getDailyRevenue(parseInt(range));
 
-        const mockData = {
-            labels: ["Jan 1", "Jan 2", "Jan 3", "Jan 4", "Jan 5", "Jan 6", "Jan 7"],
+        const labels = stats.map(s => {
+            const date = new Date(s.date);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+        const data = stats.map(s => s.revenue);
+
+        // If no data, provide empty but valid structure
+        const finalData = {
+            labels: labels.length > 0 ? labels : ["No Data"],
             datasets: [
                 {
                     label: metric || "Revenue",
-                    data: [1200, 1500, 1100, 1800, 2000, 1700, 2200],
+                    data: data.length > 0 ? data : [0],
                     borderColor: "#4F46E5",
                     tension: 0.4
                 }
@@ -74,7 +82,7 @@ exports.getAdminAnalytics = async (req, res, next) => {
 
         res.status(200).json({
             success: true,
-            data: mockData
+            data: finalData
         });
     } catch (error) {
         next(error);

@@ -510,6 +510,48 @@ CREATE TABLE admin_settings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
+-- ============================================================
+-- 23. CUSTOMERS TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS customers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  first_name VARCHAR(255) NOT NULL,
+  last_name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  phone VARCHAR(20),
+  status ENUM('Active', 'Inactive', 'Blocked') DEFAULT 'Active',
+  join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  total_orders INT DEFAULT 0,
+  total_spent DECIMAL(10, 2) DEFAULT 0.00,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_email (email),
+  INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 24. REPORTS TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS reports (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  report_type ENUM('sales', 'inventory', 'customers', 'financial', 'custom') NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  parameters JSON,
+  data_snapshot JSON,
+  file_url VARCHAR(500),
+  format ENUM('json', 'pdf', 'csv', 'excel') DEFAULT 'json',
+  status ENUM('pending', 'processing', 'completed', 'failed') DEFAULT 'pending',
+  error_message TEXT,
+  generated_by VARCHAR(36) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  completed_at TIMESTAMP NULL,
+  FOREIGN KEY (generated_by) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_type (report_type),
+  INDEX idx_status (status),
+  INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
 ---
 
 ## Entity Relationship Diagram
@@ -546,6 +588,9 @@ erDiagram
     ORDERS ||--o{ COUPON_USAGE : uses
     
     COUPONS ||--o{ COUPON_USAGE : "used in"
+    
+    USERS ||--o| CUSTOMERS : extends
+    USERS ||--o{ REPORTS : generates
 ```
 
 ---
@@ -2101,9 +2146,9 @@ class ProductModel {
     if (variants && variants.length) {
       for (const variant of variants) {
         await db.query(
-          `INSERT INTO product_variants (id, product_id, name, sku, price, stock_quantity)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [uuidv4(), productId, variant.name, variant.sku, variant.price, variant.stockQuantity]
+          `INSERT INTO product_variants (product_id, name, sku, price, stock_quantity)
+           VALUES (?, ?, ?, ?, ?)`,
+          [productId, variant.name, variant.sku, variant.price, variant.stockQuantity]
         );
       }
     }

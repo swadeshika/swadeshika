@@ -84,10 +84,30 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(255) NOT NULL,
   phone VARCHAR(20),
   role ENUM('customer', 'admin') DEFAULT 'customer',
+  deleted_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_email (email),
   INDEX idx_role (role)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 1.1 CUSTOMERS TABLE (CRM)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS customers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  first_name VARCHAR(255) NOT NULL,
+  last_name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  phone VARCHAR(20),
+  status ENUM('Active', 'Inactive', 'Blocked') DEFAULT 'Active',
+  join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  total_orders INT DEFAULT 0,
+  total_spent DECIMAL(10, 2) DEFAULT 0.00,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_email (email),
+  INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
@@ -551,14 +571,13 @@ CREATE TABLE newsletter_subscribers (
   is_active BOOLEAN DEFAULT TRUE,
   subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   unsubscribed_at TIMESTAMP NULL,
-  INDEX idx_email (email),
-  INDEX idx_active (is_active)
+  INDEX idx_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
 -- 23. SITE ANALYTICS TABLE (Simple Counters)
 -- ============================================================
-CREATE TABLE site_analytics (
+CREATE TABLE IF NOT EXISTS site_analytics (
   id INT AUTO_INCREMENT PRIMARY KEY,
   metric_key VARCHAR(100) UNIQUE NOT NULL,
   metric_value BIGINT DEFAULT 0,
@@ -568,7 +587,7 @@ CREATE TABLE site_analytics (
 -- ============================================================
 -- 24. VISITOR LOGS TABLE (Detailed Tracking)
 -- ============================================================
-CREATE TABLE visitor_logs (
+CREATE TABLE IF NOT EXISTS visitor_logs (
   id INT AUTO_INCREMENT PRIMARY KEY,
   ip_address VARCHAR(45),
   user_agent VARCHAR(500),
@@ -582,7 +601,7 @@ CREATE TABLE visitor_logs (
 -- 25. REPORTS TABLE
 -- ✅ ADDED: For storing generated reports and analytics snapshots
 -- ============================================================
-CREATE TABLE reports (
+CREATE TABLE IF NOT EXISTS reports (
   id INT AUTO_INCREMENT PRIMARY KEY,
   report_type ENUM('sales', 'inventory', 'customers', 'financial', 'custom') NOT NULL,
   name VARCHAR(255) NOT NULL,
@@ -717,3 +736,73 @@ INSERT INTO site_analytics (metric_key, metric_value) VALUES ('visitor_count', 1
 -- ============================================================
 -- END OF MIGRATION SCRIPT
 -- ============================================================
+
+-- ============================================================
+-- 23. HERO SLIDES TABLE
+-- ============================================================
+CREATE TABLE hero_slides (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  subtitle VARCHAR(255),
+  image_url VARCHAR(500) NOT NULL,
+  button_text VARCHAR(50) DEFAULT 'ORDER NOW',
+  button_link VARCHAR(255) DEFAULT '/shop',
+  display_order INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO hero_slides (title, subtitle, image_url, button_text, button_link, display_order) VALUES
+('Pure Forest Honey', 'Directly from the tribes of Central India', '/hero-slide-1.jpg', 'SHOP HONEY', '/shop/honey', 1),
+('Organic Cold Pressed Oils', 'Nutritious & flavorful for healthy cooking', '/hero-slide-2-spices.jpg', 'EXPLORE OILS', '/shop/oils', 2);
+
+
+-- ============================================================
+-- 24. QUICK LINKS TABLE
+-- ============================================================
+CREATE TABLE quick_links (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  icon VARCHAR(50) NOT NULL,
+  href VARCHAR(255) NOT NULL,
+  display_order INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO quick_links (name, icon, href, display_order) VALUES
+('Festival Specials', '', '/shop/festival', 1),
+('Membership Deals', '', '/membership', 2),
+('New Launches', '', '/shop/new', 3),
+('Under ?499', '', '/shop/under-499', 4),
+('Under ?999', '', '/shop/under-999', 5),
+('All Products', '', '/shop', 6);
+
+
+-- ============================================================
+-- 25. HOME BANNERS TABLE
+-- ============================================================
+CREATE TABLE home_banners (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  type ENUM('big', 'small') NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  subtitle VARCHAR(255),
+  image_url VARCHAR(500) NOT NULL,
+  button_text VARCHAR(50) DEFAULT 'ORDER NOW',
+  button_link VARCHAR(255) DEFAULT '/shop',
+  display_order INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO home_banners (type, title, subtitle, image_url, button_text, button_link, display_order) VALUES
+('big', 'Festival Special Offers', 'Pure Desi Ghee at Best Prices', 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-Ex8VxC2U7ANMfELBQuhxanzrVb8gEz.png', 'ORDER NOW', '/shop/festival', 1),
+('small', 'A2 Ghee from Free-Grazing Gir Cows', 'Pure & Authentic', '/hero-slide-2-spices.jpg', 'Shop Now', '/shop/a2-ghee', 2),
+('small', 'Farmers to get more back to Your Roots', NULL, '/pattern-leaves.jpg', 'ORDER NOW', '/about/farmers', 3);
+
+
+COMMIT;
+

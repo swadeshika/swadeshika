@@ -399,6 +399,7 @@ exports.getOrderById = async (req, res, next) => {
                 total: order.total_amount
             },
             trackingNumber: order.tracking_number,
+            estimatedDeliveryDate: order.estimated_delivery_date || new Date(new Date(order.created_at).setDate(new Date(order.created_at).getDate() + 5)),
             createdAt: order.created_at,
             deliveredAt: order.delivered_at,
             timeline: timeline
@@ -496,8 +497,8 @@ exports.trackOrder = async (req, res, next) => {
                 orderId: order.order_number,
                 status: order.status,
                 trackingNumber: order.tracking_number,
-                carrier: 'Blue Dart', // Placeholder or add to DB
-                estimatedDelivery: new Date(new Date(order.created_at).setDate(new Date(order.created_at).getDate() + 5)), // Mock 5 days
+                carrier: order.carrier || 'Blue Dart',
+                estimatedDelivery: order.estimated_delivery_date || new Date(new Date(order.created_at).setDate(new Date(order.created_at).getDate() + 5)),
                 currentLocation: order.status === 'delivered' ? 'Delivered' : 'In Transit',
                 timeline
             }

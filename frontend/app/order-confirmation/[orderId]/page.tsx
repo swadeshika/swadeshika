@@ -68,10 +68,12 @@ export default function OrderConfirmationPage() {
     }
 
     const orderDate = order.createdAt ? format(new Date(order.createdAt), "MMMM d, yyyy") : "N/A"
-    // Estimated delivery: +5 days mock
-    const estimatedDate = order.createdAt
-        ? format(new Date(new Date(order.createdAt).setDate(new Date(order.createdAt).getDate() + 5)), "MMMM d, yyyy")
-        : "Soon"
+    
+    const estimatedDate = order.estimatedDeliveryDate 
+        ? format(new Date(order.estimatedDeliveryDate), "MMMM d, yyyy")
+        : (order.createdAt
+            ? format(new Date(new Date(order.createdAt).setDate(new Date(order.createdAt).getDate() + 5)), "MMMM d, yyyy")
+            : "Soon")
 
     return (
         <div className="flex min-h-screen flex-col">

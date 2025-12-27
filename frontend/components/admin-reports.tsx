@@ -5,16 +5,12 @@
  *
  * Purpose
  * - Presents key business metrics with a date range filter and export options.
- * - Keeps data client-side with mock derivations; ready to swap with API later.
+ * - Integration: Uses ReportService to fetch real-time analytics from the backend.
  *
  * Key Features
  * - Date range selector (7/30/90/365 days) influencing KPIs and sections
  * - CSV export (overall summary + per-section where useful)
  * - Consistent admin styling and accessible markup
- *
- * Notes
- * - All data is mock-derived deterministically from the selected range.
- * - Replace the `deriveData` function with API calls to fetch real metrics.
  */
 
 import { useMemo, useState, useEffect } from "react"

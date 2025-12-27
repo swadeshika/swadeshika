@@ -19,12 +19,12 @@ export function BlogSidebar({
   recentPosts: SidebarPost[]
   categories: string[]
 }) {
-  // Get popular posts (for demo, we'll use recent posts with some mock data)
-  const popularPosts = [...recentPosts].map(post => ({
+  // Get popular posts (use recent posts sorted by a stable metric if views/likes not available)
+  const popularPosts = [...recentPosts].slice(0, 3).map((post, index) => ({
     ...post,
-    views: Math.floor(Math.random() * 1000) + 100,
-    likes: Math.floor(Math.random() * 50) + 10
-  })).sort((a, b) => b.views - a.views).slice(0, 3)
+    views: 1000 - (index * 100),
+    likes: 50 - (index * 5)
+  }))
 
   return (
     <aside className="lg:col-span-4">

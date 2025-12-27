@@ -38,6 +38,7 @@ export interface Order {
     address?: OrderAddress; // Detail view
     summary?: OrderSummary; // Detail view
     trackingNumber?: string;
+    estimatedDeliveryDate?: string | Date;
 }
 
 interface OrdersResponse {

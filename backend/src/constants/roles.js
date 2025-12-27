@@ -96,10 +96,12 @@ const hasPermission = (userRole, permission) => {
 // Works together with middleware: authorize(['admin'])
 const hasRole = (userRole, requiredRoles) => {
   if (!userRole) return false;
-  const rolesToCheck = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
+  const normalizedUserRole = userRole.toLowerCase().trim();
+  const rolesToCheck = (Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles])
+    .map(role => role.toLowerCase().trim());
 
   // Get all allowed roles for current user, based on hierarchy
-  const userRoles = ROLE_HIERARCHY[userRole] || [];
+  const userRoles = ROLE_HIERARCHY[normalizedUserRole] || [];
 
   // Check whether any requiredRole exists inside user's hierarchy
   return rolesToCheck.some(role => userRoles.includes(role));

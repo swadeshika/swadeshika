@@ -52,7 +52,12 @@ class DashboardService {
             coupons: couponPerformance,
             returns: [
                 { label: "Return Rate", value: `${returnRate}%` },
-                { label: "Avg. Resolution Time", value: "2.5 days" }, // Static for now
+                { 
+                    label: "Avg. Resolution Time", 
+                    value: returnStats.avgResolutionSeconds > 0 
+                        ? `${(returnStats.avgResolutionSeconds / 86400).toFixed(1)} days` 
+                        : "N/A" 
+                },
                 { label: "Refunded Amount", value: `₹${returnStats.refundedAmount.toLocaleString('en-IN')}` }
             ]
         };

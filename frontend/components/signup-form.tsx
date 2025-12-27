@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -16,7 +16,14 @@ export function SignupForm() {
   const router = useRouter()
   const { toast } = useToast()
   const register = useAuthStore((state) => state.register)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/")
+    }
+  }, [isAuthenticated, router])
 
   // Form State
   const [formData, setFormData] = useState({
@@ -48,7 +55,7 @@ export function SignupForm() {
     }
 
     try {
-      const { success, role } = await register(
+      const { success, role, error } = await register(
         formData.fullName,
         formData.email,
         formData.password,
@@ -72,7 +79,7 @@ export function SignupForm() {
       } else {
         toast({
           title: "Registration Failed",
-          description: "Could not create account. Please try again or use a different email.",
+          description: error || "Could not create account. Please try again or use a different email.",
           variant: "destructive",
         })
       }
@@ -136,6 +143,9 @@ export function SignupForm() {
               onChange={handleChange}
               required 
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Must be at least 8 characters and include upper, lower, number and special character.
+            </p>
           </div>
 
           <div className="space-y-2">

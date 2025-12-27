@@ -108,10 +108,15 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!hasHydrated) return
-    if (!isAuthenticated || user?.role !== "admin") {
+    
+    // Normalize role for comparison
+    const normalizedRole = user?.role?.toLowerCase().trim();
+    console.log(`[AdminLayout] Auth Check - Role: ${user?.role}, Normalized: ${normalizedRole}, Authenticated: ${isAuthenticated}`);
+
+    if (!isAuthenticated || normalizedRole !== "admin") {
       toast({
         title: "Access Denied",
-        description: "You must be logged in as an admin to access this page.",
+        description: `You must be logged in as an admin (Role: ${user?.role || 'none'}) to access this page.`,
         variant: "destructive",
       })
       router.push("/login")
@@ -122,7 +127,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   if (!hasHydrated) {
     return null
   }
-  if (!isAuthenticated || user?.role !== "admin") {
+  if (!isAuthenticated || user?.role?.toLowerCase().trim() !== "admin") {
     return null
   }
 

@@ -37,7 +37,15 @@ class AdminSettingsModel {
     `;
 
     const [rows] = await db.query(query);
-    return rows[0] || null;
+    
+    if (rows.length === 0) {
+      // Bootstrap with default values
+      await db.query('INSERT INTO admin_settings (id, store_name, updated_at) VALUES (1, "Swadeshika Store", NOW())');
+      const [newRows] = await db.query(query);
+      return newRows[0];
+    }
+
+    return rows[0];
   }
 
   /**

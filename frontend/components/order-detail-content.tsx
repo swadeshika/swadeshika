@@ -10,56 +10,11 @@ import { useState } from "react"
 import { useAuthStore } from "@/lib/auth-store"
 import { toast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+import { ordersService, Order } from "@/lib/services/ordersService"
+import { useEffect } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
 
-// Mock order data
-const mockOrder = {
-  id: "ORD-2024-001",
-  status: "shipped",
-  createdAt: "2024-01-15T10:30:00Z",
-  total: 2499,
-  subtotal: 2299,
-  shipping: 100,
-  tax: 100,
-  items: [
-    {
-      id: "1",
-      name: "Premium A2 Desi Cow Ghee",
-      variant: "1 Liter",
-      price: 899,
-      quantity: 2,
-      image: "/traditional-ghee.jpg",
-    },
-    {
-      id: "2",
-      name: "Organic Turmeric Powder",
-      variant: "500g",
-      price: 299,
-      quantity: 1,
-      image: "/turmeric-powder-in-bowl.jpg",
-    },
-  ],
-  shippingAddress: {
-    name: "Rajesh Kumar",
-    phone: "+91 98765 43210",
-    email: "rajesh@example.com",
-    address: "123, MG Road, Koramangala",
-    city: "Bangalore",
-    state: "Karnataka",
-    pincode: "560034",
-  },
-  tracking: {
-    carrier: "Blue Dart",
-    trackingNumber: "BD123456789IN",
-    estimatedDelivery: "2024-01-20",
-  },
-  timeline: [
-    { status: "placed", date: "2024-01-15T10:30:00Z", completed: true },
-    { status: "confirmed", date: "2024-01-15T11:00:00Z", completed: true },
-    { status: "processing", date: "2024-01-16T09:00:00Z", completed: true },
-    { status: "shipped", date: "2024-01-17T14:30:00Z", completed: true },
-    { status: "delivered", date: null, completed: false },
-  ],
-}
+// Mock data removed
 
 const statusConfig = {
   placed: { label: "Placed", color: "bg-blue-500", icon: Clock },
@@ -75,6 +30,24 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlistStore()
   const { isAuthenticated } = useAuthStore()
   const [togglingId, setTogglingId] = useState<string | number | null>(null)
+  const [order, setOrder] = useState<Order | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchOrder = async () => {
+      try {
+        setLoading(true)
+        const data = await ordersService.getOrderById(orderId)
+        setOrder(data)
+      } catch (error) {
+        console.error("Failed to fetch order:", error)
+        toast({ title: "Error", description: "Failed to load order details" })
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchOrder()
+  }, [orderId])
 
   const handleWishlistToggle = async (productId: string | number, name: string, e: React.MouseEvent) => {
     e.preventDefault()
@@ -95,8 +68,28 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
     }
   }
 
-  const order = mockOrder
-  const StatusIcon = statusConfig[order.status as keyof typeof statusConfig].icon
+  if (loading) {
+    return (
+      <div className="container mx-auto px-1 py-8 max-w-6xl space-y-6">
+        <Skeleton className="h-10 w-1/3" />
+        <div className="grid lg:grid-cols-3 gap-6">
+           <Skeleton className="lg:col-span-2 h-[400px]" />
+           <Skeleton className="h-[400px]" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!order) {
+    return (
+      <div className="container mx-auto px-1 py-8 max-w-6xl text-center">
+        <h2 className="text-2xl font-bold">Order Not Found</h2>
+        <Button asChild className="mt-4"><Link href="/account/orders">Back to Orders</Link></Button>
+      </div>
+    )
+  }
+
+  const StatusIcon = statusConfig[order.status as keyof typeof statusConfig]?.icon || Clock
 
   return (
     <div className="container mx-auto px-1 py-8 max-w-6xl">

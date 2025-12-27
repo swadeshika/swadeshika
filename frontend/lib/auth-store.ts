@@ -35,10 +35,10 @@ export interface User {
 interface AuthState {
   user: User | null
   isAuthenticated: boolean
-  login: (email: string, password: string) => Promise<{ success: boolean; role: UserRole }>
+  login: (email: string, password: string) => Promise<{ success: boolean; role: UserRole; error?: string }>
   logout: () => Promise<void>
   setUser: (user: User) => void
-  register: (name: string, email: string, password: string, phone?: string) => Promise<{ success: boolean; role: UserRole }>
+  register: (name: string, email: string, password: string, phone?: string) => Promise<{ success: boolean; role: UserRole; error?: string }>
 }
 
 /**
@@ -79,7 +79,11 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
           })
 
-          return { success: false, role: "customer" as UserRole }
+          return {
+            success: false,
+            role: "customer" as UserRole,
+            error: error.errors?.[0]?.message || error.message || "Login failed"
+          }
         }
       },
 
@@ -107,7 +111,11 @@ export const useAuthStore = create<AuthState>()(
         } catch (error: any) {
           console.error('Registration error:', error)
 
-          return { success: false, role: "customer" as UserRole }
+          return {
+            success: false,
+            role: "customer" as UserRole,
+            error: error.errors?.[0]?.message || error.message || "Registration failed"
+          }
         }
       },
 

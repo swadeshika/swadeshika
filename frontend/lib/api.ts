@@ -31,11 +31,17 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
         }
     }
 
-    console.log('Fetching:', url);
-    const response = await fetch(url, {
-        ...options,
-        headers,
-    });
+    console.log(`[API] Fetching: ${url}`, options);
+    let response;
+    try {
+        response = await fetch(url, {
+            ...options,
+            headers,
+        });
+    } catch (fetchError: any) {
+        console.error(`[API] Network Error for ${url}:`, fetchError);
+        throw fetchError; // Re-throw to be caught by the component
+    }
 
     let data;
     try {
@@ -55,7 +61,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
                 window.location.href = '/login';
             }, 100);
         }
-        throw new Error(data.message || 'API request failed');
+
+        // Create an error object that includes the detailed messages from the backend
+        const error: any = new Error(data.message || 'API request failed');
+        error.status = response.status;
+        error.errors = data.errors; // Validation errors array
+        throw error;
     }
 
     return { data };

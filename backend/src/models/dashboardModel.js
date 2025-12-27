@@ -202,12 +202,6 @@ class DashboardModel {
         return rows;
     }
 
-    /**
-     * Get returns statistics
-     * @param {string} startDate 
-     * @param {string} endDate 
-     * @returns {Promise<Object>}
-     */
     static async getReturns(startDate, endDate) {
         // Return Rate
         const [totalOrders] = await db.query(
@@ -225,10 +219,20 @@ class DashboardModel {
             [startDate, endDate]
         );
 
+        // Avg Resolution Time (for delivered orders)
+        const [resolutionTime] = await db.query(
+            `SELECT COALESCE(AVG(TIMESTAMPDIFF(SECOND, created_at, delivered_at)), 0) as avg_seconds 
+             FROM orders 
+             WHERE created_at BETWEEN ? AND ? 
+             AND status = "delivered" AND delivered_at IS NOT NULL`,
+            [startDate, endDate]
+        );
+
         return {
             total: totalOrders[0].count,
             returned: returnedOrders[0].count,
-            refundedAmount: refundedAmount[0].amount
+            refundedAmount: refundedAmount[0].amount,
+            avgResolutionSeconds: resolutionTime[0].avg_seconds
         };
     }
 }

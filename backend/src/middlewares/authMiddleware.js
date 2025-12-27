@@ -97,6 +97,9 @@ const authenticate = async (req, res, next) => {
     // Attach user to request for future middlewares/controllers
     req.user = user;
 
+    // DIAGNOSTIC LOGGING: Log user role for debugging
+    console.log(`[AUTH] User Authenticated: ${user.email}, Role: ${user.role}`);
+
     next();
   } catch (err) {
     // Access token expired → ask user to refresh
@@ -141,11 +144,17 @@ const authorize = (allowedRoles = []) => {
       });
 
     // Check if user's role is allowed
-    if (!hasRole(req.user.role, roles))
+    // Normalize user role and allowed roles for case-insensitive comparison
+    const userRole = req.user.role ? req.user.role.toLowerCase().trim() : '';
+    const normalizedAllowedRoles = roles.map(r => r.toLowerCase().trim());
+
+    if (!hasRole(userRole, normalizedAllowedRoles)) {
+      console.warn(`[AUTH] Access Denied: User role '${userRole}' not in allowed roles [${normalizedAllowedRoles.join(', ')}]`);
       return res.status(403).json({
         success: false,
         message: getMessage('FORBIDDEN'),
       });
+    }
 
     next();
   };

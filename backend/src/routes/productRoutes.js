@@ -23,7 +23,17 @@ const productValidator = require('../validators/productValidator');
 
 // Public Routes
 router.get('/', productController.getAllProducts);
-router.get('/:id', productValidator.getById, productController.getProduct);
+/**
+ * GET /products/:id
+ * =================
+ * 
+ * IMPORTANT: No validator here!
+ * - This route accepts BOTH numeric IDs and string slugs
+ * - Examples: /products/123 OR /products/pure-desi-cow-ghee
+ * - The controller and model handle both cases via findByIdOrSlug()
+ * - Adding isInt() validator would reject all slug-based requests
+ */
+router.get('/:id', productController.getProduct);
 
 // Admin Routes (Protected)
 router.post('/', authenticate, authorize('admin'), productValidator.create, productController.createProduct);

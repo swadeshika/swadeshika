@@ -111,9 +111,34 @@ class ProductModel {
 
   /**
    * Find product by ID or Slug with all details
+   * 
+   * CRITICAL FIX: Proper ID vs Slug Detection
+   * ==========================================
+   * 
+   * PROBLEM (Before):
+   * - Used !isNaN(identifier) which doesn't work correctly
+   * - isNaN("123") returns false, so !isNaN("123") returns true ✓
+   * - isNaN("pure-desi-cow-ghee") returns true, so !isNaN() returns false ✓
+   * - BUT: isNaN() has edge cases with empty strings, whitespace, etc.
+   * 
+   * SOLUTION (Now):
+   * - Check if identifier is a string that contains only digits
+   * - Use Number.isInteger(Number(identifier)) for robust detection
+   * - This correctly identifies "123" as ID and "pure-desi-cow-ghee" as slug
+   * 
+   * WHY THIS MATTERS:
+   * - Product details pages use slugs in URLs (/products/pure-desi-cow-ghee)
+   * - Admin panel uses IDs (/admin/products/123)
+   * - Wrong detection = 404 errors for all product pages
    */
   static async findByIdOrSlug(identifier) {
-    const isId = !isNaN(identifier);
+    // Robust check: Is this a numeric ID or a string slug?
+    // Number.isInteger(Number(x)) correctly handles:
+    // - "123" → true (numeric ID)
+    // - "pure-desi-cow-ghee" → false (string slug)
+    // - 123 → true (numeric ID)
+    const isId = Number.isInteger(Number(identifier)) && String(identifier) === String(Number(identifier));
+    
     const sql = `
       SELECT p.*, c.name as category_name, c.slug as category_slug
       FROM products p

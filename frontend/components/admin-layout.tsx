@@ -80,7 +80,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { toast } = useToast()
-  const { user, isAuthenticated, logout } = useAuthStore()
+  const { user, isAuthenticated, isInitialized, logout } = useAuthStore()
   // Track hydration state from Zustand persist to avoid redirect loops on refresh
   const [hasHydrated, setHasHydrated] = useState<boolean>(false)
   // Track open/close state of dropdowns
@@ -107,25 +107,33 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
-    if (!hasHydrated) return
+    // Wait for both Zustand hydration and manual initialization (AuthInitializer)
+    if (!hasHydrated || !isInitialized) return
     
     // Normalize role for comparison
     const normalizedRole = user?.role?.toLowerCase().trim();
-    console.log(`[AdminLayout] Auth Check - Role: ${user?.role}, Normalized: ${normalizedRole}, Authenticated: ${isAuthenticated}`);
+    console.log(`[AdminLayout] Auth Check - Role: ${user?.role}, Normalized: ${normalizedRole}, Authenticated: ${isAuthenticated}, Initialized: ${isInitialized}`);
 
     if (!isAuthenticated || normalizedRole !== "admin") {
       toast({
         title: "Access Denied",
-        description: `You must be logged in as an admin (Role: ${user?.role || 'none'}) to access this page.`,
+        description: `You must be logged in as an admin to access this page.`,
         variant: "destructive",
       })
       router.push("/login")
     }
-  }, [hasHydrated, isAuthenticated, user, router, toast])
+  }, [hasHydrated, isInitialized, isAuthenticated, user, router, toast])
 
-  // Avoid flicker/redirect before hydration completes
-  if (!hasHydrated) {
-    return null
+  // Avoid flicker/redirect before hydration and initialization complete
+  if (!hasHydrated || !isInitialized) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#F5F1E8]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 rounded-full border-4 border-[#2D5F3F] border-t-transparent animate-spin"></div>
+          <p className="text-[#6B4423] font-medium">Verifying access...</p>
+        </div>
+      </div>
+    )
   }
   if (!isAuthenticated || user?.role?.toLowerCase().trim() !== "admin") {
     return null

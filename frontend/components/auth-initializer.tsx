@@ -6,6 +6,7 @@ import { authService } from "@/lib/authService"
 
 export function AuthInitializer() {
   const setUser = useAuthStore((state) => state.setUser)
+  const setInitialized = useAuthStore((state) => state.setInitialized)
   
   useEffect(() => {
     const initAuth = async () => {
@@ -19,9 +20,11 @@ export function AuthInitializer() {
           localStorage.removeItem('accessToken')
         }
       }
+      // Mark as initialized regardless of success/fail
+      setInitialized(true)
     }
     initAuth()
-  }, [setUser])
+  }, [setUser, setInitialized])
 
   return null
 }

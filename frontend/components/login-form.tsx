@@ -32,16 +32,9 @@ export function LoginForm() {
   const router = useRouter()
   const { toast } = useToast()
   const login = useAuthStore((state) => state.login)
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.push("/")
-    }
-  }, [isAuthenticated, router])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()

@@ -66,25 +66,81 @@ export const useCartStore = create<CartStore>()(
         }
       },
 
+      /**
+       * CRITICAL FIX: Merge Local Cart (Updated)
+       * =========================================
+       * 
+       * PROBLEM (Before):
+       * - Looped through items one by one
+       * - Race condition between add and fetch
+       * - No transaction support
+       * - Partial failures possible
+       * 
+       * SOLUTION (Now):
+       * - Single batch API call
+       * - Backend handles transaction
+       * - Duplicate detection on server
+       * - All-or-nothing operation
+       * 
+       * WHY THIS MATTERS:
+       * - Better performance (1 request vs N requests)
+       * - Data consistency guaranteed
+       * - No race conditions
+       * - Proper error handling
+       */
       mergeLocalCart: async () => {
-        // This would be called after login
         const { items, fetchCart } = get()
-        if (items.length === 0) return await fetchCart()
 
-        // Basic strategy: push local items to backend then fetch
-        for (const item of items) {
-          try {
-            await cartService.addToCart({
-              productId: item.productId,
-              variantId: item.variantId,
-              quantity: item.quantity
-            })
-          } catch (e) {
-            console.error("Merge error", e)
-          }
+        // If no local items, just fetch server cart
+        if (items.length === 0) {
+          return await fetchCart()
         }
-        // After merging, fetch fresh state
-        await fetchCart()
+
+        try {
+          // Prepare items for batch merge
+          // Convert frontend format to backend format
+          const itemsToMerge = items.map(item => ({
+            productId: item.productId,
+            variantId: item.variantId || null,
+            quantity: item.quantity
+          }))
+
+          // Call new batch merge endpoint
+          // Backend will handle transaction and duplicate detection
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000/api/v1'}/cart/merge`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+            },
+            body: JSON.stringify({ items: itemsToMerge })
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to merge cart')
+          }
+
+          const data = await response.json()
+
+          // Update store with merged cart from server
+          const mappedItems: CartItem[] = data.data.items.map((item: any) => ({
+            id: item.id,
+            productId: item.product_id,
+            name: item.variant_name ? `${item.product_name} - ${item.variant_name}` : item.product_name,
+            price: item.price,
+            image: item.image_url,
+            quantity: item.quantity,
+            category: "Product",
+            variantId: item.variant_id,
+            userId: item.user_id as unknown as string
+          }))
+
+          set({ items: mappedItems })
+        } catch (error) {
+          console.error('[CartStore] Merge failed:', error)
+          // Fallback: Just fetch cart if merge fails
+          await fetchCart()
+        }
       },
 
       addItem: async (item, quantity = 1) => {

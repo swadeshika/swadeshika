@@ -39,6 +39,36 @@ router.get('/', CartController.getCart);
 router.post('/', addToCartValidation, validate, CartController.addToCart);
 
 /**
+ * CRITICAL FIX: Merge Cart Endpoint
+ * ==================================
+ * 
+ * @route POST /merge
+ * @desc Merge local cart items into user's cart (batch operation)
+ * @access Private
+ * 
+ * WHAT IT DOES:
+ * - Accepts array of cart items
+ * - Merges all items in single transaction
+ * - Detects and handles duplicates
+ * - Returns complete merged cart
+ * 
+ * REQUEST BODY:
+ * {
+ *   items: [
+ *     { productId: 1, variantId: null, quantity: 2 },
+ *     { productId: 5, variantId: 3, quantity: 1 }
+ *   ]
+ * }
+ */
+const mergeCartValidation = [
+    body('items').isArray({ min: 1 }).withMessage('Items array is required and must not be empty'),
+    body('items.*.productId').notEmpty().withMessage('Each item must have a productId'),
+    body('items.*.quantity').isInt({ min: 1 }).withMessage('Each item quantity must be at least 1')
+];
+
+router.post('/merge', mergeCartValidation, validate, CartController.mergeCart);
+
+/**
  * @route PUT /:itemId
  * @desc Update cart item quantity
  * @access Private

@@ -16,14 +16,7 @@ export function SignupForm() {
   const router = useRouter()
   const { toast } = useToast()
   const register = useAuthStore((state) => state.register)
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const [isLoading, setIsLoading] = useState(false)
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.push("/")
-    }
-  }, [isAuthenticated, router])
 
   // Form State
   const [formData, setFormData] = useState({

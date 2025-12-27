@@ -35,9 +35,11 @@ export interface User {
 interface AuthState {
   user: User | null
   isAuthenticated: boolean
+  isInitialized: boolean
   login: (email: string, password: string) => Promise<{ success: boolean; role: UserRole; error?: string }>
   logout: () => Promise<void>
   setUser: (user: User) => void
+  setInitialized: (val: boolean) => void
   register: (name: string, email: string, password: string, phone?: string) => Promise<{ success: boolean; role: UserRole; error?: string }>
 }
 
@@ -50,6 +52,7 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       isAuthenticated: false,
+      isInitialized: false,
 
       /**
        * Login function
@@ -146,6 +149,10 @@ export const useAuthStore = create<AuthState>()(
           user,
           isAuthenticated: true,
         })
+      },
+
+      setInitialized: (val: boolean) => {
+        set({ isInitialized: val })
       },
     }),
     {

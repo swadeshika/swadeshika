@@ -70,13 +70,13 @@ export default function ContactPage() {
                 <div className="p-6">
                   <h3 className="text-xl font-semibold text-[#6B4423] mb-4">Find us on the map</h3>
                   <div className="aspect-video w-full rounded-lg overflow-hidden">
-                    <iframe 
-                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d856.3281976213816!2d73.02497082846641!3d26.225860501610864!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39418b0073aabd59%3A0xcde004111bdf411c!2sSwadeshika!5e1!3m2!1sen!2sin!4v1761985008215!5m2!1sen!2sin" 
-                      width="100%" 
-                      height="100%" 
-                      style={{ border: 0 }} 
-                      allowFullScreen 
-                      loading="lazy" 
+                    <iframe
+                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d856.3281976213816!2d73.02497082846641!3d26.225860501610864!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39418b0073aabd59%3A0xcde004111bdf411c!2sSwadeshika!5e1!3m2!1sen!2sin!4v1761985008215!5m2!1sen!2sin"
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      allowFullScreen
+                      loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"
                       className="w-full h-full"
                     ></iframe>
@@ -100,8 +100,8 @@ export default function ContactPage() {
                       <div>
                         <h4 className="font-medium text-[#6B4423]">{item.title}</h4>
                         {item.link ? (
-                          <a 
-                            href={item.link} 
+                          <a
+                            href={item.link}
                             className="text-[#8B6F47] hover:text-[#6B4423] transition-colors"
                             target="_blank"
                             rel="noopener noreferrer"
@@ -124,27 +124,27 @@ export default function ContactPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-4">
-                    <a 
-                      href="https://www.instagram.com/swadeshika.official?igsh=MzU3YTd0aWxkMHZy" 
-                      target="_blank" 
+                    <a
+                      href="https://www.instagram.com/swadeshika.official?igsh=MzU3YTd0aWxkMHZy"
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-[#8B6F47] hover:text-[#6B4423] transition-colors"
                       aria-label="Instagram"
                     >
                       <Instagram className="h-6 w-6" />
                     </a>
-                    <a 
-                      href="https://twitter.com/swadeshika" 
-                      target="_blank" 
+                    <a
+                      href="https://twitter.com/swadeshika"
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-[#8B6F47] hover:text-[#6B4423] transition-colors"
                       aria-label="Twitter"
                     >
                       <Twitter className="h-6 w-6" />
                     </a>
-                    <a 
-                      href="https://www.facebook.com/share/19ZcPQy7N5/" 
-                      target="_blank" 
+                    <a
+                      href="https://www.facebook.com/share/19ZcPQy7N5/"
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-[#8B6F47] hover:text-[#6B4423] transition-colors"
                       aria-label="Facebook"
@@ -158,8 +158,8 @@ export default function ContactPage() {
               <div className="bg-[#F5F1E8] p-6 rounded-2xl border-2 border-[#E8DCC8]">
                 <h3 className="font-semibold text-[#6B4423] mb-2">Need help with an order?</h3>
                 <p className="text-sm text-[#8B6F47] mb-4">Check our <a href="/faqs" className="text-[#2D5F3F] hover:underline">FAQs</a> for quick answers to common questions about orders, shipping, and returns.</p>
-                <a 
-                  href="/faqs" 
+                <a
+                  href="/faqs"
                   className="inline-flex items-center text-sm font-medium text-[#2D5F3F] hover:underline"
                 >
                   Visit Help Center

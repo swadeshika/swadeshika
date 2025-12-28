@@ -84,7 +84,7 @@ export function SiteFooter() {
           if (countRes.data.success) {
             setVisitorCount(countRes.data.data.count)
           }
-        } catch (e) {}
+        } catch (e) { }
       }
     }
 
@@ -105,10 +105,10 @@ export function SiteFooter() {
         setEmail("")
       }
     } catch (error: any) {
-      toast({ 
-        title: "Subscription failed", 
-        description: error.message || "Could not subscribe. Please try again.", 
-        variant: "destructive" 
+      toast({
+        title: "Subscription failed",
+        description: error.message || "Could not subscribe. Please try again.",
+        variant: "destructive"
       })
     } finally {
       setSubscribing(false)
@@ -124,7 +124,7 @@ export function SiteFooter() {
           <div className="lg:col-span-2">
             {/* Logo and brand name */}
             <Link href="/" className="flex items-center gap-2 mb-4 cursor-pointer">
-               <img src="/logo.png" alt="logo" className=" w-[180px]"/>
+              <img src="/logo.png" alt="logo" className=" w-[180px]" />
             </Link>
 
             {/* Brand description */}
@@ -137,10 +137,10 @@ export function SiteFooter() {
             <div className="space-y-2">
               <h3 className="font-semibold">Subscribe to our newsletter</h3>
               <div className="flex gap-2">
-                <Input 
-                  type="email" 
-                  placeholder="Enter your email" 
-                  className="max-w-xs" 
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  className="max-w-xs"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -152,11 +152,11 @@ export function SiteFooter() {
 
             {/* Social media links with icons */}
             <div className="flex gap-4 mt-6">
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+              <Link href="https://www.facebook.com/share/19ZcPQy7N5/" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" target="_blank" rel="noopener noreferrer">
                 <Facebook className="h-5 w-5" />
                 <span className="sr-only">Facebook</span>
               </Link>
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+              <Link href="https://www.instagram.com/swadeshika.official?igsh=MzU3YTd0aWxkMHZy" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" target="_blank" rel="noopener noreferrer">
                 <Instagram className="h-5 w-5" />
                 <span className="sr-only">Instagram</span>
               </Link>
@@ -218,21 +218,21 @@ export function SiteFooter() {
               <Phone className="h-5 w-5 text-primary mt-0.5" />
               <div>
                 <p className="font-medium">Call Us</p>
-                <p className="text-muted-foreground">+91 1234567890</p>
+                <p className="text-muted-foreground">+91 7300039429, +91 8150976411</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <Mail className="h-5 w-5 text-primary mt-0.5" />
               <div>
                 <p className="font-medium">Email Us</p>
-                <p className="text-muted-foreground">support@swadeshika.com</p>
+                <p className="text-muted-foreground">official.swadeshika@gmail.com</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <MapPin className="h-5 w-5 text-primary mt-0.5" />
               <div>
                 <p className="font-medium">Visit Us</p>
-                <p className="text-muted-foreground">Mumbai, Maharashtra, India</p>
+                <p className="text-muted-foreground">98, 99 Swavalamban Kendra, Karni Nagar, Kudi - Madhuban Main Link Road, Near Kisan Gas Godam, Jodhpur</p>
               </div>
             </div>
           </div>
@@ -252,7 +252,7 @@ export function SiteFooter() {
 
           {/* Copyright notice with dynamic year */}
           <p className="text-sm text-muted-foreground text-center">
-          © {new Date().getFullYear()} Swadeshika. All rights reserved. |
+            © {new Date().getFullYear()} Swadeshika. All rights reserved. |
             👥 Visitors: <span id="visitorCount">{visitorCount !== null ? visitorCount.toLocaleString() : '...'}</span> |
           </p>
         </div>

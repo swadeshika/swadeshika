@@ -145,6 +145,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
         const error: any = new Error(data.message || 'API request failed');
         error.status = response.status;
         error.errors = data.errors; // Validation errors array
+        if (data.errors) {
+            console.error('❌ [API] Validation Failed:', JSON.stringify(data.errors, null, 2));
+        }
         throw error;
     }
 

@@ -43,6 +43,35 @@ exports.getProduct = async (req, res, next) => {
 };
 
 const { slugify } = require('../utils/stringUtils');
+const fs = require('fs');
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
+
+// Directory where uploaded files are served from (public/uploads)
+const UPLOAD_DIR = path.join(__dirname, '..', '..', 'public', 'uploads');
+
+async function saveDataUrlImage(dataUrl) {
+    // dataUrl format: data:<mime-type>;base64,<data>
+    const match = String(dataUrl).match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (!match) return null;
+
+    const mime = match[1];
+    const base64Data = match[2];
+    const ext = mime.split('/')[1].split('+')[0] || 'png';
+
+    // Ensure upload directory exists
+    await fs.promises.mkdir(UPLOAD_DIR, { recursive: true });
+
+    const filename = `${Date.now()}-${uuidv4()}.${ext}`;
+    const filePath = path.join(UPLOAD_DIR, filename);
+
+    const buffer = Buffer.from(base64Data, 'base64');
+    await fs.promises.writeFile(filePath, buffer);
+
+    // Return the public URL path (served from /uploads)
+    const backendBase = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+    return `${backendBase}/uploads/${filename}`;
+}
 
 /**
  * Create new product
@@ -50,9 +79,56 @@ const { slugify } = require('../utils/stringUtils');
  */
 exports.createProduct = async (req, res, next) => {
     try {
-        console.log('📦 [CreateProduct] Incoming Body:', JSON.stringify(req.body, null, 2));
+        // Log basic payload size to help diagnose connection-reset / packet issues
+        const payloadStr = JSON.stringify(req.body || {});
+        const payloadSize = Buffer.byteLength(payloadStr, 'utf8');
+        console.log(`📦 [CreateProduct] Payload size: ${payloadSize} bytes`);
+
+        // If images are passed as data URLs (base64), log their lengths (useful for debugging)
+        if (req.body && Array.isArray(req.body.images)) {
+            req.body.images.forEach((img, idx) => {
+                const dataUrl = img && (img.image_url || img.url);
+                if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
+                    console.log(`📷 [CreateProduct] image[${idx}] data URL length: ${dataUrl.length}`);
+                }
+            });
+        }
 
         // TODO: Add validation result check here if using express-validator in routes
+
+        // Convert any base64 data-URL images in the long description to uploaded files
+        if (req.body && typeof req.body.description === 'string') {
+            try {
+                const dataUrlRegex = /data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g;
+                const matches = req.body.description.match(dataUrlRegex) || [];
+                for (const d of matches) {
+                    const publicPath = await saveDataUrlImage(d);
+                    if (publicPath) {
+                        req.body.description = req.body.description.split(d).join(publicPath);
+                    }
+                }
+            } catch (e) {
+                console.warn('⚠️ Failed to process base64 images in description:', e.message || e);
+            }
+        }
+
+        // Convert any base64 images passed in the `images` array
+        if (req.body && Array.isArray(req.body.images)) {
+            for (const img of req.body.images) {
+                const dataUrl = img && (img.image_url || img.url);
+                if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
+                    try {
+                        const publicPath = await saveDataUrlImage(dataUrl);
+                        if (publicPath) {
+                            if (img.image_url) img.image_url = publicPath;
+                            else img.url = publicPath;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Failed to save data URL image:', e.message || e);
+                    }
+                }
+            }
+        }
 
         // Auto-generate slug if not provided
         if (!req.body.slug && req.body.name) {

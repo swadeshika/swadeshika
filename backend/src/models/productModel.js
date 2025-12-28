@@ -2,6 +2,25 @@
 
 const db = require('../config/db');
 
+// Helper to convert relative upload paths to absolute URLs
+function toAssetUrl(p) {
+  if (!p) return p;
+  const backendBase = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+
+  // If already absolute URL but points to old dev host (127.0.0.1:5000 or localhost:5000), rewrite it
+  if (p.startsWith('http://') || p.startsWith('https://')) {
+    const oldHostRegex = /^https?:\/\/(?:127\.0\.0\.1|localhost):5000/;
+    if (oldHostRegex.test(p)) {
+      return p.replace(oldHostRegex, backendBase);
+    }
+    return p;
+  }
+
+  // Relative path -> prefix with backend base
+  if (p.startsWith('/')) return `${backendBase}${p}`;
+  return `${backendBase}/${p}`;
+}
+
 class ProductModel {
 
   /**
@@ -101,6 +120,11 @@ class ProductModel {
 
     const [products] = await db.query(sql, params);
 
+    // Normalize primary_image URLs to absolute URLs so frontend can load them
+    products.forEach(p => {
+      if (p.primary_image) p.primary_image = toAssetUrl(p.primary_image);
+    });
+
     // Get total count for pagination
     let countSql = `
       SELECT COUNT(*) as total 
@@ -153,7 +177,7 @@ class ProductModel {
     // - "pure-desi-cow-ghee" → false (string slug)
     // - 123 → true (numeric ID)
     const isId = Number.isInteger(Number(identifier)) && String(identifier) === String(Number(identifier));
-    
+
     const sql = `
       SELECT p.*, c.name as category_name, c.slug as category_slug
       FROM products p
@@ -173,9 +197,12 @@ class ProductModel {
     const [specs] = await db.query(`SELECT * FROM product_specifications WHERE product_id = ? ORDER BY display_order`, [product.id]);
     const [tags] = await db.query(`SELECT tag FROM product_tags WHERE product_id = ?`, [product.id]);
 
+    // Normalize image URLs
+    const normalizedImages = images.map(img => ({ ...img, image_url: toAssetUrl(img.image_url) }));
+
     return {
       ...product,
-      images,
+      images: normalizedImages,
       variants,
       features: features.map(f => f.feature_text),
       specifications: specs.reduce((acc, s) => ({ ...acc, [s.spec_key]: s.spec_value }), {}),
@@ -224,10 +251,10 @@ class ProductModel {
        */
       if (data.images && data.images.length) {
         const imageValues = data.images.map(img => [
-          productId, 
+          productId,
           img.image_url || img.url,  // Accept both field names
-          img.alt_text, 
-          img.is_primary || false, 
+          img.alt_text,
+          img.is_primary || false,
           img.display_order || 0
         ]);
         await conn.query(
@@ -318,10 +345,10 @@ class ProductModel {
            * Same fix as in CREATE method - accept both 'url' and 'image_url'
            */
           const imageValues = data.images.map(img => [
-            id, 
+            id,
             img.image_url || img.url,  // Accept both field names
-            img.alt_text, 
-            img.is_primary || false, 
+            img.alt_text,
+            img.is_primary || false,
             img.display_order || 0
           ]);
           await conn.query(`INSERT INTO product_images (product_id, image_url, alt_text, is_primary, display_order) VALUES ?`, [imageValues]);

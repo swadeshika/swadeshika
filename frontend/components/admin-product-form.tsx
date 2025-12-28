@@ -197,7 +197,8 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
             weight: parseFloat(form.weight || "0") || 0,
             weight_unit: 'kg', // fixed for now
             in_stock: form.status === 'active',
-            is_active: form.status === 'active',
+            // Respect explicit Publish toggle when provided; otherwise fall back to status
+            is_active: typeof form.publish === 'boolean' ? form.publish : (form.status === 'active'),
             meta_title: form.metaTitle,
             meta_description: form.metaDescription,
             tags: form.tags.split(',').map(t => t.trim()).filter(t => t.length > 0),

@@ -21,6 +21,25 @@ function toAssetUrl(p) {
   return `${backendBase}/${p}`;
 }
 
+// Small HTML entity unescape helper to convert &lt; &gt; &amp; etc. back to characters
+function unescapeHtml(s) {
+  if (s == null) return s;
+  // Iteratively unescape common HTML entities up to a few passes to handle
+  // strings that were encoded multiple times (e.g. &amp;lt; becomes &lt; then <)
+  let out = String(s);
+  for (let i = 0; i < 3; i++) {
+    const prev = out;
+    out = out
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'");
+    if (out === prev) break;
+  }
+  return out;
+}
+
 class ProductModel {
 
   /**
@@ -49,7 +68,7 @@ class ProductModel {
     const allowedColumns = [
       'id', 'name', 'slug', 'description', 'short_description', 'sku',
       'price', 'compare_price', 'cost_price', 'weight', 'weight_unit',
-      'stock_quantity', 'in_stock', 'is_active', 'is_featured', 'review_count', 'average_rating',
+      'stock_quantity', 'in_stock', 'is_active', 'is_featured', 'review_count', 'average_rating', 'status',
       'created_at', 'updated_at'
     ];
 
@@ -123,6 +142,8 @@ class ProductModel {
     // Normalize primary_image URLs to absolute URLs so frontend can load them
     products.forEach(p => {
       if (p.primary_image) p.primary_image = toAssetUrl(p.primary_image);
+      if (p.description) p.description = unescapeHtml(p.description);
+      if (p.short_description) p.short_description = unescapeHtml(p.short_description);
     });
 
     // Get total count for pagination
@@ -197,8 +218,10 @@ class ProductModel {
     const [specs] = await db.query(`SELECT * FROM product_specifications WHERE product_id = ? ORDER BY display_order`, [product.id]);
     const [tags] = await db.query(`SELECT tag FROM product_tags WHERE product_id = ?`, [product.id]);
 
-    // Normalize image URLs
+    // Normalize image URLs and unescape description fields
     const normalizedImages = images.map(img => ({ ...img, image_url: toAssetUrl(img.image_url) }));
+    if (product.description) product.description = unescapeHtml(product.description);
+    if (product.short_description) product.short_description = unescapeHtml(product.short_description);
 
     return {
       ...product,
@@ -220,12 +243,16 @@ class ProductModel {
 
       // 1. Insert Product
       const [res] = await conn.query(
-        `INSERT INTO products (name, slug, description, short_description, category_id, sku, price, compare_price, cost_price, weight, weight_unit, stock_quantity, is_featured, meta_title, meta_description) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO products (name, slug, description, short_description, category_id, sku, price, compare_price, cost_price, weight, weight_unit, stock_quantity, in_stock, is_active, is_featured, meta_title, meta_description) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           data.name, data.slug, data.description, data.short_description, data.category_id, data.sku,
           data.price, data.compare_price, data.cost_price, data.weight, data.weight_unit || 'kg',
-          data.stock_quantity || 0, data.is_featured || false, data.meta_title, data.meta_description
+          data.stock_quantity || 0,
+          // in_stock and is_active: allow frontend to control publish/status; default true
+          (data.in_stock === undefined ? true : !!data.in_stock),
+          (data.is_active === undefined ? true : !!data.is_active),
+          data.is_featured || false, data.meta_title, data.meta_description
         ]
       );
       const productId = res.insertId;
@@ -324,12 +351,16 @@ class ProductModel {
       await conn.query(
         `UPDATE products SET 
          name=?, slug=?, description=?, short_description=?, category_id=?, sku=?, price=?, compare_price=?, 
-         weight=?, weight_unit=?, stock_quantity=?, is_featured=?, meta_title=?, meta_description=?, updated_at=NOW()
+         weight=?, weight_unit=?, stock_quantity=?, in_stock = COALESCE(?, in_stock), is_active = COALESCE(?, is_active), is_featured=?, meta_title=?, meta_description=?, updated_at=NOW()
          WHERE id=?`,
         [
           data.name, data.slug, data.description, data.short_description, data.category_id, data.sku,
           data.price, data.compare_price, data.weight, data.weight_unit,
-          data.stock_quantity, data.is_featured, data.meta_title, data.meta_description, id
+          data.stock_quantity,
+          // Pass NULL to COALESCE when the frontend did not specify these fields so existing values are preserved
+          (data.in_stock === undefined ? null : (data.in_stock ? 1 : 0)),
+          (data.is_active === undefined ? null : (data.is_active ? 1 : 0)),
+          data.is_featured, data.meta_title, data.meta_description, id
         ]
       );
 

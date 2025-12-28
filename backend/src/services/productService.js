@@ -26,6 +26,7 @@ class ProductService {
              * - Added 'in_stock' to admin view fields
              * - Now admin panel can show correct stock status
              */
+            // Admin view fields (do not request non-existent columns)
             selectedFields = ['name', 'sku', 'stock_quantity', 'in_stock', 'price', 'category_id', 'is_featured'];
         }
 

@@ -168,6 +168,49 @@ exports.updateProduct = async (req, res, next) => {
             });
         }
 
+        // Log payload size to help diagnose connection-reset / packet issues
+        try {
+            const payloadStr = JSON.stringify(req.body || {});
+            const payloadSize = Buffer.byteLength(payloadStr, 'utf8');
+            console.log(`📦 [UpdateProduct] Payload size: ${payloadSize} bytes`);
+        } catch (e) {
+            // ignore JSON stringify errors
+        }
+
+        // Convert any base64 data-URL images in the long description to uploaded files
+        if (req.body && typeof req.body.description === 'string') {
+            try {
+                const dataUrlRegex = /data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g;
+                const matches = req.body.description.match(dataUrlRegex) || [];
+                for (const d of matches) {
+                    const publicPath = await saveDataUrlImage(d);
+                    if (publicPath) {
+                        req.body.description = req.body.description.split(d).join(publicPath);
+                    }
+                }
+            } catch (e) {
+                console.warn('⚠️ Failed to process base64 images in description (update):', e.message || e);
+            }
+        }
+
+        // Convert any base64 images passed in the `images` array
+        if (req.body && Array.isArray(req.body.images)) {
+            for (const img of req.body.images) {
+                const dataUrl = img && (img.image_url || img.url);
+                if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
+                    try {
+                        const publicPath = await saveDataUrlImage(dataUrl);
+                        if (publicPath) {
+                            if (img.image_url) img.image_url = publicPath;
+                            else img.url = publicPath;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Failed to save data URL image (update):', e.message || e);
+                    }
+                }
+            }
+        }
+
         await ProductService.updateProduct(id, req.body);
 
         // Fetch updated product

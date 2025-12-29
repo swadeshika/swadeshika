@@ -97,7 +97,14 @@ class CouponModel {
      */
     static async findAll() {
         const [rows] = await db.query('SELECT * FROM coupons ORDER BY created_at DESC');
-        return rows;
+        // Attach product_ids and category_ids for each coupon so frontend can read "applies to" restrictions
+        const results = await Promise.all(rows.map(async (r) => {
+            const coupon = r;
+            coupon.product_ids = await this.getCouponProducts(coupon.id);
+            coupon.category_ids = await this.getCouponCategories(coupon.id);
+            return coupon;
+        }));
+        return results;
     }
 
     /**

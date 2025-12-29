@@ -27,7 +27,15 @@ export function CartContent() {
 
     setIsValidating(true)
     try {
-      const result = await couponService.validateCoupon(couponCode, subtotal, items)
+      // Map cart items to backend expected shape
+      const cartItemsForApi = items.map(i => ({
+        product_id: (i as any).productId || (i as any).id,
+        category_id: (i as any).categoryId || null,
+        price: i.price,
+        quantity: i.quantity
+      }))
+
+      const result = await couponService.validateCoupon(couponCode, subtotal, cartItemsForApi)
 
       if (result.isValid) {
         setAppliedCoupon({
@@ -85,7 +93,7 @@ export function CartContent() {
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const shipping = subtotal >= shippingThreshold ? 0 : flatRate
-  const discount = 0
+  const discount = appliedCoupon ? appliedCoupon.discountAmount : 0
   const total = subtotal + shipping - discount
 
   // Calculate amount needed for free shipping

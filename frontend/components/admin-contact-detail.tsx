@@ -207,6 +207,27 @@ export function AdminContactDetail() {
                               </Card>
                          )}
 
+                         {submission.attachment_url && (
+                              <Card className="rounded-2xl border-2 border-[#E8DCC8]">
+                                   <CardHeader>
+                                        <CardTitle className="text-lg text-[#6B4423]">Attachment</CardTitle>
+                                   </CardHeader>
+                                   <CardContent>
+                                        <div className="text-sm">
+                                             <a
+                                                  href={(process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:5000') + submission.attachment_url}
+                                                  target="_blank"
+                                                  rel="noreferrer"
+                                                  className="text-blue-600 hover:underline flex items-center gap-2"
+                                             >
+                                                  <span className="truncate max-w-[200px]">{submission.attachment_name || 'View File'}</span>
+                                                  <span className="text-xs text-muted-foreground">(Click to open)</span>
+                                             </a>
+                                        </div>
+                                   </CardContent>
+                              </Card>
+                         )}
+
                          <Card className="rounded-2xl border-2 border-[#E8DCC8]">
                               <CardHeader>
                                    <CardTitle className="text-lg text-[#6B4423]">Actions</CardTitle>

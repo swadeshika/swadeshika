@@ -169,18 +169,16 @@ export function ContactForm() {
         </div>
       </div>
 
-      {formData.subject === "order" && (
-        <div className="space-y-2">
-          <Label htmlFor="orderNumber">Order Number (if applicable)</Label>
-          <Input
-            id="orderNumber"
-            name="orderNumber"
-            value={formData.orderNumber}
-            onChange={handleChange}
-            placeholder="e.g., ORD123456"
-          />
-        </div>
-      )}
+      <div className="space-y-2">
+        <Label htmlFor="orderNumber">Order Number <span className="text-muted-foreground font-normal">(optional)</span></Label>
+        <Input
+          id="orderNumber"
+          name="orderNumber"
+          value={formData.orderNumber}
+          onChange={handleChange}
+          placeholder="e.g., ORD123456"
+        />
+      </div>
 
       <div className="space-y-2">
         <Label htmlFor="message">Your Message <span className="text-red-500">*</span></Label>

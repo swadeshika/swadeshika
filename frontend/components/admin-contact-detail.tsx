@@ -215,7 +215,7 @@ export function AdminContactDetail() {
                                    <CardContent>
                                         <div className="text-sm">
                                              <a
-                                                  href={(process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:5000') + submission.attachment_url}
+                                                  href={process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') + submission.attachment_url}
                                                   target="_blank"
                                                   rel="noreferrer"
                                                   className="text-blue-600 hover:underline flex items-center gap-2"

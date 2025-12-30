@@ -57,14 +57,35 @@ export function ChangePassword({ onSuccess }: { onSuccess?: () => void }) {
       toast({ title: "Passwords do not match", variant: "destructive" })
       return
     }
+
     setSubmitting(true)
-    await new Promise((r) => setTimeout(r, 800))
-    setSubmitting(false)
-    setCurrent("")
-    setNext("")
-    setConfirm("")
-    toast({ title: "Password Updated", description: "Your password has been changed." })
-    onSuccess?.()
+
+    try {
+      // Import api dynamically or at top (ensure api from lib/api is used)
+      const { api } = await import("@/lib/api")
+
+      const response = await api.put("/auth/change-password", {
+        old_password: current,
+        new_password: next
+      })
+
+      if (response.data.success) {
+        toast({ title: "Password Updated", description: "Your password has been changed." })
+        setCurrent("")
+        setNext("")
+        setConfirm("")
+        onSuccess?.()
+      }
+    } catch (error: any) {
+      console.error("Change password error:", error)
+      toast({
+        title: "Update Failed",
+        description: error.data?.message || error.message || "Failed to update password.",
+        variant: "destructive"
+      })
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (

@@ -12,8 +12,7 @@ const { validate } = require('../middlewares/validationMiddleware');
 
 // Validation Rules
 const updateUserValidation = [
-    body('firstName').optional().notEmpty().withMessage('First name cannot be empty'),
-    body('lastName').optional().notEmpty().withMessage('Last name cannot be empty'),
+    body('name').optional().notEmpty().withMessage('Name cannot be empty'),
     body('phone').optional().isMobilePhone().withMessage('Invalid phone number')
 ];
 

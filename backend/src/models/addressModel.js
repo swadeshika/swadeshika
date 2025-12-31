@@ -71,7 +71,7 @@ class AddressModel {
      */
     static async update(id, updateData) {
         const allowedFields = [
-            'full_name', 'phone', 'address_line1', 'address_line2', 
+            'full_name', 'phone', 'address_line1', 'address_line2',
             'city', 'state', 'postal_code', 'country', 'address_type', 'is_default'
         ];
 
@@ -89,7 +89,7 @@ class AddressModel {
 
         values.push(id);
         const query = `UPDATE addresses SET ${updates.join(', ')} WHERE id = ?`;
-        
+
         await db.query(query, values);
         return this.findById(id);
     }
@@ -106,7 +106,7 @@ class AddressModel {
     }
 
     /**
-     * Set default address for a user
+     * Set default address for a user (Scoped by Phone Number)
      * @param {string} userId - User ID
      * @param {string} addressId - Address ID to set as default
      */
@@ -115,16 +115,23 @@ class AddressModel {
         try {
             await connection.beginTransaction();
 
-            // Unset current default
+            // 1. Get the phone number of the target address
+            const [rows] = await connection.query('SELECT phone FROM addresses WHERE id = ?', [addressId]);
+            if (rows.length === 0) {
+                throw new Error('Address not found');
+            }
+            const phone = rows[0].phone;
+
+            // 2. Unset default for all OTHER addresses with the SAME phone number for this user
             await connection.query(
-                'UPDATE addresses SET is_default = FALSE WHERE user_id = ?',
-                [userId]
+                'UPDATE addresses SET is_default = FALSE WHERE user_id = ? AND phone = ?',
+                [userId, phone]
             );
 
-            // Set new default
+            // 3. Set the target address as default
             await connection.query(
-                'UPDATE addresses SET is_default = TRUE WHERE id = ? AND user_id = ?',
-                [addressId, userId]
+                'UPDATE addresses SET is_default = TRUE WHERE id = ?',
+                [addressId]
             );
 
             await connection.commit();
@@ -143,6 +150,20 @@ class AddressModel {
      */
     static async countByUserId(userId) {
         const [rows] = await db.query('SELECT COUNT(*) as count FROM addresses WHERE user_id = ?', [userId]);
+        return rows[0].count;
+    }
+
+    /**
+     * Count addresses for a user with specific phone number
+     * @param {string} userId 
+     * @param {string} phone 
+     * @returns {Promise<number>}
+     */
+    static async countByUserIdAndPhone(userId, phone) {
+        const [rows] = await db.query(
+            'SELECT COUNT(*) as count FROM addresses WHERE user_id = ? AND phone = ?',
+            [userId, phone]
+        );
         return rows[0].count;
     }
 }

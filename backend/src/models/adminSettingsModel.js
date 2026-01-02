@@ -31,13 +31,15 @@ class AdminSettingsModel {
         low_stock_threshold, 
         allow_backorders, 
         two_factor_enabled, 
+        enabled_gateways,
+        gateway_configs,
         updated_at
       FROM admin_settings
       LIMIT 1
     `;
 
     const [rows] = await db.query(query);
-    
+
     if (rows.length === 0) {
       // Bootstrap with default values
       await db.query('INSERT INTO admin_settings (id, store_name, updated_at) VALUES (1, "Swadeshika Store", NOW())');
@@ -45,7 +47,19 @@ class AdminSettingsModel {
       return newRows[0];
     }
 
-    return rows[0];
+    const settings = rows[0];
+
+    // Parse JSON fields if they are strings (mysql2 might return them as objects or strings depending on config)
+    if (settings) {
+      if (typeof settings.enabled_gateways === 'string') {
+        try { settings.enabled_gateways = JSON.parse(settings.enabled_gateways); } catch (e) { settings.enabled_gateways = {}; }
+      }
+      if (typeof settings.gateway_configs === 'string') {
+        try { settings.gateway_configs = JSON.parse(settings.gateway_configs); } catch (e) { settings.gateway_configs = {}; }
+      }
+    }
+
+    return settings;
   }
 
   /**
@@ -76,7 +90,9 @@ class AdminSettingsModel {
       'units',
       'low_stock_threshold',
       'allow_backorders',
-      'two_factor_enabled'
+      'two_factor_enabled',
+      'enabled_gateways',
+      'gateway_configs'
     ];
 
     // 1. Get existing settings to find the correct ID
@@ -92,7 +108,11 @@ class AdminSettingsModel {
       for (const field of allowedFields) {
         if (data[field] !== undefined) {
           insertFields.push(field);
-          insertValues.push(data[field]);
+          let value = data[field];
+          if (typeof value === 'object' && value !== null) {
+            value = JSON.stringify(value);
+          }
+          insertValues.push(value);
           placeholders.push('?');
         }
       }
@@ -112,7 +132,11 @@ class AdminSettingsModel {
     for (const field of allowedFields) {
       if (data[field] !== undefined) {
         updates.push(`${field} = ?`);
-        values.push(data[field]);
+        let value = data[field];
+        if (typeof value === 'object' && value !== null) {
+          value = JSON.stringify(value);
+        }
+        values.push(value);
       }
     }
 

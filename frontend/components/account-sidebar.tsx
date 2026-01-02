@@ -2,7 +2,9 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
 import { User, Package, MapPin, Heart, Settings, LogOut, Star } from "lucide-react"
+import { authService } from "@/lib/authService"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -18,6 +20,21 @@ const menuItems = [
 
 export function AccountSidebar() {
 	const pathname = usePathname()
+	const [user, setUser] = useState<{ name: string; email: string } | null>(null)
+
+	useEffect(() => {
+		const loadUser = async () => {
+			try {
+				const userData = await authService.getCurrentUser()
+				if (userData) {
+					setUser(userData)
+				}
+			} catch (error) {
+				console.error("Failed to load user for sidebar", error)
+			}
+		}
+		loadUser()
+	}, [])
 
 	return (
 		// make sidebar full-width on small screens and fixed-width on md+ to avoid overflow
@@ -25,10 +42,10 @@ export function AccountSidebar() {
 			<CardContent className="p-4 sm:p-6 max-[370px]:p-3 space-y-6 box-border">
 				<div className="space-y-1">
 					<h3 className="font-semibold text-lg max-[370px]:text-base text-[#6B4423] truncate">
-						John Doe
+						{user ? user.name : "Loading..."}
 					</h3>
 					<p className="text-sm max-[370px]:text-sm text-[#8B6F47] truncate">
-						john@example.com
+						{user ? user.email : "..."}
 					</p>
 				</div>
 
@@ -42,11 +59,10 @@ export function AccountSidebar() {
 							<Link
 								key={item.href}
 								href={item.href}
-								className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-colors border-2 w-full min-w-0 ${
-									isActive
+								className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-colors border-2 w-full min-w-0 ${isActive
 										? "bg-[#2D5F3F] text-white border-[#2D5F3F]"
 										: "border-[#E8DCC8] hover:bg-[#F5F1E8] text-[#6B4423]"
-								}`}
+									}`}
 								aria-current={isActive ? "page" : undefined}
 							>
 								<item.icon className="h-5 w-5 max-[370px]:h-4 max-[370px]:w-4 flex-shrink-0" />

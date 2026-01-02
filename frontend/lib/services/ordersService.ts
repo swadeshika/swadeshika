@@ -6,6 +6,8 @@ export interface OrderItem {
     quantity: number;
     price: string;
     subtotal: string;
+    image?: string;
+    id?: string | number;
 }
 
 export interface OrderAddress {
@@ -39,6 +41,16 @@ export interface Order {
     summary?: OrderSummary; // Detail view
     trackingNumber?: string;
     estimatedDeliveryDate?: string | Date;
+    timeline?: {
+        status: string;
+        date: string;
+        completed: boolean;
+    }[];
+    tracking?: {
+        carrier: string;
+        trackingNumber: string;
+        estimatedDelivery: string;
+    };
 }
 
 interface OrdersResponse {

@@ -10,6 +10,8 @@ export interface ContactSubmission {
      message: string;
      status: 'new' | 'read' | 'replied' | 'archived';
      created_at: string;
+     attachment_url?: string;
+     attachment_name?: string;
 }
 
 export interface ContactQuery {

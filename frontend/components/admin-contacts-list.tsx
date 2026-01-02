@@ -253,10 +253,27 @@ export function AdminContactsList() {
 
               <div className="space-y-2">
                 <div className="text-sm font-medium text-[#8B6F47]">Message</div>
-                <div className="p-4 rounded-lg bg-white border border-[#E8DCC8] text-[#6B4423] whitespace-pre-wrap">
+                <div className="p-4 rounded-lg bg-white border border-[#E8DCC8] text-[#6B4423] whitespace-pre-wrap max-h-60 overflow-y-auto">
                   {selectedSubmission.message}
                 </div>
               </div>
+
+              {selectedSubmission.attachment_url && (
+                <div className="space-y-2">
+                  <div className="text-sm font-medium text-[#8B6F47]">Attachment</div>
+                  <div className="p-3 rounded-lg bg-white border border-[#E8DCC8] flex items-center gap-2">
+                    <a
+                      href={(process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:5000') + selectedSubmission.attachment_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-600 hover:underline flex items-center gap-2 text-sm font-medium"
+                    >
+                      <span className="truncate max-w-[200px]">{selectedSubmission.attachment_name || 'View Attachment'}</span>
+                      <span className="text-xs text-muted-foreground">(Click to open)</span>
+                    </a>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-between pt-4 border-t border-[#E8DCC8]">
                 <div className="flex items-center gap-4">

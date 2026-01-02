@@ -49,7 +49,7 @@ export function ContactForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const { name, email, subject, message, orderNumber, phone } = formData
-    
+
     if (!name.trim() || !email.trim() || !subject.trim() || !message.trim()) {
       toast({ title: "Required fields missing", description: "Please fill in all required fields.", variant: "destructive" })
       return
@@ -57,18 +57,33 @@ export function ContactForm() {
 
     setLoading(true)
     try {
-      const payload = {
-        name,
-        email,
-        phone,
-        subject,
-        order_number: orderNumber,
-        message
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', name);
+      formDataToSend.append('email', email);
+      formDataToSend.append('subject', subject);
+      formDataToSend.append('message', message);
+      if (phone) formDataToSend.append('phone', phone);
+      if (orderNumber) formDataToSend.append('order_number', orderNumber);
+      if (file) formDataToSend.append('attachment', file);
+
+      // Using raw fetch to handle FormData correctly (browser sets Content-Type/boundary)
+      const token = localStorage.getItem('accessToken');
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/contact`, {
+        method: 'POST',
+        headers: headers,
+        body: formDataToSend
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to send message');
       }
-      
-      const response = await api.post('/contact', payload)
-      
-      if (response.data.success) {
+
+      if (data.success) {
         // Reset form
         setFormData({
           name: "",
@@ -79,10 +94,10 @@ export function ContactForm() {
           message: ""
         })
         setFile(null)
-        
-        toast({ 
-          title: "Message sent successfully!", 
-          description: "Our team will get back to you within 24 hours." 
+
+        toast({
+          title: "Message sent successfully!",
+          description: "Our team will get back to you within 24 hours."
         })
       }
     } catch (error: any) {
@@ -101,22 +116,22 @@ export function ContactForm() {
       <div className="grid sm:grid-cols-2 gap-5">
         <div className="space-y-2">
           <Label htmlFor="name">Full Name <span className="text-red-500">*</span></Label>
-          <Input 
-            id="name" 
+          <Input
+            id="name"
             name="name"
-            value={formData.name} 
-            onChange={handleChange} 
+            value={formData.name}
+            onChange={handleChange}
             placeholder="Your full name"
           />
         </div>
         <div className="space-y-2">
           <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
-          <Input 
-            id="email" 
-            type="email" 
+          <Input
+            id="email"
+            type="email"
             name="email"
-            value={formData.email} 
-            onChange={handleChange} 
+            value={formData.email}
+            onChange={handleChange}
             placeholder="your.email@example.com"
           />
         </div>
@@ -125,20 +140,20 @@ export function ContactForm() {
       <div className="grid sm:grid-cols-2 gap-5">
         <div className="space-y-2">
           <Label htmlFor="phone">Phone Number</Label>
-          <Input 
-            id="phone" 
-            type="tel" 
+          <Input
+            id="phone"
+            type="tel"
             name="phone"
-            value={formData.phone} 
-            onChange={handleChange} 
+            value={formData.phone}
+            onChange={handleChange}
             placeholder="+91 12345 67890"
           />
         </div>
         <div className="space-y-2">
           <Label>Subject <span className="text-red-500">*</span></Label>
-          <Select 
-            value={formData.subject} 
-            onValueChange={(value) => setFormData({...formData, subject: value})}
+          <Select
+            value={formData.subject}
+            onValueChange={(value) => setFormData({ ...formData, subject: value })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select a subject" />
@@ -154,27 +169,25 @@ export function ContactForm() {
         </div>
       </div>
 
-      {formData.subject === "order" && (
-        <div className="space-y-2">
-          <Label htmlFor="orderNumber">Order Number (if applicable)</Label>
-          <Input 
-            id="orderNumber" 
-            name="orderNumber"
-            value={formData.orderNumber} 
-            onChange={handleChange} 
-            placeholder="e.g., ORD123456"
-          />
-        </div>
-      )}
+      <div className="space-y-2">
+        <Label htmlFor="orderNumber">Order Number <span className="text-muted-foreground font-normal">(optional)</span></Label>
+        <Input
+          id="orderNumber"
+          name="orderNumber"
+          value={formData.orderNumber}
+          onChange={handleChange}
+          placeholder="e.g., ORD123456"
+        />
+      </div>
 
       <div className="space-y-2">
         <Label htmlFor="message">Your Message <span className="text-red-500">*</span></Label>
-        <Textarea 
-          id="message" 
+        <Textarea
+          id="message"
           name="message"
-          value={formData.message} 
-          onChange={handleChange} 
-          className="min-h-36" 
+          value={formData.message}
+          onChange={handleChange}
+          className="min-h-36"
           placeholder="How can we help you today?"
         />
       </div>
@@ -188,10 +201,10 @@ export function ContactForm() {
             <input type="file" className="hidden" onChange={handleFileChange} />
           </label>
           {file && (
-            <Button 
-              type="button" 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               className="text-red-500 hover:text-red-600"
               onClick={() => setFile(null)}
             >
@@ -206,9 +219,9 @@ export function ContactForm() {
         <p className="text-sm text-muted-foreground">
           <span className="text-red-500">*</span> Required fields
         </p>
-        <Button 
-          type="submit" 
-          disabled={loading} 
+        <Button
+          type="submit"
+          disabled={loading}
           className="bg-[#2D5F3F] hover:bg-[#234A32] text-white px-8 h-11 w-full sm:w-auto"
         >
           {loading ? (

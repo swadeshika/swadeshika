@@ -4,11 +4,14 @@ const contactController = require('../controllers/contactController');
 const { authenticate, authorize } = require('../middlewares/authMiddleware');
 const { ROLES } = require('../constants/roles');
 
+const upload = require('../middlewares/contactUploadMiddleware');
+
 /**
  * PUBLIC ROUTES
  */
 // POST /api/v1/contact - Submit contact form
-router.post('/', contactController.submitContactForm);
+// 'attachment' must match frontend form field name
+router.post('/', upload.single('attachment'), contactController.submitContactForm);
 
 /**
  * PROTECTED ROUTES (Admin only)

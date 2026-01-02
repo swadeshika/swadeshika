@@ -556,6 +556,8 @@ CREATE TABLE contact_submissions (
   subject VARCHAR(255) NOT NULL,
   order_number VARCHAR(50),
   message TEXT NOT NULL,
+  attachment_url VARCHAR(500),
+  attachment_name VARCHAR(255),
   status ENUM('new', 'read', 'replied', 'archived') DEFAULT 'new',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_email (email),

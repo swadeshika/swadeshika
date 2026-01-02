@@ -12,24 +12,9 @@ class AddressService {
      * @returns {Promise<Object>} Created address
      */
     static async createAddress(userId, data) {
-        // Check if this is the first address, if so make it default
-        const count = await AddressModel.countByUserId(userId);
+        // Check if this is the first address for THIS phone number, if so make it default
+        const count = await AddressModel.countByUserIdAndPhone(userId, data.phone);
         const is_default = count === 0 ? true : (data.is_default || false);
-
-        // Map frontend keys to DB keys if necessary (though controller handles this usually, 
-        // we'll ensure data passed here is already mapped or map it)
-        // Assuming controller passes DB-compatible keys or we map them here.
-        // Let's assume controller maps them.
-        
-        // If setting as default, we need to handle that logic
-        if (is_default && count > 0) {
-            // We'll handle this by creating it first then setting default, 
-            // or relying on the model's create to set it and then unsetting others?
-            // Model.create just inserts. 
-            // If is_default is true, we should unset others first.
-            await AddressModel.setDefault(userId, null); // Hacky way to unset all? No, setDefault takes an ID.
-            // Better: Create it, then if is_default is true, call setDefault.
-        }
 
         const address = await AddressModel.create({
             user_id: userId,
@@ -37,11 +22,13 @@ class AddressService {
             is_default // Override with calculated default
         });
 
+        // Use the model's setDefault logic which now handles scoping by phone
         if (is_default && count > 0) {
-             await AddressModel.setDefault(userId, address.id);
+            await AddressModel.setDefault(userId, address.id);
         }
 
-        return address;
+        // Refetch to ensure we return the correct state (e.g. is_default might be true now)
+        return await AddressModel.findById(address.id);
     }
 
     /**

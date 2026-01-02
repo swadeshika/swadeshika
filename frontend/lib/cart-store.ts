@@ -53,7 +53,7 @@ export const useCartStore = create<CartStore>()(
             id: item.id,
             productId: item.product_id,
             name: item.variant_name ? `${item.product_name} - ${item.variant_name}` : item.product_name,
-            price: item.price,
+            price: Number(item.price),
             image: item.image_url,
             quantity: item.quantity,
             category: item.category_name || item.category || "Product", // prefer backend category name if available
@@ -128,7 +128,7 @@ export const useCartStore = create<CartStore>()(
             id: item.id,
             productId: item.product_id,
             name: item.variant_name ? `${item.product_name} - ${item.variant_name}` : item.product_name,
-            price: item.price,
+            price: Number(item.price),
             image: item.image_url,
             quantity: item.quantity,
             category: "Product",

@@ -91,6 +91,7 @@ export function CheckoutForm() {
       city: formData.get("city"),
       state: formData.get("state"),
       postalCode: formData.get("pincode"),
+      country: "India"
     }
 
     const billingAddress = sameAsBilling ? shippingAddress : {
@@ -101,17 +102,24 @@ export function CheckoutForm() {
       city: formData.get("billingCity"),
       state: formData.get("billingState"),
       postalCode: formData.get("billingPincode"),
+      country: "India"
     }
 
     const orderData = {
-      items: [], // Backend fetches from cart
+      items: cartItems.map(item => ({
+        productId: item.id,
+        productName: item.name,
+        quantity: item.quantity,
+        price: Number(item.price),
+        image: item.image
+      })),
       shippingAddress,
       billingAddress,
       paymentMethod,
-      subtotal,
-      tax,
-      shippingCost: shipping,
-      totalAmount: total,
+      subtotal: Number(subtotal),
+      tax: Number(tax),
+      shippingCost: Number(shipping),
+      totalAmount: Number(total),
       phone: formData.get("phone"),
       email: formData.get("email"),
       couponCode: null,

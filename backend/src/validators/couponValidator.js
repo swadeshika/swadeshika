@@ -22,6 +22,30 @@
 
 const { body, param, validationResult } = require('express-validator');
 
+// Normalize incoming payloads: accept snake_case (frontend) or camelCase (legacy)
+function normalizeCouponPayload(req, res, next) {
+    const map = {
+        discount_type: 'discountType',
+        discount_value: 'discountValue',
+        min_order_amount: 'minOrderAmount',
+        usage_limit: 'usageLimit',
+        per_user_limit: 'perUserLimit',
+        valid_from: 'validFrom',
+        valid_until: 'validUntil',
+        is_active: 'isActive',
+        product_ids: 'product_ids',
+        category_ids: 'category_ids'
+    };
+
+    for (const [snake, camel] of Object.entries(map)) {
+        if (req.body[snake] !== undefined && req.body[camel] === undefined) {
+            req.body[camel] = req.body[snake];
+        }
+    }
+
+    next();
+}
+
 /**
  * Validation Rules for Creating a Coupon
  * =======================================
@@ -149,43 +173,35 @@ const createCouponValidation = [
             return true;
         }),
     
-    // Validate valid from date
+    // Validate valid from date (optional)
     body('validFrom')
-        .notEmpty().withMessage('Valid from date is required')
+        .optional()
         .isISO8601().withMessage('Invalid date format for validFrom (use ISO 8601)'),
-    
-    // Validate valid until date
+
+    // Validate valid until date (optional). If both dates provided, ensure ordering.
     body('validUntil')
-        .notEmpty().withMessage('Valid until date is required')
+        .optional()
         .isISO8601().withMessage('Invalid date format for validUntil (use ISO 8601)')
         .custom((value, { req }) => {
-            /**
-             * CRITICAL VALIDATION: Date Range Logic
-             * ======================================
-             * 
-             * WHY THIS IS IMPORTANT:
-             * - Prevents coupons that are already expired
-             * - Ensures valid date range
-             * - Catches configuration errors
-             * 
-             * CHECKS:
-             * 1. validUntil must be after validFrom
-             * 2. validUntil should not be in the past (optional warning)
-             */
-            const validFrom = new Date(req.body.validFrom);
+            const validFromRaw = req.body.validFrom;
             const validUntil = new Date(value);
-            
-            // Check if validUntil is after validFrom
-            if (validUntil <= validFrom) {
-                throw new Error('Valid until date must be after valid from date');
+
+            if (validFromRaw) {
+                const validFrom = new Date(validFromRaw);
+                if (isNaN(validFrom.getTime())) {
+                    throw new Error('Invalid validFrom date');
+                }
+                if (validUntil <= validFrom) {
+                    throw new Error('Valid until date must be after valid from date');
+                }
             }
-            
+
             // Optional: Warn if creating already-expired coupon
             const now = new Date();
             if (validUntil < now) {
                 throw new Error('Valid until date is in the past. Coupon will be immediately expired.');
             }
-            
+
             return true;
         }),
     
@@ -199,6 +215,19 @@ const createCouponValidation = [
     body('isActive')
         .optional()
         .isBoolean().withMessage('isActive must be true or false'),
+    // Optional: product_ids and category_ids for "applies to" restrictions
+    body('product_ids')
+        .optional()
+        .isArray().withMessage('product_ids must be an array of product IDs'),
+    body('product_ids.*')
+        .optional()
+        .isInt({ min: 1 }).withMessage('Each product_id must be a positive integer'),
+    body('category_ids')
+        .optional()
+        .isArray().withMessage('category_ids must be an array of category IDs'),
+    body('category_ids.*')
+        .optional()
+        .isInt({ min: 1 }).withMessage('Each category_id must be a positive integer'),
 ];
 
 /**
@@ -241,9 +270,32 @@ const validateCouponValidation = [
         .notEmpty().withMessage('Coupon code is required')
         .isLength({ min: 3, max: 50 }).withMessage('Invalid coupon code'),
     
-    body('orderAmount')
-        .notEmpty().withMessage('Order amount is required')
-        .isFloat({ min: 0.01 }).withMessage('Order amount must be a positive number'),
+    // Accept either `orderTotal` (frontend) or `orderAmount` (legacy)
+    body().custom((value, { req }) => {
+        const orderTotal = req.body.orderTotal ?? req.body.orderAmount;
+        if (orderTotal === undefined || orderTotal === null) {
+            throw new Error('Order total is required');
+        }
+        if (isNaN(parseFloat(orderTotal)) || parseFloat(orderTotal) <= 0) {
+            throw new Error('Order total must be a positive number');
+        }
+
+        // Validate cartItems if provided
+        const cartItems = req.body.cartItems;
+        if (cartItems !== undefined) {
+            if (!Array.isArray(cartItems)) {
+                throw new Error('cartItems must be an array');
+            }
+            for (const item of cartItems) {
+                const hasProductId = item.product_id || item.productId;
+                if (!hasProductId) throw new Error('Each cart item must include product_id or productId');
+                if (isNaN(parseFloat(item.price))) throw new Error('Each cart item must include a numeric price');
+                if (isNaN(parseInt(item.quantity))) throw new Error('Each cart item must include a quantity');
+            }
+        }
+
+        return true;
+    }),
 ];
 
 /**
@@ -284,8 +336,8 @@ const handleValidationErrors = (req, res, next) => {
  * =================
  */
 module.exports = {
-    create: [...createCouponValidation, handleValidationErrors],
-    update: [...updateCouponValidation, handleValidationErrors],
+    create: [normalizeCouponPayload, ...createCouponValidation, handleValidationErrors],
+    update: [normalizeCouponPayload, ...updateCouponValidation, handleValidationErrors],
     validate: [...validateCouponValidation, handleValidationErrors],
     getById: [...couponIdValidation, handleValidationErrors],
     delete: [...couponIdValidation, handleValidationErrors],

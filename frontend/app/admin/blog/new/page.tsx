@@ -4,7 +4,7 @@ import { AdminBlogEditor } from "@/components/admin-blog-editor"
 export default function NewBlogPost() {
   return (
     <AdminLayout>
-      <AdminBlogEditor />
+      <AdminBlogEditor isNew={true} />
     </AdminLayout>
   )
 }

@@ -39,17 +39,17 @@ const createProductValidation = [
         .trim()
         .notEmpty().withMessage('Product name is required')
         .isLength({ min: 3, max: 200 }).withMessage('Product name must be between 3 and 200 characters'),
-    
+
     body('description')
         .optional()
         .trim()
-        .isLength({ max: 2000 }).withMessage('Description cannot exceed 2000 characters'),
-    
-    body('shortDescription')
+        .isLength({ max: 50000000 }).withMessage('Description cannot exceed 50000000 characters'),
+
+    body('short_description')
         .optional()
         .trim()
         .isLength({ max: 500 }).withMessage('Short description cannot exceed 500 characters'),
-    
+
     body('price')
         .notEmpty().withMessage('Price is required')
         .isFloat({ min: 0.01 }).withMessage('Price must be a positive number')
@@ -60,8 +60,8 @@ const createProductValidation = [
             }
             return true;
         }),
-    
-    body('comparePrice')
+
+    body('compare_price')
         .optional()
         .isFloat({ min: 0 }).withMessage('Compare price must be a positive number')
         .custom((value, { req }) => {
@@ -71,36 +71,36 @@ const createProductValidation = [
             }
             return true;
         }),
-    
-    body('stockQuantity')
+
+    body('stock_quantity')
         .notEmpty().withMessage('Stock quantity is required')
         .isInt({ min: 0 }).withMessage('Stock quantity must be a non-negative integer'),
-    
-    body('categoryId')
+
+    body('category_id')
         .notEmpty().withMessage('Category is required')
         .isInt({ min: 1 }).withMessage('Invalid category ID'),
-    
+
     body('sku')
         .optional()
         .trim()
         .matches(/^[A-Z0-9-]+$/i).withMessage('SKU can only contain letters, numbers, and hyphens'),
-    
+
     body('weight')
         .optional()
         .isFloat({ min: 0.01 }).withMessage('Weight must be a positive number'),
-    
-    body('weightUnit')
+
+    body('weight_unit')
         .optional()
         .isIn(['kg', 'g', 'lb', 'oz']).withMessage('Invalid weight unit'),
-    
-    body('isActive')
+
+    body('is_active')
         .optional()
-        .isBoolean().withMessage('isActive must be true or false'),
-    
+        .isBoolean().withMessage('is_active must be true or false'),
+
     body('tags')
         .optional()
         .isArray().withMessage('Tags must be an array'),
-    
+
     body('tags.*')
         .optional()
         .trim()
@@ -117,20 +117,20 @@ const createProductValidation = [
 const updateProductValidation = [
     param('id')
         .isInt({ min: 1 }).withMessage('Invalid product ID'),
-    
+
     body('name')
         .optional()
         .trim()
         .isLength({ min: 3, max: 200 }).withMessage('Product name must be between 3 and 200 characters'),
-    
+
     body('price')
         .optional()
         .isFloat({ min: 0.01 }).withMessage('Price must be a positive number'),
-    
-    body('stockQuantity')
+
+    body('stock_quantity')
         .optional()
         .isInt({ min: 0 }).withMessage('Stock quantity must be a non-negative integer'),
-    
+
     // Add other fields as needed (same rules as create, but optional)
 ];
 
@@ -166,7 +166,7 @@ const productIdValidation = [
  */
 const handleValidationErrors = (req, res, next) => {
     const errors = validationResult(req);
-    
+
     if (!errors.isEmpty()) {
         // Format errors for frontend consumption
         const formattedErrors = errors.array().map(err => ({
@@ -174,14 +174,14 @@ const handleValidationErrors = (req, res, next) => {
             message: err.msg,
             value: err.value
         }));
-        
+
         return res.status(422).json({
             success: false,
             message: 'Validation failed',
             errors: formattedErrors
         });
     }
-    
+
     next();
 };
 

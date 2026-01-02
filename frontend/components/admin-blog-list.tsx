@@ -26,7 +26,7 @@ export function AdminBlogList() {
   const fetchPosts = async () => {
     try {
       setIsLoading(true)
-      const data = await blogService.getAllPosts()
+      const data = await blogService.getAllPosts({ sortBy: 'created_at', sortOrder: 'DESC', limit: 100 })
       setPostsData(data)
     } catch (error) {
       toast({ title: "Failed to load posts", variant: "destructive" })
@@ -153,11 +153,19 @@ export function AdminBlogList() {
                   <TableRow key={post.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border">
+                        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border bg-gray-100">
                           <img
-                            src={post.featured_image || 'https://placehold.co/600x400'}
+                            src={post.featured_image?.startsWith('http') || post.featured_image?.startsWith('data:')
+                              ? post.featured_image 
+                              : post.featured_image 
+                                ? `http://127.0.0.1:5000${post.featured_image}`
+                                : 'https://placehold.co/600x400?text=No+Image'}
                             alt={post.title}
                             className="h-full w-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = 'https://placehold.co/600x400?text=No+Image';
+                            }}
                           />
                         </div>
                         <span className="line-clamp-1">{post.title}</span>

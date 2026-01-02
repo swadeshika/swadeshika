@@ -1,4 +1,4 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000/api/v1';
+export const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000/api/v1';
 
 /**
  * Standard API Response structure
@@ -145,8 +145,18 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
         const error: any = new Error(data.message || 'API request failed');
         error.status = response.status;
         error.errors = data.errors; // Validation errors array
+        if (data.errors) {
+            console.error('❌ [API] Validation Failed:', JSON.stringify(data.errors, null, 2));
+        }
         throw error;
     }
+
+    console.log(`[API] Response received for ${url}:`, {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText
+    });
+    console.log(`[API] Response data:`, data);
 
     return { data };
 }

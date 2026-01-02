@@ -34,21 +34,28 @@ const { body, param, validationResult } = require('express-validator');
  * - couponCode: Optional, valid format
  */
 const createOrderValidation = [
-    // Validate items array
+    // Validate items array - optional because the controller can use DB cart when items are omitted
     body('items')
-        .isArray({ min: 1 }).withMessage('Order must contain at least one item')
-        .custom((items) => {
+        .custom((items, { req }) => {
+            // If items not provided or empty array, allow controller to fallback to DB cart
+            if (items == null) return true;
+            if (Array.isArray(items) && items.length === 0) return true;
+
+            if (!Array.isArray(items)) {
+                throw new Error('Items must be an array');
+            }
+
             // Ensure all items have required fields
             for (const item of items) {
-                if (!item.productId || !item.quantity || !item.price) {
+                if (!item.productId || item.quantity == null || item.price == null) {
                     throw new Error('Each item must have productId, quantity, and price');
                 }
-                
+
                 // Validate quantity is positive integer
                 if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
                     throw new Error('Item quantity must be a positive integer');
                 }
-                
+
                 // Validate price is positive number
                 if (typeof item.price !== 'number' || item.price <= 0) {
                     throw new Error('Item price must be a positive number');
@@ -93,9 +100,10 @@ const createOrderValidation = [
         .notEmpty().withMessage('Postal code is required')
         .matches(/^[0-9]{5,10}$/).withMessage('Invalid postal code format'),
     
+    // Country may be omitted from frontend; default applied in controller. Accept empty.
     body('shippingAddress.country')
+        .optional({ checkFalsy: true })
         .trim()
-        .notEmpty().withMessage('Country is required')
         .isLength({ min: 2, max: 100 }).withMessage('Country name must be between 2 and 100 characters'),
     
     // Validate payment method
@@ -124,22 +132,26 @@ const createOrderValidation = [
              * - Allow small floating-point differences (0.01)
              */
             const items = req.body.items || [];
+            // If items are not provided, controller will calculate from DB cart — skip strict check here
+            if (!items || items.length === 0) return true;
+
             const calculatedTotal = items.reduce((sum, item) => {
                 return sum + (item.price * item.quantity);
             }, 0);
-            
+
             // Allow 1 cent difference for floating-point precision
             const difference = Math.abs(calculatedTotal - parseFloat(value));
             if (difference > 0.01) {
                 throw new Error(`Total amount mismatch. Expected: ${calculatedTotal.toFixed(2)}, Received: ${value}`);
             }
-            
+
             return true;
         }),
     
     // Validate coupon code (optional)
+    // Allow empty couponCode to be treated as not provided
     body('couponCode')
-        .optional()
+        .optional({ checkFalsy: true })
         .trim()
         .isLength({ min: 3, max: 50 }).withMessage('Coupon code must be between 3 and 50 characters')
         .matches(/^[A-Z0-9-]+$/i).withMessage('Coupon code can only contain letters, numbers, and hyphens'),

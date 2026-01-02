@@ -153,9 +153,9 @@ const sections = [
       <div className="space-y-4">
         <p>If you have any questions about our Refund Policy, please contact us:</p>
         <ul className="space-y-2 list-disc pl-5">
-          <li><strong>Email:</strong> support@swadeshika.com</li>
-          <li><strong>Phone:</strong> +91 XXXXXXXXXX</li>
-          <li><strong>Business Hours:</strong> Monday to Saturday, 10:00 AM to 7:00 PM IST</li>
+          <li><strong>Email:</strong> official.swadeshika@gmail.com</li>
+          <li><strong>Phone:</strong> +91 7300039429, +91 8150976411</li>
+          <li><strong>Business Hours:</strong> Monday to Saturday, 9:00 AM to 6:00 PM</li>
         </ul>
         <p className="text-sm text-gray-600">Last Updated: November 1, 2025</p>
       </div>

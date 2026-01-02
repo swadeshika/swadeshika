@@ -15,7 +15,7 @@ const TOKEN_TYPES = {
 // (in seconds)
 // ------------------------------
 const TOKEN_EXPIRATION = {
-  [TOKEN_TYPES.ACCESS]: 15 * 60,            // 15 minutes (short-lived for security)
+  [TOKEN_TYPES.ACCESS]: 24 * 60 * 60,          // 24 hours (changed from 15 minutes for better UX)
   [TOKEN_TYPES.REFRESH]: 30 * 24 * 60 * 60, // 30 days (changed from 7 days - keeps user logged in)
   [TOKEN_TYPES.RESET_PASSWORD]: 60 * 60,    // 1 hour
   [TOKEN_TYPES.VERIFY_EMAIL]: 24 * 60 * 60, // 24 hours

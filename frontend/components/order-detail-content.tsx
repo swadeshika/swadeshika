@@ -34,6 +34,10 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Ensure wishlist is loaded so isInWishlist works correctly
+    if (useWishlistStore.getState().fetchWishlist) {
+      useWishlistStore.getState().fetchWishlist()
+    }
     const fetchOrder = async () => {
       try {
         setLoading(true)
@@ -73,8 +77,8 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
       <div className="container mx-auto px-1 py-8 max-w-6xl space-y-6">
         <Skeleton className="h-10 w-1/3" />
         <div className="grid lg:grid-cols-3 gap-6">
-           <Skeleton className="lg:col-span-2 h-[400px]" />
-           <Skeleton className="h-[400px]" />
+          <Skeleton className="lg:col-span-2 h-[400px]" />
+          <Skeleton className="h-[400px]" />
         </div>
       </div>
     )
@@ -106,7 +110,16 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
 
           {/* right: two buttons side-by-side — on mobile this becomes its own line below the order number */}
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={async () => {
+              try {
+                // show quick loading state
+                toast({ title: 'Downloading invoice...' })
+                await ordersService.downloadInvoice(orderId)
+              } catch (err) {
+                console.error('Invoice download failed', err)
+                toast({ title: 'Download failed', description: 'Unable to download invoice', variant: 'destructive' })
+              }
+            }}>
               <Download className="h-4 w-4" />
               Download Invoice
             </Button>
@@ -120,16 +133,16 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <span>
             Placed on{" "}
-            {new Date(order.createdAt).toLocaleDateString("en-IN", {
+            {new Date(order.createdAt || Date.now()).toLocaleDateString("en-IN", {
               day: "numeric",
               month: "long",
               year: "numeric",
             })}
           </span>
           <span>•</span>
-          <Badge className={statusConfig[order.status as keyof typeof statusConfig].color}>
+          <Badge className={statusConfig[order.status as keyof typeof statusConfig]?.color || "bg-gray-500"}>
             <StatusIcon className="h-3 w-3 mr-1" />
-            {statusConfig[order.status as keyof typeof statusConfig].label}
+            {statusConfig[order.status as keyof typeof statusConfig]?.label || order.status}
           </Badge>
         </div>
       </div>
@@ -145,15 +158,16 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {order.timeline.map((step, index) => {
-                  const StepIcon = statusConfig[step.status as keyof typeof statusConfig].icon
-                  const isLast = index === order.timeline.length - 1
+                {(order.timeline || []).map((step: any, index: number) => {
+                  const statusInfo = statusConfig[step.status as keyof typeof statusConfig] || statusConfig.pending;
+                  const StepIcon = statusInfo.icon
+                  const isLast = index === (order.timeline || []).length - 1
 
                   return (
                     <div key={step.status} className="flex gap-4 my-0">
                       <div className="flex flex-col items-center">
                         <div
-                          className={`rounded-full p-2 ${step.completed ? statusConfig[step.status as keyof typeof statusConfig].color : "bg-muted"
+                          className={`rounded-full p-2 ${step.completed ? statusInfo.color : "bg-muted"
                             }`}
                         >
                           <StepIcon className={`h-4 w-4 ${step.completed ? "text-white" : "text-muted-foreground"}`} />
@@ -162,7 +176,7 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
                       </div>
                       <div className="flex-1 pb-8">
                         <p className={`font-medium ${step.completed ? "text-foreground" : "text-muted-foreground"}`}>
-                          {statusConfig[step.status as keyof typeof statusConfig].label}
+                          {statusInfo.label}
                         </p>
                         {step.date && (
                           <p className="text-sm text-muted-foreground">
@@ -223,44 +237,29 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
           <Card className="py-6 border-2 border-[#E8DCC8]">
             <CardHeader>
               <CardTitle>Order Items</CardTitle>
-              <CardDescription>{order.items.length} items in this order</CardDescription>
+              <CardDescription>{(order.items || []).length} items in this order</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {order.items.map((item) => (
-                  <div key={item.id} className="flex gap-4">
+                {order.items?.map((item) => (
+                  <div key={item.id || Math.random()} className="flex gap-4">
                     <img
                       src={item.image || "/placeholder.svg"}
-                      alt={item.name}
+                      alt={item.productName || "Product"}
                       className="w-20 h-20 object-cover rounded-lg"
                     />
                     <div className="flex-1">
                       <div className="flex items-start justify-between">
                         <div>
-                          <h4 className="font-medium">{item.name}</h4>
-                          <p className="text-sm text-muted-foreground">{item.variant}</p>
+                          <h4 className="font-medium">{item.productName}</h4>
+                          <p className="text-sm text-muted-foreground">{item.variantName}</p>
                           <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
                         </div>
-                        <button
-                          onClick={(e) => handleWishlistToggle(item.id, item.name, e)}
-                          className="p-2 rounded-full hover:bg-muted transition-colors"
-                          title={isInWishlist(Number(item.id)) ? "Remove from wishlist" : "Add to wishlist"}
-                        >
-                          {togglingId === item.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                          ) : (
-                            <Heart
-                              className={cn(
-                                "h-4 w-4 transition-colors",
-                                isInWishlist(Number(item.id)) ? "fill-red-500 text-red-500" : "text-muted-foreground hover:text-red-500"
-                              )}
-                            />
-                          )}
-                        </button>
+                        {/* Wishlist button removed for now as it needs product ID which might differ from item ID */}
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium">₹{item.price.toLocaleString("en-IN")}</p>
+                      <p className="font-medium">₹{Number(item.price || 0).toLocaleString("en-IN")}</p>
                     </div>
                   </div>
                 ))}
@@ -279,20 +278,20 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span>₹{order.subtotal.toLocaleString("en-IN")}</span>
+                <span>₹{Number(order.summary?.subtotal || 0).toLocaleString("en-IN")}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Shipping</span>
-                <span>₹{order.shipping.toLocaleString("en-IN")}</span>
+                <span>₹{Number(order.summary?.shipping || 0).toLocaleString("en-IN")}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Tax</span>
-                <span>₹{order.tax.toLocaleString("en-IN")}</span>
+                <span>₹{Number(order.summary?.tax || 0).toLocaleString("en-IN")}</span>
               </div>
               <Separator />
               <div className="flex justify-between font-medium text-lg">
                 <span>Total</span>
-                <span>₹{order.total.toLocaleString("en-IN")}</span>
+                <span>₹{Number(order.summary?.total || order.totalAmount || 0).toLocaleString("en-IN")}</span>
               </div>
             </CardContent>
           </Card>
@@ -304,22 +303,19 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-2 text-sm">
-                <p className="font-medium">{order.shippingAddress.name}</p>
-                <p className="text-muted-foreground">{order.shippingAddress.address}</p>
+                <p className="font-medium">{order.address?.fullName || "N/A"}</p>
+                <p className="text-muted-foreground">{order.address?.addressLine1}</p>
                 <p className="text-muted-foreground">
-                  {order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode}
+                  {order.address?.city}, {order.address?.state} - {order.address?.postalCode}
                 </p>
               </div>
               <Separator />
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Phone className="h-4 w-4" />
-                  <span>{order.shippingAddress.phone}</span>
+                  <span>{order.address?.phone || "N/A"}</span>
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Mail className="h-4 w-4" />
-                  <span>{order.shippingAddress.email}</span>
-                </div>
+                {/* Email is not in address object usually, verify backend */}
               </div>
             </CardContent>
           </Card>

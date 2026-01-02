@@ -13,13 +13,31 @@ const ContactService = require('../services/contactService');
  */
 exports.submitContactForm = async (req, res, next) => {
     try {
+        // DEBUGGING LOGS
+        console.log('--- Contact Submission Debug ---');
+        console.log('Headers Content-Type:', req.headers['content-type']);
+        console.log('Body keys:', Object.keys(req.body));
+        console.log('File:', req.file);
+
         const { name, email, subject, message } = req.body;
 
         if (!name || !email || !subject || !message) {
             return res.status(400).json({ success: false, message: 'Missing required fields' });
         }
 
-        await ContactService.createSubmission(req.body);
+        const data = { ...req.body };
+
+        // Handle file upload
+        if (req.file) {
+            // Construct public URL
+            // If served from localhost:5000/uploads/...
+            // We'll just store the relative path or full URL. 
+            // Storing relative path /uploads/contacts/filename is better.
+            data.attachment_url = `/uploads/contacts/${req.file.filename}`;
+            data.attachment_name = req.file.originalname;
+        }
+
+        await ContactService.createSubmission(data);
 
         res.status(201).json({
             success: true,

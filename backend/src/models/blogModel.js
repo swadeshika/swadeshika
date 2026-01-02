@@ -6,7 +6,7 @@ class BlogModel {
     /**
      * Find all blog posts with pagination and filters
      */
-    static async findAll({ page = 1, limit = 10, category, search, status }) {
+    static async findAll({ page = 1, limit = 10, category, search, status, sortBy = 'published_at', sortOrder = 'DESC' }) {
         const offset = (page - 1) * limit;
         const params = [];
 
@@ -33,8 +33,17 @@ class BlogModel {
             params.push(status);
         }
 
-        // Sort by published_at desc, then created_at desc
-        sql += ` ORDER BY b.published_at DESC, b.created_at DESC`;
+        // Dynamic Sorting
+        const allowedSortFields = ['published_at', 'created_at', 'updated_at', 'title'];
+        const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'published_at';
+        const validSortOrder = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+        sql += ` ORDER BY b.${validSortBy} ${validSortOrder}`;
+        
+        // Secondary sort for stability
+        if (validSortBy !== 'created_at') {
+             sql += `, b.created_at DESC`;
+        }
 
         // Pagination
         sql += ` LIMIT ? OFFSET ?`;
@@ -89,12 +98,12 @@ class BlogModel {
         const params = [
             data.title,
             data.slug,
-            data.excerpt,
+            data.excerpt || null,
             data.content,
-            data.featured_image,
+            data.featured_image || null,
             data.author_id,
             data.category_id,
-            data.tags,
+            data.tags || null,
             data.status || 'draft',
             data.published_at ? new Date(data.published_at) : (data.status === 'published' ? new Date() : null)
         ];

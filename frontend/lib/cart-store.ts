@@ -53,10 +53,11 @@ export const useCartStore = create<CartStore>()(
             id: item.id,
             productId: item.product_id,
             name: item.variant_name ? `${item.product_name} - ${item.variant_name}` : item.product_name,
-            price: item.price,
+            price: Number(item.price),
             image: item.image_url,
             quantity: item.quantity,
-            category: "Product", // Default as backend doesn't send category yet
+            category: item.category_name || item.category || "Product", // prefer backend category name if available
+            categoryId: item.category_id || item.categoryId || null,
             variantId: item.variant_id,
             userId: item.user_id as unknown as string // Map backend user_id to frontend userId
           }))
@@ -127,7 +128,7 @@ export const useCartStore = create<CartStore>()(
             id: item.id,
             productId: item.product_id,
             name: item.variant_name ? `${item.product_name} - ${item.variant_name}` : item.product_name,
-            price: item.price,
+            price: Number(item.price),
             image: item.image_url,
             quantity: item.quantity,
             category: "Product",
@@ -190,6 +191,7 @@ export const useCartStore = create<CartStore>()(
                 ...item,
                 productId,
                 id: productId, // In local mode, ID is ProductID
+                categoryId: (item as any).categoryId ?? (item as any).category_id ?? null,
                 quantity: quantity
               }]
             })

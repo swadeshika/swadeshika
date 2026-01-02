@@ -52,7 +52,7 @@ const faqSections = [
       },
       {
         q: "How do I initiate a return?",
-        a: "To initiate a return, please contact our customer support at support@swadeshika.com with your order number and reason for return. Our team will guide you through the process and provide a return authorization if eligible."
+        a: "To initiate a return, please contact our customer support at official.swadeshika@gmail.com with your order number and reason for return. Our team will guide you through the process and provide a return authorization if eligible."
       },
       {
         q: "How long do refunds take to process?",
@@ -74,7 +74,7 @@ const faqSections = [
       },
       {
         q: "Do you offer bulk or wholesale purchases?",
-        a: "Yes, we offer special pricing for bulk and wholesale orders. Please contact our wholesale team at wholesale@swadeshika.com for more information and pricing."
+        a: "Yes, we offer special pricing for bulk and wholesale orders. Please contact our wholesale team at official.swadeshika@gmail.com for more information and pricing."
       }
     ]
   },
@@ -120,10 +120,10 @@ const faqSections = [
  */
 function highlightMatches(text: string, query: string): React.ReactNode {
   if (!query.trim()) return text;
-  
+
   // Split text into parts, capturing the query as separate elements
   const parts = text.split(new RegExp(`(${query})`, 'gi'));
-  
+
   return parts.map((part, i) => {
     // Apply highlight only to matching parts (case-insensitive)
     const isMatch = part.toLowerCase() === query.toLowerCase();
@@ -146,7 +146,7 @@ function highlightMatches(text: string, query: string): React.ReactNode {
 export default function FaqsPage() {
   // State for search query
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   /**
    * Filters FAQ sections based on the search query
    * @type {Array} Filtered and mapped FAQ sections
@@ -154,8 +154,8 @@ export default function FaqsPage() {
   const filteredSections = faqSections
     .map(section => ({
       ...section,
-      items: section.items.filter(item => 
-        item.q.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      items: section.items.filter(item =>
+        item.q.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.a.toLowerCase().includes(searchQuery.toLowerCase())
       )
     }))
@@ -199,7 +199,7 @@ export default function FaqsPage() {
               />
               <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#8B6F47]" />
               {searchQuery && (
-                <button 
+                <button
                   onClick={() => setSearchQuery('')}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#8B6F47] hover:text-[#6B4423]"
                   aria-label="Clear search"
@@ -245,8 +245,8 @@ export default function FaqsPage() {
                 <p className="text-[#8B6F47] mb-6">
                   We couldn't find any results for "{searchQuery}". Try different keywords or check out our <a href="/contact" className="text-[#2D5F3F] hover:underline">contact page</a> for help.
                 </p>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="border-[#E8DCC8] text-[#6B4423] hover:bg-[#F5F1E8]"
                   onClick={() => setSearchQuery('')}
                 >
@@ -269,7 +269,7 @@ export default function FaqsPage() {
                   Contact Support
                 </Button>
                 <Button variant="outline" className="bg-white text-[#2D5F3F] hover:bg-white/90 hover:bg-accent">
-                  Call Us: +91 98765 43210
+                  Call Us: +91 73000 39429
                 </Button>
               </div>
             </div>

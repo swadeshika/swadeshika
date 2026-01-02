@@ -14,7 +14,7 @@ class DashboardService {
         const startStr = startDate.toISOString().slice(0, 19).replace('T', ' ');
         const endStr = endDate.toISOString().slice(0, 19).replace('T', ' ');
 
-        const kpis = await DashboardModel.getKPIs(startStr, endStr);
+        const kpis = await DashboardModel.getKPIs(startStr, endStr) || {};
         const ordersByStatus = await DashboardModel.getOrdersByStatus(startStr, endStr);
         const salesByCategory = await DashboardModel.getSalesByCategory(startStr, endStr);
         const topCustomers = await DashboardModel.getTopCustomers(startStr, endStr);
@@ -23,18 +23,33 @@ class DashboardService {
         const couponPerformance = await DashboardModel.getCouponPerformance(startStr, endStr);
         const returnStats = await DashboardModel.getReturns(startStr, endStr);
 
+        // Defensive numeric parsing to avoid runtime errors when DB returns unexpected values
+        const safeKpis = {
+            revenue: Number(kpis.revenue || 0),
+            orders: Number(kpis.orders || 0),
+            products: Number(kpis.products || 0),
+            customers: Number(kpis.customers || 0)
+        };
+
+        const safeReturnStats = {
+            total: Number(returnStats?.total || 0),
+            returned: Number(returnStats?.returned || 0),
+            refundedAmount: Number(returnStats?.refundedAmount || 0),
+            avgResolutionSeconds: Number(returnStats?.avgResolutionSeconds || 0)
+        };
+
         // Calculate Return Rate
-        const returnRate = returnStats.total > 0
-            ? ((returnStats.returned / returnStats.total) * 100).toFixed(1)
+        const returnRate = safeReturnStats.total > 0
+            ? ((safeReturnStats.returned / safeReturnStats.total) * 100).toFixed(1)
             : "0.0";
 
         // Format for frontend
         return {
             kpis: [
-                { title: "Revenue", value: `₹${kpis.revenue.toLocaleString('en-IN')}`, icon: "BarChart3" },
-                { title: "Orders", value: kpis.orders.toString(), icon: "ShoppingCart" },
-                { title: "Products", value: kpis.products.toString(), icon: "Package" },
-                { title: "Customers", value: kpis.customers.toString(), icon: "Users" }
+                { title: "Revenue", value: `₹${safeKpis.revenue.toLocaleString('en-IN')}`, icon: "BarChart3" },
+                { title: "Orders", value: safeKpis.orders.toString(), icon: "ShoppingCart" },
+                { title: "Products", value: safeKpis.products.toString(), icon: "Package" },
+                { title: "Customers", value: safeKpis.customers.toString(), icon: "Users" }
             ],
             ordersByStatus: ordersByStatus.map(s => ({
                 label: s.status.charAt(0).toUpperCase() + s.status.slice(1),
@@ -45,20 +60,20 @@ class DashboardService {
             topCustomers,
             topProducts,
             paymentMethods: paymentMethods.map(p => ({
-                icon: "CreditCard", // Default icon
+                icon: "CreditCard",
                 name: p.name || 'Unknown',
-                value: kpis.orders > 0 ? Math.round((p.value / kpis.orders) * 100) : 0
+                value: safeKpis.orders > 0 ? Math.round((Number(p.value || 0) / safeKpis.orders) * 100) : 0
             })),
             coupons: couponPerformance,
             returns: [
                 { label: "Return Rate", value: `${returnRate}%` },
                 { 
                     label: "Avg. Resolution Time", 
-                    value: returnStats.avgResolutionSeconds > 0 
-                        ? `${(returnStats.avgResolutionSeconds / 86400).toFixed(1)} days` 
+                    value: safeReturnStats.avgResolutionSeconds > 0 
+                        ? `${(safeReturnStats.avgResolutionSeconds / 86400).toFixed(1)} days` 
                         : "N/A" 
                 },
-                { label: "Refunded Amount", value: `₹${returnStats.refundedAmount.toLocaleString('en-IN')}` }
+                    { label: "Refunded Amount", value: `₹${safeReturnStats.refundedAmount.toLocaleString('en-IN')}` }
             ]
         };
     }

@@ -34,7 +34,6 @@ type Preferences = {
   marketing: boolean
 }
 
-const STORAGE_PROFILE = "account_profile"
 const STORAGE_PREFS = "account_prefs"
 
 export function AccountSettings() {
@@ -43,9 +42,9 @@ export function AccountSettings() {
   const [passwordLoading, setPasswordLoading] = useState(false)
 
   const [profile, setProfile] = useState<Profile>({
-    fullName: "John Doe",
-    email: "john@example.com",
-    phone: "+91 1234567890",
+    fullName: "",
+    email: "",
+    phone: "",
   })
 
   const [prefs, setPrefs] = useState<Preferences>({
@@ -58,47 +57,61 @@ export function AccountSettings() {
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
 
-  // Load from localStorage
+  // Load from API
   useEffect(() => {
-    try {
-      const p = localStorage.getItem(STORAGE_PROFILE)
-      if (p) setProfile(JSON.parse(p))
-    } catch {}
-    try {
-      const pr = localStorage.getItem(STORAGE_PREFS)
-      if (pr) setPrefs(JSON.parse(pr))
-    } catch {}
+    const loadProfile = async () => {
+      try {
+        const user = await authService.getCurrentUser()
+        if (user) {
+          setProfile({
+            fullName: user.name,
+            email: user.email,
+            phone: user.phone || ""
+          })
+        }
+      } catch (error) {
+        console.error("Failed to load profile", error)
+        toast({ title: "Failed to load profile", variant: "destructive" })
+      }
+    }
+    loadProfile()
   }, [])
 
-  const persistProfile = (next: Profile) => {
-    setProfile(next)
-    try {
-      localStorage.setItem(STORAGE_PROFILE, JSON.stringify(next))
-    } catch {}
-  }
+
 
   const persistPrefs = (next: Preferences, showToast = true) => {
     setPrefs(next)
     try {
       localStorage.setItem(STORAGE_PREFS, JSON.stringify(next))
-    } catch {}
+    } catch { }
     if (showToast) toast({ title: "Preferences updated" })
   }
 
-  const handleProfileSubmit = (e: React.FormEvent) => {
+  const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setProfileLoading(true)
-    setTimeout(() => {
-      persistProfile(profile)
-      setProfileLoading(false)
+
+    try {
+      await authService.updateProfile({
+        name: profile.fullName,
+        phone: profile.phone
+      })
       toast({ title: "Profile saved", description: "Your profile information has been updated." })
-    }, 600)
+    } catch (error: any) {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Could not update profile.",
+        variant: "destructive"
+      })
+    } finally {
+      setProfileLoading(false)
+    }
   }
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setPasswordLoading(true)
-    
+
     // Basic validations
     if (!currentPassword) {
       setPasswordLoading(false)
@@ -119,16 +132,16 @@ export function AccountSettings() {
     try {
       // Call actual API
       await authService.changePassword(currentPassword, newPassword)
-      
+
       setCurrentPassword("")
       setNewPassword("")
       setConfirmPassword("")
       toast({ title: "Password updated", description: "Your password has been changed successfully." })
     } catch (error: any) {
-      toast({ 
-        title: "Update Failed", 
-        description: error.message || "Could not update password. Please check your current password.", 
-        variant: "destructive" 
+      toast({
+        title: "Update Failed",
+        description: error.message || "Could not update password. Please check your current password.",
+        variant: "destructive"
       })
     } finally {
       setPasswordLoading(false)
@@ -271,10 +284,10 @@ export function AccountSettings() {
                 <AlertDialogAction
                   className="bg-red-600 hover:bg-red-700 text-white"
                   onClick={() => {
-                    try {
-                      localStorage.removeItem(STORAGE_PROFILE)
-                      localStorage.removeItem(STORAGE_PREFS)
-                    } catch {}
+                    //   try {
+                    //     localStorage.removeItem(STORAGE_PROFILE)
+                    //     localStorage.removeItem(STORAGE_PREFS)
+                    //   } catch {}
                     toast({ title: "Account deletion requested", description: "We have queued your deletion request." })
                   }}
                 >

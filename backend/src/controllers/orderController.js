@@ -8,7 +8,7 @@ const AdminSettingsService = require('../services/adminSettingsService'); // Imp
 
 exports.createOrder = async (req, res, next) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user ? req.user.id : null;
         let { addressId, paymentMethod, couponCode, notes, items: bodyItems, shippingAddress } = req.body;
 
         // 1. Handle Address Creation if shippingAddress provided
@@ -103,7 +103,7 @@ exports.createOrder = async (req, res, next) => {
         // 4. Create Order
         const orderData = {
             user_id: userId,
-            address_id: finalAddressId, // Link finalized address ID
+            address_id: addressId, // Link finalized address ID
             subtotal,
             discount_amount: discountAmount,
             shipping_fee: shippingFee,
@@ -370,27 +370,47 @@ exports.getOrderById = async (req, res, next) => {
             orderNumber: order.order_number,
             status: order.status,
             paymentStatus: order.payment_status,
+            // Items formatted for frontend compatibility
             items: order.items.map(item => ({
+                id: item.product_id,
+                name: item.product_name,
+                variant: item.variant_name,
+                quantity: item.quantity,
+                price: item.price,
+                subtotal: item.subtotal,
+                image: item.image
+            })),
+            // Also include a structured items array for newer clients
+            itemsStructured: order.items.map(item => ({
+                productId: item.product_id,
                 productName: item.product_name,
+                variantId: item.variant_id,
                 variantName: item.variant_name,
                 quantity: item.quantity,
                 price: item.price,
                 subtotal: item.subtotal,
-                image: item.image // Ensure image is passed if available, though model might not select it if not in order_items. 
-                // Note: order_items table usually doesn't store image, products table does. 
-                // We might need to join/fetch image if frontend needs it. 
-                // Previous code didn't have image in map either, but frontend uses it. 
-                // Frontend has: src={item.image || "/placeholder.svg"}
-                // For now, let's stick to fixing timeline.
+                image: item.image
             })),
             address: order.address ? {
                 fullName: order.address.full_name,
                 phone: order.address.phone,
                 addressLine1: order.address.address_line1,
+                addressLine2: order.address.address_line2,
                 city: order.address.city,
                 state: order.address.state,
                 postalCode: order.address.postal_code
             } : null,
+            // Also provide a shippingAddress object compatible with frontend expectations
+            shippingAddress: order.address ? {
+                name: order.address.full_name,
+                address: [order.address.address_line1, order.address.address_line2].filter(Boolean).join(', '),
+                city: order.address.city,
+                state: order.address.state,
+                pincode: order.address.postal_code,
+                phone: order.address.phone,
+                email: order.user_email || null
+            } : null,
+            // Summary (newer structured shape)
             summary: {
                 subtotal: order.subtotal,
                 discount: order.discount_amount,
@@ -398,6 +418,11 @@ exports.getOrderById = async (req, res, next) => {
                 tax: order.tax_amount,
                 total: order.total_amount
             },
+            // Backwards-compatible top-level numeric fields
+            subtotal: order.subtotal,
+            shipping: order.shipping_fee,
+            tax: order.tax_amount,
+            total: order.total_amount,
             trackingNumber: order.tracking_number,
             estimatedDeliveryDate: order.estimated_delivery_date || new Date(new Date(order.created_at).setDate(new Date(order.created_at).getDate() + 5)),
             createdAt: order.created_at,
@@ -413,6 +438,63 @@ exports.getOrderById = async (req, res, next) => {
         next(error);
     }
 };
+
+/**
+ * Download invoice PDF
+ */
+exports.downloadInvoice = async (req, res, next) => {
+    try {
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+
+        if (req.user.role !== 'admin' && order.user_id !== req.user.id) {
+            return res.status(403).json({ success: false, message: 'Not authorized to view this order' });
+        }
+
+        const PDFDocument = require('pdfkit');
+
+        res.setHeader('Content-Type', 'application/pdf');
+        const filename = `invoice_${order.order_number || order.id}.pdf`;
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+        const doc = new PDFDocument({ size: 'A4', margin: 50 });
+        doc.pipe(res);
+
+        doc.fontSize(20).text('Invoice', { align: 'center' });
+        doc.moveDown();
+
+        doc.fontSize(12).text(`Order: ${order.order_number || order.id}`);
+        doc.text(`Date: ${new Date(order.created_at).toLocaleString()}`);
+        doc.moveDown();
+
+        doc.text('Items:', { underline: true });
+        doc.moveDown(0.5);
+
+        order.items.forEach((item) => {
+            const name = item.product_name || item.productName || 'Item';
+            const variant = item.variant_name ? ` (${item.variant_name})` : '';
+            const qty = item.quantity || 1;
+            const price = Number(item.price || 0).toFixed(2);
+            const subtotal = Number(item.subtotal || (item.price * item.quantity) || 0).toFixed(2);
+            doc.text(`${name}${variant} — Qty: ${qty}  Price: ₹${price}  Subtotal: ₹${subtotal}`);
+        });
+
+        doc.moveDown();
+        doc.text(`Subtotal: ₹${order.subtotal || 0}`);
+        doc.text(`Shipping: ₹${order.shipping_fee || 0}`);
+        doc.text(`Tax: ₹${order.tax_amount || 0}`);
+        doc.moveDown();
+        doc.fontSize(14).text(`Total: ₹${order.total_amount || 0}`, { align: 'right' });
+
+        doc.end();
+    } catch (error) {
+        next(error);
+    }
+};
+ 
 
 /**
  * Update order status (Admin)

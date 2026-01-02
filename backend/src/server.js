@@ -31,6 +31,11 @@ const PORT = process.env.PORT || 5000;
       console.log(`🚀 Server running on port ${PORT}`);
     });
 
+    // Increase server timeout to 5 minutes (300000 ms) for large uploads
+    server.timeout = 300000;
+    server.keepAliveTimeout = 300000;
+    server.headersTimeout = 301000;
+
     // Handle server 'error' events (eg. port already in use)
     server.on('error', (err) => {
       if (err && err.code === 'EADDRINUSE') {

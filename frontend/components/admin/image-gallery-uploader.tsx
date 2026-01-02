@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { uploadService } from "@/lib/services/uploadService"
+import { uploadService, BACKEND_ORIGIN } from "@/lib/services/uploadService"
 import { Loader2 } from "lucide-react"
 
 // Multi-image uploader with real file upload
@@ -75,7 +75,7 @@ export function ImageGalleryUploader({ label = "Upload gallery images", onChange
     const item = items[idx];
     
     // Delete file from server if it's an uploaded file
-    if (item.url && item.url.startsWith('http://127.0.0.1:5000/uploads/')) {
+    if (item.url && (item.url.startsWith(`${BACKEND_ORIGIN}/uploads/`) || item.url.startsWith(`${BACKEND_ORIGIN}/api/v1/images/`))) {
       try {
         await uploadService.deleteImage(item.url);
         console.log('[ImageGalleryUploader] File deleted from server');

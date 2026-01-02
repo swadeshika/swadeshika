@@ -48,6 +48,21 @@ const pool = mysql.createPool({
 async function connectDB() {
   try {
     const conn = await pool.getConnection(); // Get a connection
+
+    // Try to increase MySQL packet size for this session to allow large inserts.
+    // Some MySQL environments disallow changing this variable at SESSION level
+    // (it is read-only). In that case, log a warning and continue — the
+    // server's global setting will remain in effect.
+    try {
+      await conn.query('SET SESSION max_allowed_packet = 1073741824'); // 1GB
+    } catch (e) {
+      if (e && e.code === 'ER_VARIABLE_IS_READONLY') {
+        console.warn("⚠️ max_allowed_packet is read-only in this server; skipped SET SESSION. To change it, run 'SET GLOBAL max_allowed_packet=...' with sufficient privileges or update my.cnf/my.ini.");
+      } else {
+        console.warn('⚠️ Warning: failed to set session max_allowed_packet:', e && e.message ? e.message : e);
+      }
+    }
+
     conn.release();                           // Release back to pool
 
     console.log('✅ Database connected successfully');

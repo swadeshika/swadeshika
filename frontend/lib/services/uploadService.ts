@@ -5,6 +5,16 @@
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000/api/v1';
 
+// Derive backend origin (e.g., http://localhost:5001) from BASE_URL
+let BACKEND_ORIGIN: string;
+try {
+    BACKEND_ORIGIN = new URL(BASE_URL).origin;
+} catch (e) {
+    BACKEND_ORIGIN = BASE_URL.replace(/\/api\/v1\/?$/, '');
+}
+
+export { BACKEND_ORIGIN };
+
 export const uploadService = {
     /**
      * Upload single image
@@ -36,8 +46,8 @@ export const uploadService = {
             throw new Error(data.message || 'Upload failed');
         }
 
-        // Return full URL
-        const fullUrl = `http://127.0.0.1:5000${data.data.url}`;
+        // Return full URL based on configured backend origin
+        const fullUrl = `${BACKEND_ORIGIN}${data.data.url}`;
         console.log('[UploadService] Generated URL:', fullUrl);
         return fullUrl;
     },
@@ -74,8 +84,8 @@ export const uploadService = {
             throw new Error(data.message || 'Upload failed');
         }
 
-        // Return full URLs
-        const fullUrls = data.data.map((item: any) => `http://127.0.0.1:5000${item.url}`);
+        // Return full URLs based on configured backend origin
+        const fullUrls = data.data.map((item: any) => `${BACKEND_ORIGIN}${item.url}`);
         console.log('[UploadService] Generated URLs:', fullUrls);
         return fullUrls;
     },

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { uploadService } from "@/lib/services/uploadService"
+import { uploadService, BACKEND_ORIGIN } from "@/lib/services/uploadService"
 import { Loader2 } from "lucide-react"
 
 // Single-image uploader with real file upload
@@ -59,8 +59,8 @@ export function ImageUploader({ label = "Upload image", onChange, initialUrl }: 
 
   // Clear current selection and preview
   const clear = async () => {
-    // Delete file from server if it exists
-    if (preview && preview.startsWith('http://127.0.0.1:5000/uploads/')) {
+    // Delete file from server if it exists (hosted on backend)
+    if (preview && (preview.startsWith(`${BACKEND_ORIGIN}/uploads/`) || preview.startsWith(`${BACKEND_ORIGIN}/api/v1/images/`))) {
       try {
         await uploadService.deleteImage(preview);
         console.log('[ImageUploader] File deleted from server');

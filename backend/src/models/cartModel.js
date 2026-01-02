@@ -17,11 +17,13 @@ class CartModel {
         const sql = `
             SELECT 
                 ci.id, ci.user_id, ci.product_id, ci.variant_id, ci.quantity, ci.created_at,
-                p.name as product_name, p.slug, p.price, p.compare_price,
+                p.name as product_name, p.slug, p.price, p.compare_price, p.category_id as category_id,
+                c.name as category_name,
                 (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as image_url,
                 pv.name as variant_name, pv.price as variant_price
             FROM cart_items ci
             JOIN products p ON ci.product_id = p.id
+            LEFT JOIN categories c ON p.category_id = c.id
             LEFT JOIN product_variants pv ON ci.variant_id = pv.id
             WHERE ci.user_id = ?
             ORDER BY ci.created_at DESC

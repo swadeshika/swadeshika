@@ -1,40 +1,60 @@
-import { notFound } from "next/navigation"
+"use client"
+
+import { useEffect, useState } from "react"
+import { notFound, useParams } from "next/navigation"
 import { AdminLayout } from "@/components/admin-layout"
 import { AdminBlogEditor } from "@/components/admin-blog-editor"
-import { BLOGS } from "@/lib/blogs-data"
+import { blogService, BlogPost } from "@/lib/blogService"
 
-// Map category names to editor select values (best-effort)
-function mapCategoryToValue(name: string | undefined) {
-  if (!name) return ""
-  const n = name.toLowerCase()
-  if (n.includes("health")) return "health"
-  if (n.includes("ayurveda")) return "ayurveda"
-  if (n.includes("nutrition")) return "nutrition"
-  if (n.includes("sustainable")) return "sustainable-living"
-  if (n.includes("mindful")) return "mindfulness"
-  if (n.includes("recipe")) return "recipes"
-  return ""
-}
+export default function EditBlogPage() {
+  const params = useParams()
+  const id = params.id as string
+  const [post, setPost] = useState<BlogPost | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
-export default function EditBlogPage({ params }: { params: { id: string } }) {
-  const post = BLOGS.find((p) => p.id === params.id)
-  if (!post) return notFound()
+  useEffect(() => {
+    async function fetchPost() {
+      try {
+        setLoading(true)
+        // Fetch all posts and find by ID (since we don't have getById endpoint)
+        const posts = await blogService.getAllPosts({ limit: 1000 })
+        const foundPost = posts.find(p => p.id?.toString() === id)
+        
+        if (!foundPost) {
+          setError(true)
+          return
+        }
+        
+        setPost(foundPost)
+      } catch (err) {
+        console.error('Error fetching post:', err)
+        setError(true)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  // Build initial shape for AdminBlogEditor
-  const initial = {
-    id: post.id,
-    title: post.title,
-    author: post.author,
-    status: post.status as 'draft' | 'published',
-    publishDate: new Date(post.date),
-    featuredImage: post.image,
-    category: mapCategoryToValue(post.category),
-    // The editor will auto-generate slug if empty and handle empty excerpt/content/tags
+    fetchPost()
+  }, [id])
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-lg">Loading post...</p>
+        </div>
+      </AdminLayout>
+    )
+  }
+
+  if (error || !post) {
+    return notFound()
   }
 
   return (
     <AdminLayout>
-      <AdminBlogEditor post={initial} isNew={false} />
+      <AdminBlogEditor post={post} isNew={false} />
     </AdminLayout>
   )
 }

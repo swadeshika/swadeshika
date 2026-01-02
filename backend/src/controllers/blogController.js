@@ -22,8 +22,8 @@ const { getMessage } = require('../constants/messages');
  */
 const getAllPosts = async (req, res, next) => {
     try {
-        const { page, limit, category, search, status } = req.query;
-        const result = await BlogModel.findAll({ page, limit, category, search, status });
+        const { page, limit, category, search, status, sortBy, sortOrder } = req.query;
+        const result = await BlogModel.findAll({ page, limit, category, search, status, sortBy, sortOrder });
 
         return res.status(200).json({
             success: true,
@@ -143,7 +143,7 @@ const updatePost = async (req, res, next) => {
         console.log('updatePost called with body:', JSON.stringify(req.body).substring(0, 100) + '...');
 
         const { id } = req.params;
-        const { title, content, excerpt, featuredImage, category, category_id, tags, status, slug, author_id, published_at } = req.body;
+        const { title, content, excerpt, featuredImage, featured_image, category, category_id, tags, status, slug, author_id, published_at } = req.body;
 
         // Determine Category ID
         let categoryId = category_id;
@@ -162,7 +162,7 @@ const updatePost = async (req, res, next) => {
             slug: slug || (title ? slugify(title) : undefined),
             excerpt: excerpt || null,
             content,
-            featured_image: featuredImage || null,
+            featured_image: featured_image || featuredImage || null, // Accept both snake_case and camelCase
             category_id: categoryId, // might be undefined if not provided, model handles it
             tags: tags ? (Array.isArray(tags) ? JSON.stringify(tags) : tags) : null,
             status,

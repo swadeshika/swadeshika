@@ -73,7 +73,7 @@ export const blogService = {
     },
 
     // Blog Posts
-    async getAllPosts(params?: { page?: number; limit?: number; status?: string; category?: string }): Promise<BlogPost[]> {
+    async getAllPosts(params?: { page?: number; limit?: number; status?: string; category?: string; sortBy?: string; sortOrder?: string }): Promise<BlogPost[]> {
         const queryString = new URLSearchParams(params as any).toString();
         const endpoint = queryString ? `/blog?${queryString}` : '/blog';
         const response = await api.get<any>(endpoint);

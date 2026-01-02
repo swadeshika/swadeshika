@@ -148,6 +148,10 @@ app.use('/uploads', (req, res, next) => {
    next();
 });
 
+// Serve uploaded files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
+// Serve public static files
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 /* ============================================================

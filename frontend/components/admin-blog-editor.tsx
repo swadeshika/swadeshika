@@ -82,6 +82,16 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
     fetchMetaData()
   }, [isNew])
 
+  // Sync prop post data with state (for edit mode)
+  useEffect(() => {
+    if (initialPost && !isNew) {
+      setPost(prev => ({
+        ...prev,
+        ...initialPost
+      }))
+    }
+  }, [initialPost, isNew])
+
   // Update post with automatic slug generation
   const updatePost = (updates: Partial<BlogPost>) => {
     setPost(prev => {
@@ -106,8 +116,12 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    console.log('[BLOG SAVE] Starting save process...');
+    console.log('[BLOG SAVE] Current post data:', post);
+    
     // Validate required fields
     if (!post.title) {
+        console.log('[BLOG SAVE] Validation failed: Title is required');
         toast({ title: "Title is required", variant: "destructive" })
       return
     }
@@ -120,22 +134,33 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
       // Date handling: Ensure published_at is string ISO
     }
     
+    console.log('[BLOG SAVE] Final post data to send:', finalPost);
+    
     setIsSaving(true)
     
     try {
+      console.log('[BLOG SAVE] isNew:', isNew);
       if (isNew) {
-        await blogService.createPost(finalPost)
+        console.log('[BLOG SAVE] Calling blogService.createPost...');
+        const result = await blogService.createPost(finalPost)
+        console.log('[BLOG SAVE] Create post result:', result);
         toast({ title: "Post created successfully" })
       } else if (post.id) {
-        await blogService.updatePost(post.id, finalPost)
+        console.log('[BLOG SAVE] Calling blogService.updatePost...');
+        const result = await blogService.updatePost(post.id, finalPost)
+        console.log('[BLOG SAVE] Update post result:', result);
         toast({ title: "Post updated successfully" })
       }
+      console.log('[BLOG SAVE] Redirecting to /admin/blog');
       router.push('/admin/blog')
     } catch (error: any) {
-        console.error("Save error:", error);
+        console.error("[BLOG SAVE] Error occurred:", error);
+        console.error("[BLOG SAVE] Error message:", error.message);
+        console.error("[BLOG SAVE] Error stack:", error.stack);
         const msg = error.message || "Something went wrong";
         toast({ title: "Failed to save post", description: msg, variant: "destructive" })
     } finally {
+      console.log('[BLOG SAVE] Save process completed, setting isSaving to false');
       setIsSaving(false)
     }
   }
@@ -166,17 +191,95 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
     })
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
+    console.log('[IMAGE UPLOAD] File selected:', file?.name, file?.size)
+    
     if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
+      try {
+        // Store old image URL to delete later
+        const oldImageUrl = post.featured_image
+        console.log('[IMAGE UPLOAD] Old image URL:', oldImageUrl)
+
+        // Show loading state
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          console.log('[IMAGE UPLOAD] FileReader complete, showing preview')
+          // Temporarily show preview while uploading
+          setPost({
+            ...post,
+            featured_image: reader.result as string
+          })
+        }
+        reader.readAsDataURL(file)
+
+        // Upload to server
+        const formData = new FormData()
+        formData.append('image', file)
+
+        const token = localStorage.getItem('accessToken')
+        console.log('[IMAGE UPLOAD] Uploading to server...')
+        
+        const response = await fetch('http://127.0.0.1:5000/api/v1/upload/image', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        })
+
+        if (!response.ok) {
+          throw new Error('Image upload failed')
+        }
+
+        const data = await response.json()
+        console.log('[IMAGE UPLOAD] Upload successful, response:', data)
+        
+        // Save only relative path (not full URL)
+        console.log('[IMAGE UPLOAD] Setting new image path:', data.data.url)
+        setPost(prev => {
+          const updated = {
+            ...prev,
+            featured_image: data.data.url
+          }
+          console.log('[IMAGE UPLOAD] Updated post state:', updated)
+          return updated
+        })
+        
+        // Delete old image if it exists and is a server URL (not base64)
+        if (oldImageUrl && oldImageUrl.startsWith('/uploads/')) {
+          try {
+            const filename = oldImageUrl.split('/').pop()
+            console.log('[IMAGE UPLOAD] Deleting old image:', filename)
+            await fetch('http://127.0.0.1:5000/api/v1/upload/image', {
+              method: 'DELETE',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ filename })
+            })
+            console.log('[IMAGE UPLOAD] Old image deleted successfully')
+          } catch (deleteError) {
+            console.error('[IMAGE UPLOAD] Failed to delete old image:', deleteError)
+            // Don't show error to user, just log it
+          }
+        }
+        
+        toast({ title: "Image uploaded successfully" })
+      } catch (error) {
+        console.error('[IMAGE UPLOAD] Error occurred:', error)
+        toast({ 
+          title: "Image upload failed", 
+          description: "Please try again",
+          variant: "destructive" 
+        })
+        // Clear the failed image
         setPost({
           ...post,
-          featured_image: reader.result as string
+          featured_image: ''
         })
       }
-      reader.readAsDataURL(file)
     }
   }
 
@@ -348,9 +451,16 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
                   {post.featured_image ? (
                     <div className="relative w-full h-full">
                       <img
-                        src={post.featured_image}
+                        src={post.featured_image.startsWith('http') || post.featured_image.startsWith('data:') 
+                          ? post.featured_image 
+                          : `http://127.0.0.1:5000${post.featured_image}`}
                         alt="Featured"
                         className="object-cover w-full h-full rounded-md"
+                        onError={(e) => {
+                          console.error('Image failed to load:', post.featured_image);
+                          const target = e.target as HTMLImageElement;
+                          target.src = 'https://placehold.co/600x400?text=Image+Error';
+                        }}
                       />
                       <Button
                         variant="ghost"

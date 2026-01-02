@@ -151,6 +151,13 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
         throw error;
     }
 
+    console.log(`[API] Response received for ${url}:`, {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText
+    });
+    console.log(`[API] Response data:`, data);
+
     return { data };
 }
 

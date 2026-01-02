@@ -95,8 +95,28 @@ class DashboardModel {
             ORDER BY spent DESC
             LIMIT 5
         `;
-        const [rows] = await db.query(query, [startDate, endDate]);
-        return rows;
+
+        try {
+            const [rows] = await db.query(query, [startDate, endDate]);
+            return rows;
+        } catch (err) {
+            // If `customers` table doesn't exist (some deployments), fall back to a simplified query
+            if (err.code === 'ER_NO_SUCH_TABLE' || /doesn't exist/.test(err.message || '')) {
+                const alt = `
+                    SELECT u.name as name, SUM(o.total_amount) as spent, COUNT(o.id) as orders
+                    FROM orders o
+                    JOIN users u ON o.user_id = u.id
+                    WHERE o.created_at BETWEEN ? AND ?
+                    AND o.status != 'cancelled'
+                    GROUP BY u.id, u.name
+                    ORDER BY spent DESC
+                    LIMIT 5
+                `;
+                const [rows2] = await db.query(alt, [startDate, endDate]);
+                return rows2;
+            }
+            throw err;
+        }
     }
 
     /**
@@ -136,8 +156,24 @@ class DashboardModel {
             ORDER BY o.created_at DESC
             LIMIT 5
         `;
-        const [rows] = await db.query(query);
-        return rows;
+
+        try {
+            const [rows] = await db.query(query);
+            return rows;
+        } catch (err) {
+            if (err.code === 'ER_NO_SUCH_TABLE' || /doesn't exist/.test(err.message || '')) {
+                const alt = `
+                    SELECT o.id, o.order_number, u.name as customer, o.total_amount as amount, o.status, o.created_at
+                    FROM orders o
+                    JOIN users u ON o.user_id = u.id
+                    ORDER BY o.created_at DESC
+                    LIMIT 5
+                `;
+                const [rows2] = await db.query(alt);
+                return rows2;
+            }
+            throw err;
+        }
     }
 
     /**

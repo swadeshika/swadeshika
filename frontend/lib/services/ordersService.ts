@@ -1,4 +1,4 @@
-import { api } from '@/lib/api';
+import { api, BASE_URL } from '@/lib/api';
 
 export interface OrderItem {
     productName: string;
@@ -134,6 +134,37 @@ export const ordersService = {
     }) => {
         const res = await api.post<{ message: string; orderId: string }>(`/orders`, orderData);
         return res.data;
+    },
+
+    /**
+     * Download invoice PDF for order
+     */
+    downloadInvoice: async (id: string) => {
+        if (typeof window === 'undefined') throw new Error('Client only');
+        // Build URL using BASE_URL exported from api
+        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        const res = await fetch(`${BASE_URL}/orders/${id}/invoice`, {
+            method: 'GET',
+            headers: {
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            }
+        });
+
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error(text || 'Failed to download invoice');
+        }
+
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `invoice_${id}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        return true;
     },
 
     /**

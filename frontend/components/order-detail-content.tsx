@@ -34,6 +34,10 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Ensure wishlist is loaded so isInWishlist works correctly
+    if (useWishlistStore.getState().fetchWishlist) {
+      useWishlistStore.getState().fetchWishlist()
+    }
     const fetchOrder = async () => {
       try {
         setLoading(true)
@@ -106,7 +110,16 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
 
           {/* right: two buttons side-by-side — on mobile this becomes its own line below the order number */}
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={async () => {
+              try {
+                // show quick loading state
+                toast({ title: 'Downloading invoice...' })
+                await ordersService.downloadInvoice(orderId)
+              } catch (err) {
+                console.error('Invoice download failed', err)
+                toast({ title: 'Download failed', description: 'Unable to download invoice', variant: 'destructive' })
+              }
+            }}>
               <Download className="h-4 w-4" />
               Download Invoice
             </Button>

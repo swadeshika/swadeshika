@@ -5,6 +5,7 @@ const {
     getAllOrders,
     getMyOrders,
     getOrderById,
+    downloadInvoice,
     updateOrderStatus,
     cancelOrder,
     deleteOrder,
@@ -35,6 +36,8 @@ const orderValidator = require('../validators/orderValidator');
 // Protected Routes (User)
 // Allow optional authentication for checkout so guest users can place orders.
 router.post('/', optionalAuthenticate, orderValidator.create, createOrder);
+// Download invoice PDF
+router.get('/:id/invoice', authenticate, orderValidator.getById, downloadInvoice);
 router.get('/', authenticate, getMyOrders);
 router.get('/:id', authenticate, orderValidator.getById, getOrderById); // Controller handles permission check for owner/admin
 router.post('/:id/cancel', authenticate, orderValidator.cancel, cancelOrder);

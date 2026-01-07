@@ -50,6 +50,28 @@ exports.createOrder = async (req, res, next) => {
 
         if (bodyItems && bodyItems.length > 0) {
             // Use items from request body
+            const productIds = [...new Set(bodyItems.map(item => item.productId))];
+
+            // Verify products exist
+            if (productIds.length > 0) {
+                // Fix for pool.execute: Expand array to placeholders
+                const placeholders = productIds.map(() => '?').join(',');
+                const [existingProducts] = await db.query(
+                    `SELECT id, name FROM products WHERE id IN (${placeholders})`,
+                    productIds
+                );
+
+                const existingIds = existingProducts.map(p => p.id);
+                const missingIds = productIds.filter(id => !existingIds.includes(id));
+
+                if (missingIds.length > 0) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Some items in your cart are no longer available (IDs: ${missingIds.join(', ')}). Please remove them.`
+                    });
+                }
+            }
+
             orderItems = bodyItems.map(item => {
                 const itemSubtotal = parseFloat(item.price) * item.quantity;
                 subtotal += itemSubtotal;
@@ -58,7 +80,7 @@ exports.createOrder = async (req, res, next) => {
                     variant_id: item.variantId || null,
                     product_name: item.productName,
                     variant_name: item.variantName || null,
-                    sku: item.sku || 'N/A', // SKU might be missing in frontend model
+                    sku: item.sku || 'N/A',
                     quantity: item.quantity,
                     price: item.price,
                     subtotal: itemSubtotal
@@ -88,15 +110,21 @@ exports.createOrder = async (req, res, next) => {
 
         // 3. Calculate totals (Simplified logic for now)
         const settings = await AdminSettingsService.getSettings();
+        console.log("DEBUG: AdminSettings fetched:", JSON.stringify(settings));
+
         const shippingThreshold = settings ? Number(settings.free_shipping_threshold) : 500;
         const flatRate = settings ? Number(settings.flat_rate) : 50;
 
+        console.log(`DEBUG: Subtotal: ${subtotal}, Threshold: ${shippingThreshold}, FlatRate: ${flatRate}`);
+
         const discountAmount = 0;
         const shippingFee = subtotal >= shippingThreshold ? 0 : flatRate;
-        // Optional tax logic based on settings? For now assume included or 0.
-        // const taxRate = settings ? Number(settings.gst_percent) : 0;
-        // const taxAmount = Math.round(subtotal * (taxRate / 100));
-        const taxAmount = 0;
+        console.log(`DEBUG: Calculated Shipping Fee: ${shippingFee}`);
+
+        // Tax logic based on settings (GST %)
+        const taxRate = settings ? Number(settings.gst_percent) : 0;
+        const safeTaxRate = Number.isNaN(taxRate) ? 0 : taxRate;
+        const taxAmount = Math.round(subtotal * (safeTaxRate / 100));
 
         const totalAmount = subtotal - discountAmount + shippingFee + taxAmount;
 
@@ -494,7 +522,7 @@ exports.downloadInvoice = async (req, res, next) => {
         next(error);
     }
 };
- 
+
 
 /**
  * Update order status (Admin)

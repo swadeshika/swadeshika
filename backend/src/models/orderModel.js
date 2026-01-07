@@ -37,30 +37,36 @@ class Order {
             } = orderData;
 
             // Insert Order
+            const orderParams = [
+                orderId, orderNumber, user_id, address_id, subtotal, discount_amount,
+                shipping_fee, tax_amount, total_amount, coupon_code, payment_method,
+                payment_status, payment_id, notes
+            ];
+            console.log("DEBUG: Inserting Order:", orderParams);
+
             const [orderResult] = await connection.execute(
                 `INSERT INTO orders (
           id, order_number, user_id, address_id, subtotal, discount_amount, 
           shipping_fee, tax_amount, total_amount, coupon_code, payment_method, 
           payment_status, payment_id, notes
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [
-                    orderId, orderNumber, user_id, address_id, subtotal, discount_amount,
-                    shipping_fee, tax_amount, total_amount, coupon_code, payment_method,
-                    payment_status, payment_id, notes
-                ]
+                orderParams
             );
 
             // Insert Order Items
             for (const item of items) {
+                const itemParams = [
+                    orderId, item.product_id, item.variant_id || null, item.product_name,
+                    item.variant_name || null, item.sku, item.quantity, item.price, item.subtotal
+                ];
+                console.log("DEBUG: Inserting Item:", itemParams);
+
                 await connection.execute(
                     `INSERT INTO order_items (
             order_id, product_id, variant_id, product_name, variant_name, 
             sku, quantity, price, subtotal
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [
-                        orderId, item.product_id, item.variant_id || null, item.product_name,
-                        item.variant_name || null, item.sku, item.quantity, item.price, item.subtotal
-                    ]
+                    itemParams
                 );
             }
 

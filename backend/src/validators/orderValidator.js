@@ -135,9 +135,24 @@ const createOrderValidation = [
             // If items are not provided, controller will calculate from DB cart — skip strict check here
             if (!items || items.length === 0) return true;
 
-            const calculatedTotal = items.reduce((sum, item) => {
-                return sum + (item.price * item.quantity);
-            }, 0);
+            const itemsSubtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            // Validate request consistency (frontend-calculated totals).
+            // The backend will still compute and store its own totals during order creation.
+            const shippingCost = Number(req.body.shippingCost ?? req.body.shipping_fee ?? 0);
+            const tax = Number(req.body.tax ?? req.body.taxAmount ?? 0);
+            const calculatedTotal = itemsSubtotal + (Number.isFinite(shippingCost) ? shippingCost : 0) + (Number.isFinite(tax) ? tax : 0);
+
+            // If subtotal is provided, it should match items subtotal.
+            if (req.body.subtotal != null) {
+                const providedSubtotal = Number(req.body.subtotal);
+                if (Number.isFinite(providedSubtotal)) {
+                    const subtotalDiff = Math.abs(itemsSubtotal - providedSubtotal);
+                    if (subtotalDiff > 0.01) {
+                        throw new Error(`Subtotal mismatch. Expected: ${itemsSubtotal.toFixed(2)}, Received: ${req.body.subtotal}`);
+                    }
+                }
+            }
 
             // Allow 1 cent difference for floating-point precision
             const difference = Math.abs(calculatedTotal - parseFloat(value));

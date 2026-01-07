@@ -1,6 +1,16 @@
 // src/controllers/customers.controller.js
 const db = require('../config/db');
 
+function splitName(fullName) {
+     const safe = String(fullName || '').trim();
+     if (!safe) return { first: '', last: '' };
+     const parts = safe.split(/\s+/).filter(Boolean);
+     return {
+          first: parts[0] || '',
+          last: parts.slice(1).join(' ') || ''
+     };
+}
+
 exports.createCustomer = async (req, res) => {
      try {
           const { firstName, lastName, email, phone } = req.body;
@@ -37,54 +47,91 @@ exports.getAllCustomers = async (req, res) => {
           const { page = 1, limit = 10, search, status, sortBy = 'join_date', sortOrder = 'DESC' } = req.query;
           const offset = (page - 1) * limit;
 
-          let query = 'SELECT * FROM customers';
-          let countQuery = 'SELECT COUNT(*) as total FROM customers';
+          // IMPORTANT:
+          // The storefront uses `users` as the source of truth for customers (UUID id).
+          // The `customers` table is CRM-style and may not be populated for every user.
+          // Admin UI expects customer IDs to work with orders filtering (orders.user_id),
+          // so we return `u.id` as `id` and merge CRM fields when present.
+
           const params = [];
-          const conditions = [];
+          const conditions = ['u.role = "customer"'];
 
           if (search) {
-               conditions.push('(first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)');
+               conditions.push('(u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ? OR c.first_name LIKE ? OR c.last_name LIKE ?)');
                const searchParam = `%${search}%`;
-               params.push(searchParam, searchParam, searchParam);
+               params.push(searchParam, searchParam, searchParam, searchParam, searchParam);
           }
 
           if (status && status !== 'All' && status !== 'all') {
-               conditions.push('status = ?');
+               conditions.push('COALESCE(c.status, "Active") = ?');
                params.push(status);
           }
 
-          if (conditions.length > 0) {
-               const whereClause = ' WHERE ' + conditions.join(' AND ');
-               query += whereClause;
-               countQuery += whereClause;
-          }
+          const whereClause = conditions.length ? ` WHERE ${conditions.join(' AND ')}` : '';
 
-          // Add soft delete check if column exists, or rely on status
-          // Assuming 'inactive' is the soft delete status
+          // Whitelist sort fields to avoid SQL injection.
+          const sortMap = {
+               join_date: 'COALESCE(c.join_date, u.created_at)',
+               email: 'u.email',
+               name: 'u.name',
+               status: 'COALESCE(c.status, "Active")'
+          };
+          const sortExpr = sortMap[sortBy] || sortMap.join_date;
+          const sortDir = String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-          query += ` ORDER BY ${sortBy} ${sortOrder === 'ASC' ? 'ASC' : 'DESC'} LIMIT ? OFFSET ?`;
+          const countQuery = `
+               SELECT COUNT(*) as total
+               FROM users u
+               LEFT JOIN customers c ON u.email COLLATE utf8mb4_unicode_ci = c.email COLLATE utf8mb4_unicode_ci
+               ${whereClause}
+          `;
 
-          // Count total unique customers
-          const [countResult] = await db.query(countQuery, params.slice(0, params.length)); // Copy params for count
+          const query = `
+               SELECT
+                    u.id as user_id,
+                    u.name as user_name,
+                    u.email,
+                    u.phone as user_phone,
+                    u.created_at,
+                    c.first_name,
+                    c.last_name,
+                    c.phone as customer_phone,
+                    c.status,
+                    c.join_date,
+                    COALESCE(os.total_orders, 0) as total_orders,
+                    COALESCE(os.total_spent, 0) as total_spent
+               FROM users u
+               LEFT JOIN customers c ON u.email COLLATE utf8mb4_unicode_ci = c.email COLLATE utf8mb4_unicode_ci
+               LEFT JOIN (
+                    SELECT user_id, COUNT(*) as total_orders, COALESCE(SUM(total_amount), 0) as total_spent
+                    FROM orders
+                    GROUP BY user_id
+               ) os ON os.user_id = u.id
+               ${whereClause}
+               ORDER BY ${sortExpr} ${sortDir}
+               LIMIT ? OFFSET ?
+          `;
+
+          const [countResult] = await db.query(countQuery, params);
           const totalItems = countResult[0].total;
 
-          // Execute main query
-          // limit and offset must be integers for some drivers, so parsing
           const mainParams = [...params, parseInt(limit), parseInt(offset)];
           const [rows] = await db.query(query, mainParams);
 
-          // Normalize rows to match frontend shape: `orders` and `totalSpent`
-          const normalized = rows.map(r => ({
-               id: r.id,
-               first_name: r.first_name,
-               last_name: r.last_name,
-               email: r.email,
-               phone: r.phone,
-               status: r.status,
-               join_date: r.join_date,
-               orders: r.total_orders || 0,
-               totalSpent: r.total_spent || 0
-          }));
+          const normalized = rows.map(r => {
+               const fromUserName = splitName(r.user_name);
+               return {
+                    id: r.user_id,
+                    first_name: r.first_name || fromUserName.first,
+                    last_name: r.last_name || fromUserName.last,
+                    email: r.email,
+                    phone: r.customer_phone || r.user_phone || null,
+                    status: r.status || 'Active',
+                    join_date: r.join_date || r.created_at,
+                    orders: Number(r.total_orders || 0),
+                    totalSpent: Number(r.total_spent || 0)
+               };
+          });
 
           res.status(200).json({
                success: true,
@@ -104,31 +151,43 @@ exports.getAllCustomers = async (req, res) => {
 
 exports.getCustomerById = async (req, res) => {
      try {
-          const [rows] = await db.query('SELECT * FROM customers WHERE id = ?', [req.params.id]);
+          const userId = req.params.id;
+          const [users] = await db.query(
+               `SELECT id, name, email, phone, role, created_at
+                FROM users
+                WHERE id = ? AND role = 'customer'`,
+               [userId]
+          );
 
-          if (rows.length === 0) {
+          if (users.length === 0) {
                return res.status(404).json({ success: false, message: 'Customer not found' });
           }
 
-          const customerRow = rows[0];
+          const user = users[0];
+          const [crmRows] = await db.query(
+               `SELECT first_name, last_name, email, phone, status, join_date
+                FROM customers
+                WHERE email = ?`,
+               [user.email]
+          );
+          const crm = crmRows[0] || null;
 
-          // Calculate order stats by matching users.email to customers.email
           const [orderStats] = await db.query(
-               `SELECT COUNT(*) as orderCount, COALESCE(SUM(o.total_amount), 0) as totalSpent
-                FROM orders o
-                JOIN users u ON o.user_id = u.id
-                WHERE u.email = ?`,
-               [customerRow.email]
+               `SELECT COUNT(*) as orderCount, COALESCE(SUM(total_amount), 0) as totalSpent
+                FROM orders
+                WHERE user_id = ?`,
+               [userId]
           );
 
+          const fromUserName = splitName(user.name);
           const customer = {
-               id: customerRow.id,
-               first_name: customerRow.first_name,
-               last_name: customerRow.last_name,
-               email: customerRow.email,
-               phone: customerRow.phone,
-               status: customerRow.status,
-               join_date: customerRow.join_date,
+               id: user.id,
+               first_name: crm?.first_name || fromUserName.first,
+               last_name: crm?.last_name || fromUserName.last,
+               email: user.email,
+               phone: crm?.phone || user.phone || null,
+               status: crm?.status || 'Active',
+               join_date: crm?.join_date || user.created_at,
                orders: orderStats[0].orderCount || 0,
                totalSpent: orderStats[0].totalSpent || 0
           };
@@ -142,29 +201,54 @@ exports.getCustomerById = async (req, res) => {
 
 exports.updateCustomer = async (req, res) => {
      try {
-          const { firstName, lastName, phone, status } = req.body;
+          const { firstName, lastName, phone, status, first_name, last_name } = req.body;
+
+          const userId = req.params.id;
+          const [users] = await db.query(
+               `SELECT id, name, email, phone, role, created_at
+                FROM users
+                WHERE id = ? AND role = 'customer'`,
+               [userId]
+          );
+
+          if (users.length === 0) {
+               return res.status(404).json({ success: false, message: 'Customer not found' });
+          }
+          const user = users[0];
+
+          const resolvedFirst = first_name ?? firstName;
+          const resolvedLast = last_name ?? lastName;
 
           // Basic validation
-          if (!firstName && !lastName && !phone && !status) {
+          if (!resolvedFirst && !resolvedLast && !phone && !status) {
                return res.status(400).json({ success: false, message: 'No fields to update' });
           }
 
-          let query = 'UPDATE customers SET ';
-          const params = [];
+          // Ensure a CRM row exists (keyed by email)
+          await db.query(
+               `INSERT INTO customers (first_name, last_name, email, phone, join_date, status)
+                VALUES (?, ?, ?, ?, NOW(), ?)
+                ON DUPLICATE KEY UPDATE email = email`,
+               [
+                    resolvedFirst || splitName(user.name).first || 'Customer',
+                    resolvedLast || splitName(user.name).last || '',
+                    user.email,
+                    phone || user.phone || null,
+                    status || 'Active'
+               ]
+          );
+
           const updates = [];
+          const params = [];
+          if (resolvedFirst != null) { updates.push('first_name = ?'); params.push(resolvedFirst); }
+          if (resolvedLast != null) { updates.push('last_name = ?'); params.push(resolvedLast); }
+          if (phone != null) { updates.push('phone = ?'); params.push(phone); }
+          if (status != null) { updates.push('status = ?'); params.push(status); }
 
-          if (firstName) { updates.push('first_name = ?'); params.push(firstName); }
-          if (lastName) { updates.push('last_name = ?'); params.push(lastName); }
-          if (phone) { updates.push('phone = ?'); params.push(phone); }
-          if (status) { updates.push('status = ?'); params.push(status); }
-
-          query += updates.join(', ') + ' WHERE id = ?';
-          params.push(req.params.id);
-
-          const [result] = await db.query(query, params);
-
-          if (result.affectedRows === 0) {
-               return res.status(404).json({ success: false, message: 'Customer not found' });
+          if (updates.length > 0) {
+               const query = `UPDATE customers SET ${updates.join(', ')}, updated_at = NOW() WHERE email = ?`;
+               params.push(user.email);
+               await db.query(query, params);
           }
 
           res.status(200).json({ success: true, message: 'Customer updated successfully' });
@@ -176,12 +260,27 @@ exports.updateCustomer = async (req, res) => {
 
 exports.deleteCustomer = async (req, res) => {
      try {
-          // Soft delete: set status to 'inactive'
-          const [result] = await db.query('UPDATE customers SET status = ? WHERE id = ?', ['Inactive', req.params.id]);
+          const userId = req.params.id;
+          const [users] = await db.query(
+               `SELECT id, name, email, phone, role, created_at
+                FROM users
+                WHERE id = ? AND role = 'customer'`,
+               [userId]
+          );
 
-          if (result.affectedRows === 0) {
+          if (users.length === 0) {
                return res.status(404).json({ success: false, message: 'Customer not found' });
           }
+          const user = users[0];
+
+          // Ensure CRM row exists then mark inactive
+          const nameParts = splitName(user.name);
+          await db.query(
+               `INSERT INTO customers (first_name, last_name, email, phone, join_date, status)
+                VALUES (?, ?, ?, ?, NOW(), 'Inactive')
+                ON DUPLICATE KEY UPDATE status = 'Inactive', updated_at = NOW()`,
+               [nameParts.first || 'Customer', nameParts.last || '', user.email, user.phone || null]
+          );
 
           res.status(200).json({ success: true, message: 'Customer deleted (marked inactive) successfully' });
      } catch (err) {

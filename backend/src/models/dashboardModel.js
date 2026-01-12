@@ -181,18 +181,22 @@ class DashboardModel {
      * @returns {Promise<Array>}
      */
     static async getLowStockProducts() {
+        // Fetch global threshold
+        const [settings] = await db.query('SELECT low_stock_threshold FROM admin_settings LIMIT 1');
+        const globalThreshold = settings.length > 0 ? (settings[0].low_stock_threshold || 10) : 10;
+
         const query = `
             SELECT 
                 p.name, 
                 p.stock_quantity as stock, 
-                p.low_stock_threshold as threshold,
+                COALESCE(p.low_stock_threshold, ?) as threshold,
                 (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = TRUE LIMIT 1) as image
             FROM products p
-            WHERE p.stock_quantity <= p.low_stock_threshold
+            WHERE p.stock_quantity <= COALESCE(p.low_stock_threshold, ?)
             AND p.is_active = TRUE
             LIMIT 5
         `;
-        const [rows] = await db.query(query);
+        const [rows] = await db.query(query, [globalThreshold, globalThreshold]);
         return rows;
     }
     /**

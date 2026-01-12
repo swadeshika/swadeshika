@@ -40,20 +40,18 @@ class Order {
             } = orderData;
 
             // Insert Order
-            const orderParams = [
-                orderId, orderNumber, user_id, address_id, subtotal, discount_amount,
-                shipping_fee, tax_amount, total_amount, coupon_code, payment_method,
-                payment_status, payment_id, notes
-            ];
-            console.log("DEBUG: Inserting Order:", orderParams);
-
+            // Insert Order
             const [orderResult] = await connection.execute(
                 `INSERT INTO orders (
           id, order_number, user_id, guest_email, guest_phone, address_id, billing_address_id, subtotal, discount_amount, 
           shipping_fee, tax_amount, total_amount, coupon_code, payment_method, 
           payment_status, payment_id, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                orderParams
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    orderId, orderNumber, user_id, guest_email, guest_phone, address_id, billing_address_id, subtotal, discount_amount,
+                    shipping_fee, tax_amount, total_amount, coupon_code, payment_method,
+                    payment_status, payment_id, notes
+                ]
             );
 
             // Insert Order Items and Update Stock

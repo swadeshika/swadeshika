@@ -116,37 +116,7 @@ const createOrderValidation = [
     body('totalAmount')
         .notEmpty().withMessage('Total amount is required')
         .isFloat({ min: 0.01 }).withMessage('Total amount must be a positive number')
-        .custom((value, { req }) => {
-            /**
-             * CRITICAL VALIDATION: Verify Order Total
-             * ========================================
-             * 
-             * WHY THIS IS IMPORTANT:
-             * - Prevents price manipulation attacks
-             * - Ensures frontend calculations match backend
-             * - Catches bugs in cart total calculation
-             * 
-             * WHAT WE CHECK:
-             * - Calculate total from items array
-             * - Compare with provided totalAmount
-             * - Allow small floating-point differences (0.01)
-             */
-            const items = req.body.items || [];
-            // If items are not provided, controller will calculate from DB cart — skip strict check here
-            if (!items || items.length === 0) return true;
-
-            const calculatedTotal = items.reduce((sum, item) => {
-                return sum + (item.price * item.quantity);
-            }, 0);
-
-            // Allow 1 cent difference for floating-point precision
-            const difference = Math.abs(calculatedTotal - parseFloat(value));
-            if (difference > 0.01) {
-                throw new Error(`Total amount mismatch. Expected: ${calculatedTotal.toFixed(2)}, Received: ${value}`);
-            }
-
-            return true;
-        }),
+        .isFloat({ min: 0.01 }).withMessage('Total amount must be a positive number'),
     
     // Validate coupon code (optional)
     // Allow empty couponCode to be treated as not provided

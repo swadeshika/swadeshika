@@ -5,11 +5,12 @@ const crypto = require('crypto');
 const AddressModel = require('../models/addressModel'); // Import AddressModel
 
 const AdminSettingsService = require('../services/adminSettingsService'); // Import AdminSettingsService
+const sendEmail = require('../utils/email');
 
 exports.createOrder = async (req, res, next) => {
     try {
         const userId = req.user ? req.user.id : null;
-        let { addressId, paymentMethod, couponCode, notes, items: bodyItems, shippingAddress } = req.body;
+        let { addressId, paymentMethod, couponCode, notes, items: bodyItems, shippingAddress, billingAddress, email, phone } = req.body;
 
         // 1. Handle Address Creation if shippingAddress provided
         if (shippingAddress) {
@@ -32,6 +33,34 @@ exports.createOrder = async (req, res, next) => {
                 console.error("Failed to create address:", addrErr);
                 return res.status(400).json({ success: false, message: 'Invalid address data' });
             }
+        }
+
+        // Create Billing Address
+        let billingAddressId = null;
+        if (billingAddress) {
+            try {
+                const newBilling = await AddressModel.create({
+                    user_id: userId,
+                    full_name: billingAddress.fullName,
+                    phone: billingAddress.phone,
+                    address_line1: billingAddress.addressLine1,
+                    address_line2: billingAddress.addressLine2,
+                    city: billingAddress.city,
+                    state: billingAddress.state,
+                    postal_code: billingAddress.postalCode,
+                    country: 'India',
+                    address_type: 'billing', // distinguish type
+                    is_default: false
+                });
+                billingAddressId = newBilling.id;
+            } catch (addrErr) {
+                 console.error("Failed to create billing address:", addrErr);
+                 // Fallback to shipping address ID if billing creation fails or just proceed?
+                 // Let's fallback to addressId (Shipping) as safety
+                 billingAddressId = addressId;
+            }
+        } else {
+            billingAddressId = addressId;
         }
 
         if (!addressId) {
@@ -86,24 +115,27 @@ exports.createOrder = async (req, res, next) => {
             });
         }
 
-        // 3. Calculate totals (Simplified logic for now)
+        // 3. Calculate totals
         const settings = await AdminSettingsService.getSettings();
-        const shippingThreshold = settings ? Number(settings.free_shipping_threshold) : 500;
-        const flatRate = settings ? Number(settings.flat_rate) : 50;
+        const shippingThreshold = (settings && settings.free_shipping_threshold != null) ? Number(settings.free_shipping_threshold) : 500;
+        const flatRate = (settings && settings.flat_rate != null) ? Number(settings.flat_rate) : 50; // Fix: Handle null
 
         const discountAmount = 0;
         const shippingFee = subtotal >= shippingThreshold ? 0 : flatRate;
-        // Optional tax logic based on settings? For now assume included or 0.
-        // const taxRate = settings ? Number(settings.gst_percent) : 0;
-        // const taxAmount = Math.round(subtotal * (taxRate / 100));
-        const taxAmount = 0;
+        
+        // Calculate Tax (GST)
+        const taxRate = (settings && settings.gst_percent != null) ? Number(settings.gst_percent) : 0;
+        const taxAmount = Math.round(subtotal * (taxRate / 100));
 
         const totalAmount = subtotal - discountAmount + shippingFee + taxAmount;
 
         // 4. Create Order
         const orderData = {
             user_id: userId,
+            guest_email: email || null,
+            guest_phone: phone || null,
             address_id: addressId, // Link finalized address ID
+            billing_address_id: billingAddressId,
             subtotal,
             discount_amount: discountAmount,
             shipping_fee: shippingFee,
@@ -123,7 +155,54 @@ exports.createOrder = async (req, res, next) => {
             await Order.clearCart(userId);
         }
 
-        // 6. Format Response
+        // 6. Send Confirmation Email (Async - don't block response)
+        const recipientEmail = email || guest_email || (req.user && req.user.email);
+        
+        if (recipientEmail) {
+            const emailHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #2D5F3F;">Order Confirmed!</h2>
+                    <p>Namaste <strong>${shippingAddress.full_name}</strong>,</p>
+                    <p>Thank you for shopping with Swadeshika. Your order has been placed successfully.</p>
+                    
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        <p><strong>Order Number:</strong> ${newOrder.order_number}</p>
+                        <p><strong>Total Amount:</strong> Rs. ${newOrder.total_amount}</p>
+                        <p><strong>Payment Method:</strong> ${paymentMethod.toUpperCase()}</p>
+                    </div>
+
+                    <h3>Order Summary</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        ${orderItems.map(item => `
+                            <tr style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 10px;">${item.product_name} (${item.quantity})</td>
+                                <td style="padding: 10px; text-align: right;">Rs. ${item.subtotal}</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+
+                    <p style="margin-top: 20px;">We will notify you once your order is shipped.</p>
+                </div>
+            `;
+
+            sendEmail({
+                email: recipientEmail,
+                subject: `Order Confirmation - ${newOrder.order_number}`,
+                message: `Your order ${newOrder.order_number} has been placed successfully.`,
+                html: emailHtml
+            }).catch(err => console.error('Failed to send customer email:', err));
+
+            // Admin Notification
+            const adminEmail = process.env.ADMIN_EMAIL || 'pradeepmadasar@gmail.com'; // Fallback to user email for now
+            sendEmail({
+                email: adminEmail,
+                subject: `New Order Received - ${newOrder.order_number}`,
+                message: `New order placed by ${recipientEmail}. Total: Rs. ${newOrder.total_amount}`,
+                html: `<p>New order received from <strong>${recipientEmail}</strong> for <strong>Rs. ${newOrder.total_amount}</strong>.</p>`
+            }).catch(err => console.error('Failed to send admin email:', err));
+        }
+
+        // 7. Format Response
         res.status(201).json({
             success: true,
             message: 'Order placed successfully',
@@ -162,8 +241,8 @@ exports.getAllOrders = async (req, res, next) => {
                      c.last_name,
                      c.email AS customer_table_email,
                      -- Prefer customers table name; fall back to user's name then user's email for display if no customer name
-                     COALESCE(NULLIF(CONCAT(c.first_name, ' ', COALESCE(c.last_name, '')), ''), NULLIF(u.name, ''), u.email) AS customer_name,
-                     COALESCE(c.email, u.email) AS customer_email
+                     COALESCE(NULLIF(CONCAT(c.first_name, ' ', COALESCE(c.last_name, '')), ''), NULLIF(u.name, ''), u.email, 'Guest') AS customer_name,
+                     COALESCE(c.email, u.email, o.guest_email) AS customer_email
             FROM orders o
             LEFT JOIN users u ON o.user_id = u.id
             LEFT JOIN customers c ON u.email COLLATE utf8mb4_unicode_ci = c.email COLLATE utf8mb4_unicode_ci
@@ -310,8 +389,9 @@ exports.exportOrders = async (req, res, next) => {
 exports.getMyOrders = async (req, res, next) => {
     try {
         const userId = req.user.id;
+        const userEmail = req.user.email;
         const { page = 1, limit = 20, status } = req.query;
-        const result = await Order.findAll({ page, limit, status, userId });
+        const result = await Order.findAll({ page, limit, status, userId, userEmail });
 
         res.status(200).json({
             success: true,
@@ -321,7 +401,14 @@ exports.getMyOrders = async (req, res, next) => {
                     orderNumber: order.order_number,
                     totalAmount: order.total_amount,
                     status: order.status,
-                    createdAt: order.created_at
+                    createdAt: order.created_at,
+                    items: (order.items || []).map(i => ({
+                        product_id: i.product_id,
+                        productName: i.product_name,
+                        variantName: i.variant_name,
+                        quantity: i.quantity,
+                        image: i.image
+                    }))
                 })),
                 pagination: {
                     page: result.page,
@@ -369,12 +456,16 @@ exports.getOrderById = async (req, res, next) => {
             id: order.id,
             orderNumber: order.order_number,
             status: order.status,
+            notes: order.notes, // Added Notes
             paymentStatus: order.payment_status,
+            paymentMethod: order.payment_method, // Added
             // Items formatted for frontend compatibility
             items: order.items.map(item => ({
                 id: item.product_id,
                 name: item.product_name,
+                productName: item.product_name, // Added alias for frontend
                 variant: item.variant_name,
+                variantName: item.variant_name, // Added alias
                 quantity: item.quantity,
                 price: item.price,
                 subtotal: item.subtotal,
@@ -408,7 +499,20 @@ exports.getOrderById = async (req, res, next) => {
                 state: order.address.state,
                 pincode: order.address.postal_code,
                 phone: order.address.phone,
-                email: order.user_email || null
+                pincode: order.address.postal_code,
+                phone: order.address.phone,
+                email: order.user_email || order.guest_email || null
+            } : null,
+            
+            // Billing Address
+            billingAddress: order.billingAddress ? {
+                fullName: order.billingAddress.full_name,
+                phone: order.billingAddress.phone,
+                addressLine1: order.billingAddress.address_line1,
+                addressLine2: order.billingAddress.address_line2,
+                city: order.billingAddress.city,
+                state: order.billingAddress.state,
+                postalCode: order.billingAddress.postal_code
             } : null,
             // Summary (newer structured shape)
             summary: {
@@ -423,6 +527,7 @@ exports.getOrderById = async (req, res, next) => {
             shipping: order.shipping_fee,
             tax: order.tax_amount,
             total: order.total_amount,
+            totalAmount: order.total_amount, // Added for frontend
             trackingNumber: order.tracking_number,
             estimatedDeliveryDate: order.estimated_delivery_date || new Date(new Date(order.created_at).setDate(new Date(order.created_at).getDate() + 5)),
             createdAt: order.created_at,
@@ -455,40 +560,156 @@ exports.downloadInvoice = async (req, res, next) => {
         }
 
         const PDFDocument = require('pdfkit');
+        const doc = new PDFDocument({ size: 'A4', margin: 50 });
 
-        res.setHeader('Content-Type', 'application/pdf');
         const filename = `invoice_${order.order_number || order.id}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
-        const doc = new PDFDocument({ size: 'A4', margin: 50 });
         doc.pipe(res);
 
-        doc.fontSize(20).text('Invoice', { align: 'center' });
+        // --- Design Constants ---
+        const primaryColor = '#2D5F3F'; // Brand Green
+        const secondaryColor = '#8B6F47'; // Brand Brown/Gold
+        const lightBg = '#F5F5F5';
+        const darkText = '#333333';
+        const lightText = '#666666';
+
+        // --- Helper Functions ---
+        const generateHr = (y) => {
+            doc.strokeColor('#aaaaaa').lineWidth(1).moveTo(50, y).lineTo(550, y).stroke();
+        };
+
+        const formatDate = (date) => {
+            return new Date(date).toLocaleDateString();
+        };
+
+        // --- Header Section ---
+        // Logo / Brand Name (Top Left)
+        doc.fillColor(primaryColor).fontSize(20).font('Helvetica-Bold').text('SWADESHIKA', 50, 50);
+        doc.fontSize(10).font('Helvetica').text('Authentic Indian Products', 50, 75);
+        doc.fillColor(lightText).text('contact@swadeshika.com', 50, 90);
+
+        // Invoice Title & Details (Top Right)
+        // Adjusted X to 300 and added width to ensure right alignment doesn't wrap prematurely
+        const rightColX = 300;
+        const rightColWidth = 245; // 545 (Right Margin) - 300
+        
+        doc.fillColor(darkText).fontSize(24).font('Helvetica-Bold').text('INVOICE', rightColX, 50, { width: rightColWidth, align: 'right' });
+        doc.fontSize(10).font('Helvetica').text(`Invoice #: ${order.order_number || order.id.substring(0, 8)}`, rightColX, 80, { width: rightColWidth, align: 'right' });
+        doc.text(`Date: ${formatDate(order.created_at)}`, rightColX, 95, { width: rightColWidth, align: 'right' });
+        doc.text(`Status: ${order.status.toUpperCase()}`, rightColX, 110, { width: rightColWidth, align: 'right' });
+
         doc.moveDown();
+        generateHr(130);
 
-        doc.fontSize(12).text(`Order: ${order.order_number || order.id}`);
-        doc.text(`Date: ${new Date(order.created_at).toLocaleString()}`);
-        doc.moveDown();
+        // --- Addresses Section ---
+        const customerTop = 150;
+        
+        // Billing Address (Left)
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(darkText).text('Billing By:', 50, customerTop);
+        doc.fontSize(10).font('Helvetica').fillColor(lightText);
+        if (order.billingAddress) {
+            doc.text(order.billingAddress.full_name, 50, customerTop + 15);
+            doc.text(order.billingAddress.address_line1, 50, customerTop + 30);
+            if (order.billingAddress.address_line2) doc.text(order.billingAddress.address_line2, 50, customerTop + 45);
+            doc.text(`${order.billingAddress.city}, ${order.billingAddress.state} - ${order.billingAddress.postal_code}`, 50, customerTop + (order.billingAddress.address_line2 ? 60 : 45));
+            doc.text(order.billingAddress.phone, 50, customerTop + (order.billingAddress.address_line2 ? 75 : 60));
+        } else if (order.address) {
+             // Fallback to address
+            doc.text(order.address.full_name, 50, customerTop + 15);
+            doc.text(order.address.address_line1, 50, customerTop + 30);
+            doc.text(`${order.address.city}, ${order.address.state}`, 50, customerTop + 45);
+        } else {
+             doc.text(order.guest_email || 'Guest User', 50, customerTop + 15);
+        }
 
-        doc.text('Items:', { underline: true });
-        doc.moveDown(0.5);
+        // Shipping Address (Right)
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(darkText).text('Shipping To:', 350, customerTop);
+        doc.fontSize(10).font('Helvetica').fillColor(lightText);
+        if (order.address) {
+            doc.text(order.address.full_name, 350, customerTop + 15);
+            doc.text(order.address.address_line1, 350, customerTop + 30);
+            if(order.address.address_line2) doc.text(order.address.address_line2, 350, customerTop + 45);
+            doc.text(`${order.address.city}, ${order.address.state} - ${order.address.postal_code}`, 350, customerTop + (order.address.address_line2 ? 60 : 45));
+            doc.text(order.address.phone, 350, customerTop + (order.address.address_line2 ? 75 : 60));
+        } else {
+            doc.text('Same as billing', 350, customerTop + 15);
+        }
 
-        order.items.forEach((item) => {
+        generateHr(250);
+
+        // --- Items Table ---
+        const tableTop = 270;
+        const itemCodeX = 50;
+        const descriptionX = 100;
+        const quantityX = 340; // Shifted left
+        const priceX = 390;    // Shifted left
+        const totalX = 480;    // Shifted left allowing more space for totals
+
+        // Table Headers
+        doc.font('Helvetica-Bold').fontSize(10).fillColor(primaryColor);
+        doc.text('#', itemCodeX, tableTop);
+        doc.text('Item Description', descriptionX, tableTop);
+        doc.text('Qty', quantityX, tableTop);
+        doc.text('Price', priceX, tableTop);
+        doc.text('Total', totalX, tableTop, { align: 'right', width: 65 }); // Align header right to match values
+        
+        generateHr(tableTop + 15);
+
+        // Table Rows
+        let yPromise = tableTop + 30;
+        doc.font('Helvetica').fontSize(10).fillColor(darkText);
+
+        order.items.forEach((item, i) => {
             const name = item.product_name || item.productName || 'Item';
-            const variant = item.variant_name ? ` (${item.variant_name})` : '';
+            const variant = item.variant_name ? `(${item.variant_name})` : '';
             const qty = item.quantity || 1;
             const price = Number(item.price || 0).toFixed(2);
-            const subtotal = Number(item.subtotal || (item.price * item.quantity) || 0).toFixed(2);
-            doc.text(`${name}${variant} — Qty: ${qty}  Price: ₹${price}  Subtotal: ₹${subtotal}`);
+            const lineTotal = Number(item.subtotal || (item.price * item.quantity) || 0).toFixed(2);
+
+            doc.text(i + 1, itemCodeX, yPromise);
+            doc.text(`${name} ${variant}`, descriptionX, yPromise, { width: 230 });
+            doc.text(qty, quantityX, yPromise);
+            doc.text(`Rs. ${price}`, priceX, yPromise);
+            doc.text(`Rs. ${lineTotal}`, totalX, yPromise, { align: 'right', width: 65 });
+            
+            yPromise += 20; 
         });
 
-        doc.moveDown();
-        doc.text(`Subtotal: ₹${order.subtotal || 0}`);
-        doc.text(`Shipping: ₹${order.shipping_fee || 0}`);
-        doc.text(`Tax: ₹${order.tax_amount || 0}`);
-        doc.moveDown();
-        doc.fontSize(14).text(`Total: ₹${order.total_amount || 0}`, { align: 'right' });
+        generateHr(yPromise + 10);
 
+        // --- Totals Section ---
+        const totalSectionTop = yPromise + 25;
+        
+        // Define columns for Totals (Right Aligned)
+        const labelsStart = 300;
+        const labelsWidth = 140; // Ends at 440
+        const valuesStart = 450;
+        const valuesWidth = 95;  // Ends at 545
+
+        doc.font('Helvetica').fontSize(10).fillColor(lightText);
+        
+        doc.text('Subtotal:', labelsStart, totalSectionTop, { width: labelsWidth, align: 'right' });
+        doc.text(`Rs. ${Number(order.subtotal || 0).toFixed(2)}`, valuesStart, totalSectionTop, { width: valuesWidth, align: 'right' });
+
+        doc.text('Shipping:', labelsStart, totalSectionTop + 15, { width: labelsWidth, align: 'right' });
+        doc.text(`Rs. ${Number(order.shipping_fee || 0).toFixed(2)}`, valuesStart, totalSectionTop + 15, { width: valuesWidth, align: 'right' });
+
+        doc.text('Tax (GST):', labelsStart, totalSectionTop + 30, { width: labelsWidth, align: 'right' });
+        doc.text(`Rs. ${Number(order.tax_amount || 0).toFixed(2)}`, valuesStart, totalSectionTop + 30, { width: valuesWidth, align: 'right' });
+
+        // Grand Total
+        generateHr(totalSectionTop + 45);
+        doc.font('Helvetica-Bold').fontSize(12).fillColor(primaryColor);
+        doc.text('Grand Total:', labelsStart, totalSectionTop + 55, { width: labelsWidth, align: 'right' });
+        doc.text(`Rs. ${Number(order.total_amount || 0).toFixed(2)}`, valuesStart, totalSectionTop + 55, { width: valuesWidth, align: 'right' });
+
+        // --- Footer ---
+        doc.fontSize(10).font('Helvetica').fillColor(lightText);
+        doc.text('Thank you for shopping with Swadeshika!', 50, 700, { align: 'center', width: 500 });
+        doc.fontSize(8).text('This is a computer-generated invoice.', 50, 715, { align: 'center', width: 500 });
+        
         doc.end();
     } catch (error) {
         next(error);

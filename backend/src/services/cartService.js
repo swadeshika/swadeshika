@@ -45,6 +45,24 @@ class CartService {
     static async addToCart(userId, itemData) {
         const { productId, variantId, quantity = 1 } = itemData;
 
+        // 1. Check Stock Availability
+        const db = require('../config/db');
+        let stockQuery = 'SELECT stock_quantity, name FROM products WHERE id = ?';
+        let params = [productId];
+
+        if (variantId) {
+            stockQuery = 'SELECT stock_quantity, name FROM product_variants WHERE id = ?';
+            params = [variantId];
+        }
+
+        const [stockRes] = await db.query(stockQuery, params);
+        if (!stockRes.length) throw new Error('Product not found');
+        
+        const product = stockRes[0];
+        if (product.stock_quantity < quantity) {
+            throw new Error(`Insufficient stock. Only ${product.stock_quantity} available.`);
+        }
+
         // Check if item already exists in cart
         const existingItem = await CartModel.findItem(userId, productId, variantId);
 
@@ -73,6 +91,30 @@ class CartService {
         const item = await CartModel.findById(itemId);
         if (!item || item.user_id !== userId) {
             throw new Error('Cart item not found');
+        }
+
+        // 0. Get Item Details to check validation
+        const db = require('../config/db');
+        const [cartItemRes] = await db.query('SELECT product_id, variant_id FROM cart_items WHERE id = ?', [itemId]);
+        if (!cartItemRes.length) throw new Error('Cart item not found');
+        
+        const { product_id, variant_id } = cartItemRes[0];
+
+        // 1. Check Stock
+        let stockQuery = 'SELECT stock_quantity FROM products WHERE id = ?';
+        let params = [product_id];
+
+        if (variant_id) {
+            stockQuery = 'SELECT stock_quantity FROM product_variants WHERE id = ?';
+            params = [variant_id];
+        }
+
+        const [stockRes] = await db.query(stockQuery, params);
+        if (stockRes.length) {
+            const available = stockRes[0].stock_quantity;
+            if (available < quantity) {
+                throw new Error(`Insufficient stock. Only ${available} available.`);
+            }
         }
 
         return await CartModel.updateQuantity(itemId, quantity);

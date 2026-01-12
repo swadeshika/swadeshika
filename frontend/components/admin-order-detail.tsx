@@ -208,6 +208,12 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
                     <span className="text-muted-foreground">Tax</span>
                     <span>₹{order.summary?.tax?.toLocaleString("en-IN") || 0}</span>
                   </div>
+                  {order.couponCode && (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span className="text-muted-foreground">Coupon ({order.couponCode})</span>
+                      <span>-₹{order.summary?.discount?.toLocaleString("en-IN") || 0}</span>
+                    </div>
+                  )}
                   <Separator />
                   <div className="flex justify-between font-medium text-lg">
                     <span>Total</span>
@@ -230,11 +236,11 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
                   <div className="flex-1">
                     <p className="font-medium">{order.address?.fullName || 'Guest'}</p>
                     {/* <p className="text-sm text-muted-foreground">{order.customer?.totalOrders} orders</p> */}
-                    <div className="mt-2 space-y-1">
-                      {/* <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="mt-2 space-y-1">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Mail className="h-4 w-4" />
-                        <span>{order.customer?.email}</span>
-                      </div> */}
+                        <span>{order.shippingAddress?.email || 'No email'}</span>
+                      </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Phone className="h-4 w-4" />
                         <span>{order.address?.phone}</span>
@@ -310,7 +316,6 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
                       <SelectItem value="processing">Processing</SelectItem>
                       <SelectItem value="shipped">Shipped</SelectItem>
                       <SelectItem value="delivered">Delivered</SelectItem>

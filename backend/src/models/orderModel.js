@@ -23,7 +23,10 @@ class Order {
 
             const {
                 user_id,
+                guest_email = null,
+                guest_phone = null,
                 address_id,
+                billing_address_id = null,
                 subtotal,
                 discount_amount = 0,
                 shipping_fee = 0,
@@ -39,19 +42,20 @@ class Order {
             // Insert Order
             const [orderResult] = await connection.execute(
                 `INSERT INTO orders (
-          id, order_number, user_id, address_id, subtotal, discount_amount, 
+          id, order_number, user_id, guest_email, guest_phone, address_id, billing_address_id, subtotal, discount_amount, 
           shipping_fee, tax_amount, total_amount, coupon_code, payment_method, 
           payment_status, payment_id, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
-                    orderId, orderNumber, user_id, address_id, subtotal, discount_amount,
+                    orderId, orderNumber, user_id, guest_email, guest_phone, address_id, billing_address_id, subtotal, discount_amount,
                     shipping_fee, tax_amount, total_amount, coupon_code, payment_method,
                     payment_status, payment_id, notes
                 ]
             );
 
-            // Insert Order Items
+            // Insert Order Items and Update Stock
             for (const item of items) {
+                // 1. Insert Item
                 await connection.execute(
                     `INSERT INTO order_items (
             order_id, product_id, variant_id, product_name, variant_name, 
@@ -62,6 +66,31 @@ class Order {
                         item.variant_name || null, item.sku, item.quantity, item.price, item.subtotal
                     ]
                 );
+
+                // 2. Decrement Stock
+                let stockResult;
+                if (item.variant_id) {
+                    // Update Variant Stock
+                    [stockResult] = await connection.execute(
+                        `UPDATE product_variants 
+                         SET stock_quantity = stock_quantity - ? 
+                         WHERE id = ? AND stock_quantity >= ?`,
+                        [item.quantity, item.variant_id, item.quantity]
+                    );
+                } else {
+                    // Update Product Stock
+                    [stockResult] = await connection.execute(
+                        `UPDATE products 
+                         SET stock_quantity = stock_quantity - ? 
+                         WHERE id = ? AND stock_quantity >= ?`,
+                        [item.quantity, item.product_id, item.quantity]
+                    );
+                }
+
+                // 3. Check for Insufficient Stock
+                if (stockResult.affectedRows === 0) {
+                    throw new Error(`Insufficient stock for product: ${item.product_name} (${item.variant_name || 'Standard'})`);
+                }
             }
 
             await connection.commit();
@@ -79,7 +108,7 @@ class Order {
      * @param {Object} options - { page, limit, status, userId }
      * @returns {Promise<Object>} { orders, total, page, limit, pages }
      */
-    static async findAll({ page = 1, limit = 20, status, userId }) {
+    static async findAll({ page = 1, limit = 20, status, userId, userEmail = null }) {
         const offset = (page - 1) * limit;
         let query = 'SELECT * FROM orders';
         const params = [];
@@ -91,8 +120,13 @@ class Order {
         }
 
         if (userId) {
-            conditions.push('user_id = ?');
-            params.push(userId);
+            if (userEmail) {
+                conditions.push('(user_id = ? OR (guest_email = ? AND user_id IS NULL))');
+                params.push(userId, userEmail);
+            } else {
+                conditions.push('user_id = ?');
+                params.push(userId);
+            }
         }
 
         if (conditions.length > 0) {
@@ -115,6 +149,31 @@ class Order {
 
         const [orders] = await db.query(query, mainParams);
 
+        if (orders.length > 0) {
+            const orderIds = orders.map(o => o.id);
+            // Fetch items for these orders
+            const placeholders = orderIds.map(() => '?').join(',');
+            const [items] = await db.query(
+                `SELECT oi.*, pi.image_url as image 
+                 FROM order_items oi
+                 LEFT JOIN product_images pi ON oi.product_id = pi.product_id AND pi.is_primary = 1
+                 WHERE oi.order_id IN (${placeholders})`,
+                orderIds
+            );
+
+            // Group items by order_id
+            const itemsMap = {};
+            items.forEach(item => {
+                if (!itemsMap[item.order_id]) itemsMap[item.order_id] = [];
+                itemsMap[item.order_id].push(item);
+            });
+
+            // Attach items to orders
+            orders.forEach(order => {
+                order.items = itemsMap[order.id] || [];
+            });
+        }
+
         return { orders, total, page: parseInt(page), limit: parseInt(limit), pages: Math.ceil(total / limit) };
     }
 
@@ -134,14 +193,25 @@ class Order {
         if (orders.length === 0) return null;
 
         const order = orders[0];
-        const [items] = await db.query('SELECT * FROM order_items WHERE order_id = ?', [id]);
+        const [items] = await db.query(`
+            SELECT oi.*, pi.image_url as image 
+            FROM order_items oi
+            LEFT JOIN product_images pi ON oi.product_id = pi.product_id AND pi.is_primary = 1
+            WHERE oi.order_id = ?
+        `, [id]);
 
         // Fetch address details if needed, but usually address_id is enough or we join. 
         // Let's fetch address for convenience if possible, or just return what we have.
         // The requirement says "fetching the order etc", implying full details.
         const [address] = await db.query('SELECT * FROM addresses WHERE id = ?', [order.address_id]);
+        
+        let billingAddress = null;
+        if (order.billing_address_id) {
+             const [billing] = await db.query('SELECT * FROM addresses WHERE id = ?', [order.billing_address_id]);
+             billingAddress = billing[0] || null;
+        }
 
-        return { ...order, items, address: address[0] || null };
+        return { ...order, items, address: address[0] || null, billingAddress };
     }
 
     /**
@@ -249,17 +319,28 @@ class Order {
         const query = `
             SELECT o.*, u.email as user_email 
             FROM orders o
-            JOIN users u ON o.user_id = u.id
+            LEFT JOIN users u ON o.user_id = u.id
             WHERE o.order_number = ?
         `;
         const [rows] = await db.query(query, [orderNumber]);
         if (rows.length === 0) return null;
 
         const order = rows[0];
-        const [items] = await db.query('SELECT * FROM order_items WHERE order_id = ?', [order.id]);
+        const [items] = await db.query(`
+            SELECT oi.*, pi.image_url as image 
+            FROM order_items oi
+            LEFT JOIN product_images pi ON oi.product_id = pi.product_id AND pi.is_primary = 1
+            WHERE oi.order_id = ?
+        `, [order.id]);
         const [address] = await db.query('SELECT * FROM addresses WHERE id = ?', [order.address_id]);
 
-        return { ...order, items, address: address[0] || null };
+        let billingAddress = null;
+        if (order.billing_address_id) {
+             const [billing] = await db.query('SELECT * FROM addresses WHERE id = ?', [order.billing_address_id]);
+             billingAddress = billing[0] || null;
+        }
+
+        return { ...order, items, address: address[0] || null, billingAddress };
     }
 }
 

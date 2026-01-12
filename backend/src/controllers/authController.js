@@ -19,6 +19,7 @@
 
 const { validationResult } = require('express-validator');
 const UserModel = require('../models/userModel');
+const OrderModel = require('../models/orderModel');
 
 const {
   generateAuthTokens,
@@ -95,6 +96,9 @@ const register = async (req, res, next) => {
     // Generate tokens for user
     const tokens = generateAuthTokens(user);
 
+    // Link any previous guest orders
+    await OrderModel.claimGuestOrders(email, user.id).catch(err => console.error('Error linking orders:', err));
+
     // Save refresh token in cookie
     res.cookie('refreshToken', tokens.refresh.token, COOKIE_OPTIONS);
 
@@ -161,6 +165,9 @@ const login = async (req, res, next) => {
 
     // Generate token pair
     const tokens = generateAuthTokens(user);
+
+    // Link any previous guest orders
+    await OrderModel.claimGuestOrders(email, user.id).catch(err => console.error('Error linking orders:', err));
 
     // Save refresh token to cookie
     res.cookie('refreshToken', tokens.refresh.token, COOKIE_OPTIONS);

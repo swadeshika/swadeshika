@@ -107,8 +107,9 @@ export function CheckoutForm() {
 
     const orderData = {
       items: cartItems.map(item => ({
-        productId: item.id,
+        productId: item.productId,
         productName: item.name,
+        variantId: item.variantId,
         quantity: item.quantity,
         price: Number(item.price),
         image: item.image
@@ -392,6 +393,10 @@ export function CheckoutForm() {
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Shipping</span>
                   <span className="font-medium">{shipping === 0 ? "FREE" : `₹${shipping}`}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">GST ({gstPercent}%)</span>
+                  <span className="font-medium">₹{tax}</span>
                 </div>
               </div>
 

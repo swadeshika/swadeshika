@@ -97,7 +97,10 @@ export function AdminOrdersList() {
   const handleExportCsv = async () => {
     try {
       setExporting(true)
-      await ordersService.exportOrders()
+      await ordersService.exportOrders({
+        status: statusFilter,
+        search: debouncedSearch
+      })
       toast({ title: "Success", description: "Orders exported successfully" })
     } catch (error) {
       toast({ title: "Error", description: "Failed to export orders", variant: "destructive" })

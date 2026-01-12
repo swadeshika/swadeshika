@@ -103,6 +103,42 @@ export const ordersService = {
     },
 
     /**
+     * Export orders (Admin)
+     */
+    /**
+     * Export orders (Admin)
+     */
+    exportOrders: async (params: { status?: string; search?: string } = {}) => {
+        if (typeof window === 'undefined') throw new Error('Client only');
+
+        const query = new URLSearchParams();
+        if (params.status && params.status !== 'all') query.append('status', params.status);
+        if (params.search) query.append('search', params.search);
+
+        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        const res = await fetch(`${BASE_URL}/orders/admin/export?${query.toString()}`, {
+            method: 'GET',
+            headers: {
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            }
+        });
+
+        if (!res.ok) {
+            throw new Error('Failed to export orders');
+        }
+
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `orders_export_${Date.now()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    },
+
+    /**
      * Get my orders (User)
      */
     getMyOrders: async (params: { page?: number; limit?: number; status?: string } = {}) => {

@@ -53,6 +53,16 @@ export function ChangePassword({ onSuccess }: { onSuccess?: () => void }) {
       toast({ title: "Password too short", description: "Use at least 8 characters.", variant: "destructive" })
       return
     }
+    // Must match backend validation in /auth/change-password
+    const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/
+    if (!strongPassword.test(next)) {
+      toast({
+        title: "Weak password",
+        description: "Use uppercase, lowercase, number, and a special character (@$!%*?&).",
+        variant: "destructive",
+      })
+      return
+    }
     if (next !== confirm) {
       toast({ title: "Passwords do not match", variant: "destructive" })
       return
@@ -78,9 +88,12 @@ export function ChangePassword({ onSuccess }: { onSuccess?: () => void }) {
       }
     } catch (error: any) {
       console.error("Change password error:", error)
+      const backendMessage = Array.isArray(error?.errors) && error.errors.length > 0
+        ? error.errors[0]?.message
+        : null
       toast({
         title: "Update Failed",
-        description: error.data?.message || error.message || "Failed to update password.",
+        description: backendMessage || error.message || "Failed to update password.",
         variant: "destructive"
       })
     } finally {

@@ -110,24 +110,33 @@ export function AccountSettings() {
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setPasswordLoading(true)
 
     // Basic validations
     if (!currentPassword) {
-      setPasswordLoading(false)
       toast({ title: "Current password required", variant: "destructive" })
       return
     }
     if (newPassword.length < 8) {
-      setPasswordLoading(false)
       toast({ title: "Password too short", description: "Use at least 8 characters.", variant: "destructive" })
       return
     }
+    // Must match backend validation in /auth/change-password
+    // (uppercase, lowercase, number, special character)
+    const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/
+    if (!strongPassword.test(newPassword)) {
+      toast({
+        title: "Weak password",
+        description: "Use uppercase, lowercase, number, and a special character (@$!%*?&).",
+        variant: "destructive",
+      })
+      return
+    }
     if (newPassword !== confirmPassword) {
-      setPasswordLoading(false)
       toast({ title: "Passwords do not match", variant: "destructive" })
       return
     }
+
+    setPasswordLoading(true)
 
     try {
       // Call actual API
@@ -138,9 +147,12 @@ export function AccountSettings() {
       setConfirmPassword("")
       toast({ title: "Password updated", description: "Your password has been changed successfully." })
     } catch (error: any) {
+      const backendMessage = Array.isArray(error?.errors) && error.errors.length > 0
+        ? error.errors[0]?.message
+        : null
       toast({
         title: "Update Failed",
-        description: error.message || "Could not update password. Please check your current password.",
+        description: backendMessage || error.message || "Could not update password. Please check your current password.",
         variant: "destructive"
       })
     } finally {

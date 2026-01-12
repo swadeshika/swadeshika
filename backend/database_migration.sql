@@ -542,6 +542,8 @@ CREATE TABLE admin_settings (
   low_stock_threshold INT DEFAULT 10,
   allow_backorders BOOLEAN DEFAULT FALSE,
   two_factor_enabled BOOLEAN DEFAULT FALSE,
+  enabled_gateways JSON,
+  gateway_configs JSON,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

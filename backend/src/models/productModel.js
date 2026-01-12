@@ -88,8 +88,18 @@ class ProductModel {
       }
     }
 
+    // Global Low Stock Threshold Subquery/Join (Optimized: Get value once or subquery)
+    // For simplicity and correctness per row:
+    const thresholdLogic = `COALESCE(p.low_stock_threshold, (SELECT low_stock_threshold FROM admin_settings LIMIT 1), 10)`;
+
+    // Modified Select Clause to include effective threshold
+    let finalSelectClause = selectClause;
+    if (selectClause === 'p.*') {
+      finalSelectClause = `p.*, ${thresholdLogic} as effective_low_stock_threshold`;
+    }
+
     let sql = `
-      SELECT ${selectClause}, c.name as category_name, c.slug as category_slug,
+      SELECT ${finalSelectClause}, c.name as category_name, c.slug as category_slug,
              (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
@@ -144,6 +154,11 @@ class ProductModel {
       if (p.primary_image) p.primary_image = toAssetUrl(p.primary_image);
       if (p.description) p.description = unescapeHtml(p.description);
       if (p.short_description) p.short_description = unescapeHtml(p.short_description);
+
+      // Calculate is_low_stock boolean for frontend convenience
+      if (p.effective_low_stock_threshold !== undefined) {
+        p.is_low_stock = p.stock_quantity <= p.effective_low_stock_threshold;
+      }
     });
 
     // Get total count for pagination

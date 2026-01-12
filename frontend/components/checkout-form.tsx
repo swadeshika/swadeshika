@@ -45,15 +45,15 @@ export function CheckoutForm() {
 
   // Calculate Totals
   const subtotal = getTotalPrice()
-  const shippingThreshold = settings?.free_shipping_threshold ?? 500
-  const flatRate = settings?.flat_rate ?? 50
+  const shippingThreshold = Number(settings?.free_shipping_threshold ?? 500)
+  const flatRate = Number(settings?.flat_rate ?? 50)
 
   const shipping = subtotal > 0
     ? (subtotal >= shippingThreshold ? 0 : flatRate)
     : 0
 
   // Tax logic (can be enhanced later based on settings)
-  const gstPercent = settings?.gst_percent ?? 0
+  const gstPercent = Number(settings?.gst_percent ?? 0)
   const tax = Math.round(subtotal * (gstPercent / 100))
 
   const total = subtotal + shipping + tax;
@@ -145,9 +145,39 @@ export function CheckoutForm() {
       router.push(`/order-confirmation/${response.data.orderId}`)
     } catch (error: any) {
       console.error("Order creation failed", error);
+
+      const errorMessage = error.response?.data?.message || error.message || "Something went wrong. Please try again.";
+
+      // Check for Stale/Unavailable Items Error
+      const match = errorMessage.match(/IDs: ([0-9, ]+)/);
+      if (match && match[1]) {
+           const badIds = match[1].split(',').map((id: string) => Number(id.trim()));
+           
+           if (badIds.length > 0) {
+              const { items, removeItem } = useCartStore.getState();
+              
+              // Find items where productId matches the bad IDs
+              badIds.forEach((badId: number) => {
+                  const itemToRemove = items.find(item => item.productId === badId);
+                  if (itemToRemove) {
+                      removeItem(itemToRemove.id); 
+                  }
+              });
+
+              toast({
+                  title: "Cart Updated",
+                  description: `Removed ${badIds.length} unavailable items from your cart. Please place your order again.`,
+                  variant: "default", 
+              });
+              
+              setPlacing(false);
+              return;
+           }
+      }
+
       toast({
         title: "Order Failed",
-        description: error.message || "Something went wrong. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       })
     } finally {

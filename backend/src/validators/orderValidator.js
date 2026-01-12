@@ -116,7 +116,52 @@ const createOrderValidation = [
     body('totalAmount')
         .notEmpty().withMessage('Total amount is required')
         .isFloat({ min: 0.01 }).withMessage('Total amount must be a positive number')
-        .isFloat({ min: 0.01 }).withMessage('Total amount must be a positive number'),
+        .custom((value, { req }) => {
+            /**
+             * CRITICAL VALIDATION: Verify Order Total
+             * ========================================
+             * 
+             * WHY THIS IS IMPORTANT:
+             * - Prevents price manipulation attacks
+             * - Ensures frontend calculations match backend
+             * - Catches bugs in cart total calculation
+             * 
+             * WHAT WE CHECK:
+             * - Calculate total from items array
+             * - Compare with provided totalAmount
+             * - Allow small floating-point differences (0.01)
+             */
+            const items = req.body.items || [];
+            // If items are not provided, controller will calculate from DB cart — skip strict check here
+            if (!items || items.length === 0) return true;
+
+            const itemsSubtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            // Validate request consistency (frontend-calculated totals).
+            // The backend will still compute and store its own totals during order creation.
+            const shippingCost = Number(req.body.shippingCost ?? req.body.shipping_fee ?? 0);
+            const tax = Number(req.body.tax ?? req.body.taxAmount ?? 0);
+            const calculatedTotal = itemsSubtotal + (Number.isFinite(shippingCost) ? shippingCost : 0) + (Number.isFinite(tax) ? tax : 0);
+
+            // If subtotal is provided, it should match items subtotal.
+            if (req.body.subtotal != null) {
+                const providedSubtotal = Number(req.body.subtotal);
+                if (Number.isFinite(providedSubtotal)) {
+                    const subtotalDiff = Math.abs(itemsSubtotal - providedSubtotal);
+                    if (subtotalDiff > 0.01) {
+                        throw new Error(`Subtotal mismatch. Expected: ${itemsSubtotal.toFixed(2)}, Received: ${req.body.subtotal}`);
+                    }
+                }
+            }
+
+            // Allow 1 cent difference for floating-point precision
+            const difference = Math.abs(calculatedTotal - parseFloat(value));
+            if (difference > 0.01) {
+                throw new Error(`Total amount mismatch. Expected: ${calculatedTotal.toFixed(2)}, Received: ${value}`);
+            }
+
+            return true;
+        }),
     
     // Validate coupon code (optional)
     // Allow empty couponCode to be treated as not provided

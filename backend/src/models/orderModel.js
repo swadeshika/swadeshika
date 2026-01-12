@@ -342,6 +342,25 @@ class Order {
 
         return { ...order, items, address: address[0] || null, billingAddress };
     }
+    /**
+     * Link guest orders to a registered user
+     * @param {string} email 
+     * @param {string} userId 
+     */
+    static async claimGuestOrders(email, userId) {
+        if (!email || !userId) return;
+        
+        // Find orders with this guest email
+        // We update them to belong to the new user
+        // We strictly check guest_email to avoid stealing other users' orders (though email should be unique per user usually)
+        const [result] = await db.query(
+            `UPDATE orders 
+             SET user_id = ?, guest_email = NULL 
+             WHERE guest_email = ?`,
+            [userId, email]
+        );
+        return result.affectedRows;
+    }
 }
 
 module.exports = Order;

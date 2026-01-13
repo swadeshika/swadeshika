@@ -55,7 +55,9 @@ export function useNotifications() {
         }
 
         // Create Socket.IO connection
-        const newSocket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000', {
+        // ⚠️ IMPORTANT: Socket.IO connects to BASE URL, not /api/v1
+        const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace('/api/v1', '');
+        const newSocket = io(baseUrl, {
             auth: {
                 token,
             },

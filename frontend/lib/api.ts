@@ -37,6 +37,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
         response = await fetch(url, {
             ...options,
             headers,
+            credentials: 'include', // ✅ CRITICAL: Send cookies (refresh token) with every request
         });
     } catch (fetchError: any) {
         console.error(`[API] Network Error for ${url}:`, fetchError);

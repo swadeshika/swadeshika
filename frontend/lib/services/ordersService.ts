@@ -67,12 +67,13 @@ export const ordersService = {
     /**
      * Get all orders (Admin)
      */
-    getAllOrders: async (params: { page?: number; limit?: number; status?: string; search?: string } = {}) => {
+    getAllOrders: async (params: { page?: number; limit?: number; status?: string; search?: string; customer?: string } = {}) => {
         const query = new URLSearchParams();
         if (params.page) query.append('page', String(params.page));
         if (params.limit) query.append('limit', String(params.limit));
         if (params.status && params.status !== 'all') query.append('status', params.status);
         if (params.search) query.append('search', params.search);
+        if (params.customer) query.append('customerId', params.customer); // ✅ Filter by customer ID
 
         const res = await api.get<{ orders: Order[]; pagination: any }>(`/orders/admin/all?${query.toString()}`);
         return res.data.data;

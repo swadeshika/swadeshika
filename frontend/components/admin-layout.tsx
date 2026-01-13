@@ -44,6 +44,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useAuthStore } from "@/lib/auth-store"
 import { useToast } from "@/hooks/use-toast"
+import { useNotifications } from "@/hooks/useNotifications"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,6 +58,7 @@ const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Products", href: "/admin/products", icon: Package },
   { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
+  { name: "Reviews", href: "/admin/reviews", icon: Ghost },
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Contacts", href: "/admin/contacts", icon: Users },
   { name: "Newsletter", href: "/admin/newsletter", icon: Mail },
@@ -85,15 +87,17 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [hasHydrated, setHasHydrated] = useState<boolean>(false)
   // Track open/close state of dropdowns
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
-  // Header state (must be declared before any early returns to preserve hook order)
-  const [notifications, setNotifications] = useState<Array<{ id: string; title: string; desc?: string; read?: boolean }>>([
-    { id: "n1", title: "New order received", desc: "Order #1024", read: false },
-    { id: "n2", title: "Low stock alert", desc: "Turmeric Powder", read: false },
-    { id: "n3", title: "Customer signed up", desc: "Priya Sharma", read: true },
-  ])
-  const unreadCount = notifications.filter((n) => !n.read).length
-  const markAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-  const clearAll = () => setNotifications([])
+  
+  // Real-time notifications hook
+  const { 
+    notifications, 
+    connected, 
+    loading: notificationsLoading,
+    markAsRead, 
+    markAllAsRead, 
+    clearAll, 
+    unreadCount 
+  } = useNotifications()
 
   useEffect(() => {
     // Immediately set current hydration status (in case it's already done)
@@ -294,13 +298,13 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                     notifications.map((n) => (
                       <DropdownMenuItem key={n.id} className="group flex flex-col items-start gap-1 hover:bg-[#2D5F3F]">
                         <span className={`text-sm ${n.read ? "text-[#8B6F47]" : "text-[#6B4423] font-medium"} group-hover:text-white`}>{n.title}</span>
-                        {n.desc && <span className="text-xs text-[#8B6F47] group-hover:text-white">{n.desc}</span>}
+                        {n.description && <span className="text-xs text-[#8B6F47] group-hover:text-white">{n.description}</span>}
                       </DropdownMenuItem>
                     ))
                   )}
                   <DropdownMenuSeparator />
                   <div className="flex items-center justify-between px-2 py-1.5">
-                    <Button variant="outline" size="sm" className="bg-transparent" onClick={markAllRead}>Mark all read</Button>
+                    <Button variant="outline" size="sm" className="bg-transparent" onClick={markAllAsRead}>Mark all read</Button>
                     <Button variant="ghost" size="sm" onClick={clearAll}>Clear</Button>
                   </div>
                 </DropdownMenuContent>

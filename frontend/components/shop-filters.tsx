@@ -1,11 +1,13 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Slider } from "@/components/ui/slider"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { X, Filter } from "lucide-react"
+
+import { Category } from "@/lib/services/productService"
 
 interface ShopFiltersProps {
   category?: string
@@ -17,17 +19,10 @@ interface ShopFiltersProps {
   setSelectedBrands: (value: string[]) => void
   selectedTags: string[]
   setSelectedTags: (value: string[]) => void
+  categories?: Category[] // Made optional to avoid breaking existing usage immediately
 }
 
-const categories = [
-  { id: "ghee", label: "Ghee" },
-  { id: "spices", label: "Spices" },
-  { id: "dry-fruits", label: "Dry Fruits" },
-  { id: "oils", label: "Oils" },
-  { id: "grains", label: "Grains & Pulses" },
-  { id: "honey", label: "Honey & Sweeteners" },
-]
-
+// Static fallback/legacy lists
 const brands = [
   { id: "swadeshika", label: "Swadeshika" },
   { id: "organic", label: "Organic Select" },
@@ -51,202 +46,44 @@ export function ShopFilters({
   setSelectedBrands,
   selectedTags,
   setSelectedTags,
+  categories = [] // Default to empty if not provided
 }: ShopFiltersProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [localPrice, setLocalPrice] = useState(priceRange)
+  
+  // Sync local price when prop changes (e.g. Clear All)
+  // We only want to sync if the prop is significantly different to avoid fighting with the slider
+  useEffect(() => {
+     // Only update if external prop is different from local state to avoid loops
+     // and only if the difference is not just due to the slider moving (handled by onValueChange)
+     if (priceRange[0] !== localPrice[0] || priceRange[1] !== localPrice[1]) {
+        setLocalPrice(priceRange)
+     }
+  }, [priceRange])
+
   /**
    * Reset all filters to default values
    * Preserves category filter if on a category page
    */
   const handleClearAll = () => {
-    setPriceRange([0, 2000])
+    setPriceRange([0, 10000])
     setSelectedCategories(category ? [category] : [])
     setSelectedBrands([])
     setSelectedTags([])
   }
 
   // Selected chips helpers
-  const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.label])) as Record<string, string>
+  const categoryMap = Object.fromEntries(categories.map((c) => [c.slug, c.name])) as Record<string, string>
   const brandMap = Object.fromEntries(brands.map((b) => [b.id, b.label])) as Record<string, string>
   const tagMap = Object.fromEntries(tags.map((t) => [t.id, t.label])) as Record<string, string>
 
   const anySelected =
     (selectedCategories.length > 0 && !category) || selectedBrands.length > 0 || selectedTags.length > 0 ||
-    !(priceRange[0] === 0 && priceRange[1] === 2000)
-
-  // Reusable inner content for filters (without the outer container)
-  const FiltersInner = ({ showHeading = true }: { showHeading?: boolean }) => (
-    <>
-      {showHeading && (
-        <>
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-lg text-[#6B4423]">Filters</h2>
-            <Button variant="ghost" size="sm" onClick={handleClearAll} className="hover:bg-[#2D5F3F] cursor-pointer">
-              <X className="h-4 w-4 mr-1" />
-              Clear All
-            </Button>
-          </div>
-          <Separator />
-        </>
-      )}
-
-      {/* Selected chips */}
-      {anySelected && (
-        <div className="flex flex-wrap gap-2">
-          {/* Price chip when changed */}
-          {!(priceRange[0] === 0 && priceRange[1] === 2000) && (
-            <Button
-              variant="secondary"
-              size="sm"
-              className="rounded-full cursor-pointer"
-              onClick={() => setPriceRange([0, 2000])}
-            >
-              ₹{priceRange[0]} - ₹{priceRange[1]} <X className="ml-1 h-3 w-3" />
-            </Button>
-          )}
-          {/* Category chips (hidden on category page) */}
-          {!category &&
-            selectedCategories.map((c) => (
-              <Button
-                key={`c-${c}`}
-                variant="secondary"
-                size="sm"
-                className="rounded-full cursor-pointer"
-                onClick={() => setSelectedCategories(selectedCategories.filter((x) => x !== c))}
-              >
-                {categoryMap[c] || c} <X className="ml-1 h-3 w-3" />
-              </Button>
-            ))}
-          {/* Brand chips */}
-          {selectedBrands.map((b) => (
-            <Button
-              key={`b-${b}`}
-              variant="secondary"
-              size="sm"
-              className="rounded-full cursor-pointer"
-              onClick={() => setSelectedBrands(selectedBrands.filter((x) => x !== b))}
-            >
-              {brandMap[b] || b} <X className="ml-1 h-3 w-3" />
-            </Button>
-          ))}
-          {/* Tag chips */}
-          {selectedTags.map((t) => (
-            <Button
-              key={`t-${t}`}
-              variant="secondary"
-              size="sm"
-              className="rounded-full cursor-pointer"
-              onClick={() => setSelectedTags(selectedTags.filter((x) => x !== t))}
-            >
-              {tagMap[t] || t} <X className="ml-1 h-3 w-3" />
-            </Button>
-          ))}
-        </div>
-      )}
-
-      {/* Price Range */}
-      <div className="space-y-4">
-        <h3 className="font-medium">Price Range</h3>
-        <div className="space-y-4">
-          <Slider value={priceRange} onValueChange={setPriceRange} max={2000} step={50} className="w-full cursor-pointer" />
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">₹{priceRange[0]}</span>
-            <span className="text-muted-foreground">₹{priceRange[1]}</span>
-          </div>
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* Categories */}
-      {!category && (
-        <>
-          <div className="space-y-4">
-            <h3 className="font-medium">Categories</h3>
-            <div className="space-y-3">
-              {categories.map((cat) => (
-                <div key={cat.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={cat.id}
-                    checked={selectedCategories.includes(cat.id)}
-                    className="cursor-pointer"
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedCategories([...selectedCategories, cat.id])
-                      } else {
-                        setSelectedCategories(selectedCategories.filter((c) => c !== cat.id))
-                      }
-                    }}
-                  />
-                  <Label htmlFor={cat.id} className="text-sm font-normal cursor-pointer">
-                    {cat.label}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </div>
-          <Separator />
-        </>
-      )}
-
-      {/* Brands */}
-      <div className="space-y-4">
-        <h3 className="font-medium">Brands</h3>
-        <div className="space-y-3">
-          {brands.map((brand) => (
-            <div key={brand.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={brand.id}
-                checked={selectedBrands.includes(brand.id)}
-                className="cursor-pointer"
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    setSelectedBrands([...selectedBrands, brand.id])
-                  } else {
-                    setSelectedBrands(selectedBrands.filter((b) => b !== brand.id))
-                  }
-                }}
-              />
-              <Label htmlFor={brand.id} className="text-sm font-normal cursor-pointer">
-                {brand.label}
-              </Label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* Tags */}
-      <div className="space-y-4">
-        <h3 className="font-medium">Tags</h3>
-        <div className="space-y-3">
-          {tags.map((tag) => (
-            <div key={tag.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={tag.id}
-                checked={selectedTags.includes(tag.id)}
-                className="cursor-pointer"
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    setSelectedTags([...selectedTags, tag.id])
-                  } else {
-                    setSelectedTags(selectedTags.filter((t) => t !== tag.id))
-                  }
-                }}
-              />
-              <Label htmlFor={tag.id} className="text-sm font-normal cursor-pointer">
-                {tag.label}
-              </Label>
-            </div>
-          ))}
-        </div>
-      </div>
-    </>
-  )
+    !(priceRange[0] === 0 && priceRange[1] === 10000)
 
   return (
     <>
-      {/* Mobile: inline collapsible section below the button (no overlay, no scroll) */}
+      {/* Mobile: inline collapsible section */}
       <div className="lg:hidden">
         <Button
           variant="outline"
@@ -259,15 +96,144 @@ export function ShopFilters({
         </Button>
         {mobileOpen && (
           <div id="mobile-filters" className="mt-3 space-y-6 rounded-2xl border-2 border-[#E8DCC8] bg-white p-5">
-            <FiltersInner />
+             {/* Inline Content for Mobile */}
+             <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-lg text-[#6B4423]">Filters</h2>
+                <Button variant="ghost" size="sm" onClick={handleClearAll} className="hover:bg-[#2D5F3F] cursor-pointer">
+                  <X className="h-4 w-4 mr-1" />
+                  Clear All
+                </Button>
+              </div>
+              <Separator />
+              {renderFilters()}
           </div>
         )}
       </div>
 
-      {/* Desktop: original sidebar panel */}
+      {/* Desktop sidebar */}
       <div className="hidden lg:block space-y-6 sticky top-24 rounded-2xl border-2 border-[#E8DCC8] bg-white p-5">
-        <FiltersInner />
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-lg text-[#6B4423]">Filters</h2>
+            <Button variant="ghost" size="sm" onClick={handleClearAll} className="hover:bg-[#2D5F3F] cursor-pointer">
+              <X className="h-4 w-4 mr-1" />
+              Clear All
+            </Button>
+          </div>
+          <Separator />
+          {renderFilters()}
       </div>
     </>
   )
+
+  function renderFilters() {
+    return (
+      <>
+        {/* Selected chips */}
+        {anySelected && (
+          <div className="flex flex-wrap gap-2">
+            {/* Price chip when changed */}
+            {!(priceRange[0] === 0 && priceRange[1] === 10000) && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="rounded-full cursor-pointer"
+                onClick={() => setPriceRange([0, 10000])}
+              >
+                ₹{priceRange[0]} - ₹{priceRange[1]} <X className="ml-1 h-3 w-3" />
+              </Button>
+            )}
+            {/* Category chips (hidden on category page) */}
+            {!category &&
+              selectedCategories.map((c) => (
+                <Button
+                  key={`c-${c}`}
+                  variant="secondary"
+                  size="sm"
+                  className="rounded-full cursor-pointer"
+                  onClick={() => setSelectedCategories(selectedCategories.filter((x) => x !== c))}
+                >
+                  {categoryMap[c] || c} <X className="ml-1 h-3 w-3" />
+                </Button>
+              ))}
+            {/* Brand chips */}
+            {selectedBrands.map((b) => (
+              <Button
+                key={`b-${b}`}
+                variant="secondary"
+                size="sm"
+                className="rounded-full cursor-pointer"
+                onClick={() => setSelectedBrands(selectedBrands.filter((x) => x !== b))}
+              >
+                {brandMap[b] || b} <X className="ml-1 h-3 w-3" />
+              </Button>
+            ))}
+            {/* Tag chips */}
+            {selectedTags.map((t) => (
+              <Button
+                key={`t-${t}`}
+                variant="secondary"
+                size="sm"
+                className="rounded-full cursor-pointer"
+                onClick={() => setSelectedTags(selectedTags.filter((x) => x !== t))}
+              >
+                {tagMap[t] || t} <X className="ml-1 h-3 w-3" />
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {/* Price Range */}
+        <div className="space-y-4">
+          <h3 className="font-medium">Price Range</h3>
+          <div className="space-y-4">
+            <Slider 
+               value={localPrice} 
+               onValueChange={setLocalPrice} 
+               onValueCommit={setPriceRange} 
+               max={10000} 
+               step={100} 
+               className="w-full cursor-pointer" 
+            />
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">₹{localPrice[0]}</span>
+              <span className="text-muted-foreground">₹{localPrice[1]}</span>
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Categories */}
+        {!category && (
+          <>
+            <div className="space-y-4">
+              <h3 className="font-medium">Categories</h3>
+              <div className="space-y-3">
+                {categories.map((cat) => (
+                  <div key={cat.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={String(cat.id)}
+                      checked={selectedCategories.includes(cat.slug)}
+                      className="cursor-pointer"
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedCategories([...selectedCategories, cat.slug])
+                        } else {
+                          setSelectedCategories(selectedCategories.filter((c) => c !== cat.slug))
+                        }
+                      }}
+                    />
+                    <Label htmlFor={String(cat.id)} className="text-sm font-normal cursor-pointer">
+                      {cat.name}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Separator />
+          </>
+        )}
+      </>
+    )
+  }
 }

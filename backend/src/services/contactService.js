@@ -54,8 +54,30 @@ class ContactService {
           const submission = await ContactModel.findById(id);
           if (!submission) throw new Error('Submission not found');
 
-          // 2. TODO: Integrte Nodemailer to send actual email
-          console.log(`Sending email to ${submission.email}: ${replyMessage}`);
+          // 2. Send email using nodemailer
+          const { sendEmail } = require('../utils/email');
+          try {
+              await sendEmail({
+                  to: submission.email,
+                  subject: `Re: ${submission.subject || 'Your Contact Form Submission'}`,
+                  text: replyMessage,
+                  html: `
+                      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                          <h2 style="color: #2D5F3F;">Swadeshika Team Response</h2>
+                          <p>Dear ${submission.name},</p>
+                          <p>${replyMessage.replace(/\n/g, '<br>')}</p>
+                          <hr style="border: 1px solid #E8DCC8; margin: 20px 0;">
+                          <p style="font-size: 12px; color: #8B6F47;">
+                              This is a response to your contact form submission.<br>
+                              Original Subject: ${submission.subject || 'N/A'}
+                          </p>
+                      </div>
+                  `
+              });
+          } catch (emailError) {
+              console.error('Failed to send reply email:', emailError);
+              // Don't throw - still update status even if email fails
+          }
 
           // 3. Update status to 'replied'
           await ContactModel.update(id, { status: 'replied' });

@@ -116,12 +116,9 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    console.log('[BLOG SAVE] Starting save process...');
-    console.log('[BLOG SAVE] Current post data:', post);
-    
     // Validate required fields
     if (!post.title) {
-        console.log('[BLOG SAVE] Validation failed: Title is required');
+
         toast({ title: "Title is required", variant: "destructive" })
       return
     }
@@ -134,33 +131,29 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
       // Date handling: Ensure published_at is string ISO
     }
     
-    console.log('[BLOG SAVE] Final post data to send:', finalPost);
+
     
     setIsSaving(true)
     
     try {
-      console.log('[BLOG SAVE] isNew:', isNew);
       if (isNew) {
-        console.log('[BLOG SAVE] Calling blogService.createPost...');
         const result = await blogService.createPost(finalPost)
-        console.log('[BLOG SAVE] Create post result:', result);
+
         toast({ title: "Post created successfully" })
       } else if (post.id) {
-        console.log('[BLOG SAVE] Calling blogService.updatePost...');
+
         const result = await blogService.updatePost(post.id, finalPost)
-        console.log('[BLOG SAVE] Update post result:', result);
+
         toast({ title: "Post updated successfully" })
       }
-      console.log('[BLOG SAVE] Redirecting to /admin/blog');
+
       router.push('/admin/blog')
     } catch (error: any) {
-        console.error("[BLOG SAVE] Error occurred:", error);
-        console.error("[BLOG SAVE] Error message:", error.message);
-        console.error("[BLOG SAVE] Error stack:", error.stack);
+        console.error("Failed to save blog post:", error);
         const msg = error.message || "Something went wrong";
         toast({ title: "Failed to save post", description: msg, variant: "destructive" })
     } finally {
-      console.log('[BLOG SAVE] Save process completed, setting isSaving to false');
+
       setIsSaving(false)
     }
   }

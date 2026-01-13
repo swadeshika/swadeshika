@@ -452,9 +452,31 @@ class ProductModel {
    * Delete product
    */
   static async delete(id) {
-    // Cascading delete in DB handles related tables, but good to be explicit or check constraints
-    await db.query(`DELETE FROM products WHERE id = ?`, [id]);
-    return true;
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      // Clean up related data (referential integrity)
+      await conn.query(`DELETE FROM product_images WHERE product_id = ?`, [id]);
+      await conn.query(`DELETE FROM product_features WHERE product_id = ?`, [id]);
+      await conn.query(`DELETE FROM product_variants WHERE product_id = ?`, [id]);
+      
+      // Keep reviews but set product_id to NULL for history
+      await conn.query(`UPDATE reviews SET product_id = NULL WHERE product_id = ?`, [id]);
+      
+      // Note: order_items are NOT deleted - must preserve order history
+      
+      // Finally delete the product
+      await conn.query(`DELETE FROM products WHERE id = ?`, [id]);
+
+      await conn.commit();
+      return true;
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
   }
 }
 

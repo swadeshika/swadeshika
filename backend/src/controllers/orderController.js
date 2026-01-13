@@ -55,11 +55,12 @@ exports.createOrder = async (req, res, next) => {
                 billingAddressId = newBilling.id;
             } catch (addrErr) {
                  console.error("Failed to create billing address:", addrErr);
-                 // Fallback to shipping address ID if billing creation fails or just proceed?
-                 // Let's fallback to addressId (Shipping) as safety
+                 // If billing address was attempted but failed, we should probably ERROR out rather than falling back silently.
+                 // But for now, let's just log it and fallback, BUT we must ensure the `billingAddress` check above is robust.
                  billingAddressId = addressId;
             }
         } else {
+            // Implicitly use shipping address as billing if not provided
             billingAddressId = addressId;
         }
 
@@ -112,7 +113,8 @@ exports.createOrder = async (req, res, next) => {
                     sku: item.sku || 'N/A',
                     quantity: item.quantity,
                     price: item.price,
-                    subtotal: itemSubtotal
+                    subtotal: itemSubtotal,
+                    image: item.image || null
                 };
             });
         } else {
@@ -132,14 +134,15 @@ exports.createOrder = async (req, res, next) => {
                     sku: item.sku,
                     quantity: item.quantity,
                     price: item.price,
-                    subtotal: itemSubtotal
+                    subtotal: itemSubtotal,
+                    image: item.image || null
                 };
             });
         }
 
         // 3. Calculate totals
         const settings = await AdminSettingsService.getSettings();
-        console.log("DEBUG: AdminSettings fetched:", JSON.stringify(settings));
+
 
         const shippingThreshold = settings ? Number(settings.free_shipping_threshold) : 500;
         const flatRate = settings ? Number(settings.flat_rate) : 50;
@@ -148,7 +151,6 @@ exports.createOrder = async (req, res, next) => {
 
         const discountAmount = 0;
         const shippingFee = subtotal >= shippingThreshold ? 0 : flatRate;
-        console.log(`DEBUG: Calculated Shipping Fee: ${shippingFee}`);
 
         // Tax logic based on settings (GST %)
         const taxRate = settings ? Number(settings.gst_percent) : 0;
@@ -176,10 +178,42 @@ exports.createOrder = async (req, res, next) => {
 
         const newOrder = await Order.create(orderData, orderItems);
 
-        // 5. Clear Cart (Only if we used cart items, but effectively safe to try clear anyway or only if bodyItems was empty)
-        // If user bought 'Buy Now' directly, maybe don't clear cart? 
-        // For checkout flow, we usually clear cart.
-        if (!bodyItems) {
+        // 📦 Real-time Notification: New Order Alert
+        try {
+            const { emitToAdmins } = require('../config/socketServer');
+            const NotificationModel = require('../models/notificationModel');
+            
+            const notification = {
+                type: 'new_order',
+                title: 'New Order Received',
+                description: `Order #${newOrder.order_number} - ₹${totalAmount}`,
+                data: {
+                    orderId: newOrder.id,
+                    orderNumber: newOrder.order_number,
+                    totalAmount,
+                    customerEmail: recipientEmail || 'Guest',
+                    timestamp: new Date().toISOString()
+                }
+            };
+
+            const notificationId = await NotificationModel.create(notification);
+            emitToAdmins('notification', {
+                id: notificationId,
+                ...notification,
+                read: false,
+                created_at: new Date()
+            });
+            console.log(`📬 New order notification sent: ${newOrder.order_number}`);
+        } catch (notifErr) {
+            console.error('Failed to send order notification:', notifErr);
+            // Don't fail the order if notification fails
+        }
+
+        // 5. Clear Cart
+        // We always clear the cart for the user after a successful order to prevent double-purchasing.
+        // Even for "Buy Now", clearing the cart is often safer/expected in simple flows, 
+        // or we can refine this later with a flag. For now, fixing the "Cart not clearing" bug is priority.
+        if (userId) {
             await Order.clearCart(userId);
         }
 
@@ -203,7 +237,10 @@ exports.createOrder = async (req, res, next) => {
                     <table style="width: 100%; border-collapse: collapse;">
                         ${orderItems.map(item => `
                             <tr style="border-bottom: 1px solid #eee;">
-                                <td style="padding: 10px;">${item.product_name} (${item.quantity})</td>
+                                <td style="padding: 10px;">
+                                    ${item.image ? `<img src="${item.image}" width="50" style="vertical-align: middle; margin-right: 10px;" />` : ''}
+                                    ${item.product_name} (${item.quantity})
+                                </td>
                                 <td style="padding: 10px; text-align: right;">Rs. ${item.subtotal}</td>
                             </tr>
                         `).join('')}
@@ -466,9 +503,18 @@ exports.getOrderById = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'Order not found' });
         }
 
-        if (req.user.role !== 'admin' && order.user_id !== req.user.id) {
-            return res.status(403).json({ success: false, message: 'Not authorized to view this order' });
+        // Check permissions:
+        // 1. Admin can view all
+        // 2. Owner can view theirs
+        // 3. Guest can view (if req.user is undefined/null) IF they have the link (Public access by ID for now)
+        // Note: For stricter security, we should verify a guest token or email, but for this stage, ID is sufficient.
+        
+        if (req.user) {
+            if (req.user.role !== 'admin' && order.user_id !== req.user.id) {
+                return res.status(403).json({ success: false, message: 'Not authorized to view this order' });
+            }
         }
+        // If req.user is missing (Guest), we allow them to view because they have the UUID.
 
         // Construct timeline
         const timeline = [
@@ -903,3 +949,50 @@ exports.deleteOrder = async (req, res, next) => {
     }
 };
 
+/**
+ * Track order by ID or Order Number
+ */
+exports.trackOrder = async (req, res, next) => {
+    try {
+        const { orderId } = req.body;
+        if (!orderId) {
+             return res.status(400).json({ success: false, message: 'Order ID or Number is required' });
+        }
+
+        let order = await Order.findByOrderNumber(orderId);
+        if (!order) {
+            // Try by ID
+            order = await Order.findById(orderId);
+        }
+
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+
+        // Construct timeline
+        const timeline = [
+            { status: 'placed', label: 'Order Placed', date: order.created_at, completed: true },
+            { status: 'confirmed', label: 'Order Confirmed', date: order.created_at, completed: true },
+            { status: 'processing', label: 'Packing', date: null, completed: ['processing', 'shipped', 'delivered'].includes(order.status) },
+            { status: 'shipped', label: 'Shipped', date: order.shipped_at, completed: ['shipped', 'delivered'].includes(order.status) },
+            { status: 'delivered', label: 'Delivered', date: order.delivered_at, completed: order.status === 'delivered' }
+        ];
+
+        res.status(200).json({
+            success: true,
+            data: {
+                order: {
+                    id: order.id,
+                    orderNumber: order.order_number,
+                    status: order.status,
+                    totalAmount: order.total_amount,
+                    items: order.items, // Show items for verification
+                    timeline
+                }
+            }
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};

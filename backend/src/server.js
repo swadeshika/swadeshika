@@ -11,6 +11,9 @@ const { connectDB } = require('./config/db');
 // app.js contains all middlewares, routes, security handlers, etc.
 const app = require('./app');
 
+// Import Socket.IO initialization
+const { initSocketServer } = require('./config/socketServer');
+
 // Get the port number from environment variables
 // Fallback to 5000 if PORT is not defined in .env
 const PORT = process.env.PORT || 5000;
@@ -26,9 +29,18 @@ const PORT = process.env.PORT || 5000;
     // If DB connection fails → catch block will handle and exit process
     await connectDB();
 
-    // STEP 2: Start the Express server after DB successfully connected
-    const server = app.listen(PORT, () => {
+    // STEP 2: Create HTTP server from Express app (required for Socket.IO)
+    const http = require('http');
+    const server = http.createServer(app);
+
+    // STEP 3: Initialize Socket.IO with the HTTP server
+    initSocketServer(server);
+    console.log('🔌 Socket.IO initialized for real-time notifications');
+
+    // STEP 4: Start the server
+    server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
     });
 
     // Increase server timeout to 5 minutes (300000 ms) for large uploads
@@ -84,3 +96,4 @@ const PORT = process.env.PORT || 5000;
     process.exit(1);
   }
 })();
+

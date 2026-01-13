@@ -37,9 +37,6 @@ export function AdminProductsList() {
       })
       
       
-      // Debug logging
-      console.log('[AdminProductsList] Raw API Response:', data.products);
-      
       const mapped = data.products.map((p: any) => {
         // Prefer explicit `status` returned by backend (draft/published/archived)
         // Fallback to computed stock status if `status` not provided
@@ -49,15 +46,6 @@ export function AdminProductsList() {
         const computedStockStatus = isInStock && hasStock ? "Active" : "Out of Stock";
         const status = statusFromBackend ? (statusFromBackend[0].toUpperCase() + statusFromBackend.slice(1)) : computedStockStatus;
         
-        // Debug each product
-        console.log(`[Product: ${p.name}]`, {
-          in_stock: p.in_stock,
-          in_stock_type: typeof p.in_stock,
-          stock_quantity: p.stock_quantity,
-          isInStock,
-          hasStock,
-          finalStatus: status
-        });
         
         return {
           id: p.id,

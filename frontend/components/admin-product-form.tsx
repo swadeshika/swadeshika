@@ -168,7 +168,7 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
     name: !form.name ? "Name is required" : "",
     price: priceMissing ? "Selling price is required (or add variants)" : priceGtMrp ? "Selling should be ≤ MRP" : "",
     mrp: mrpMissing ? "MRP is required (or add variants)" : "",
-    category: !form.category ? "Category is required" : "", // TODO: Map string to ID?
+    category: !form.category ? "Category is required" : "",
     variants: hasVariants && variantIssues.length ? variantIssues[0] : "",
   }
   const isValid = !errors.name && !errors.category && !errors.price && !errors.mrp && !errors.variants

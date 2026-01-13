@@ -52,7 +52,30 @@ class ProductService {
     }
 
     static async updateProduct(id, data) {
-        return await ProductModel.update(id, data);
+        const result = await ProductModel.update(id, data);
+        
+        // Check for low stock and send alert if needed
+        if (data.stock_quantity !== undefined) {
+            try {
+                const { checkAndAlertLowStock } = require('./stockAlertService');
+                const product = await ProductModel.findByIdOrSlug(id);
+                
+                if (product) {
+                    const threshold = product.low_stock_threshold || 10;
+                    await checkAndAlertLowStock(
+                        product.id,
+                        product.stock_quantity,
+                        product.name,
+                        threshold
+                    );
+                }
+            } catch (err) {
+                console.error('Stock alert check failed:', err);
+                // Don't fail the update if notification fails
+            }
+        }
+        
+        return result;
     }
 
     static async deleteProduct(id) {

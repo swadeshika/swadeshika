@@ -29,6 +29,7 @@ const analyticsRoutes = require('./analyticsRoutes');
 const customersRoutes = require('./customers.routes');
 const reportRoutes = require('./reportRoutes');
 const uploadRoutes = require('./uploadRoutes'); // File upload routes
+const notificationRoutes = require('./notificationRoutes'); // Real-time notifications
 
 // Dynamic loading for Order Routes (as it might be fragile or WIP)
 const orderRoutes = require('./orderRoutes');
@@ -62,6 +63,7 @@ router.use('/admin/blog', adminBlogRoutes);
 router.use('/admin/dashboard', dashboardRoutes);
 router.use('/admin/reports', reportRoutes);
 router.use('/admin/analytics', analyticsRoutes); // Convenience alias
+router.use('/notifications', notificationRoutes); // Real-time notifications (admin only)
 
 // Health Check
 router.get('/health', (req, res) => {

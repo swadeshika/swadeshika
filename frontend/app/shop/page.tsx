@@ -64,16 +64,32 @@ function ClientOnly({ children }: { children: React.ReactNode }) {
 function ShopContent() {
   const searchParams = useSearchParams()
   const [searchQuery, setSearchQuery] = useState("")
-  const [priceRange, setPriceRange] = useState([0, 2000])
+  const [priceRange, setPriceRange] = useState([0, 10000])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [categories, setCategories] = useState<any[]>([])
 
   // Update search query when URL changes
   useEffect(() => {
     const query = searchParams?.get('q') || ""
     setSearchQuery(query)
   }, [searchParams])
+
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+        try {
+            // Dynamically import to avoid server-side issues if any (though this is client component)
+            const { productService } = await import('@/lib/services/productService')
+            const cats = await productService.getAllCategories()
+            setCategories(cats || [])
+        } catch (error) {
+            console.error("Failed to fetch categories:", error)
+        }
+    }
+    fetchCategories()
+  }, [])
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -95,6 +111,7 @@ function ShopContent() {
                 setSelectedBrands={setSelectedBrands}
                 selectedTags={selectedTags}
                 setSelectedTags={setSelectedTags}
+                categories={categories}
               />
             </aside>
 

@@ -127,7 +127,8 @@ class DashboardModel {
      */
     static async getTopProducts(startDate, endDate) {
         const query = `
-            SELECT p.name, SUM(oi.quantity) as sales, SUM(oi.subtotal) as revenue
+            SELECT p.name, SUM(oi.quantity) as sales, SUM(oi.subtotal) as revenue,
+            (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = TRUE LIMIT 1) as image
             FROM order_items oi
             JOIN products p ON oi.product_id = p.id
             JOIN orders o ON oi.order_id = o.id

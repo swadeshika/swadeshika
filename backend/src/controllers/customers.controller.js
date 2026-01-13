@@ -57,6 +57,7 @@ exports.getAllCustomers = async (req, res) => {
           const conditions = ['u.role = "customer"'];
 
           if (search) {
+               // Fix: Search primarily in users table, then customers
                conditions.push('(u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ? OR c.first_name LIKE ? OR c.last_name LIKE ?)');
                const searchParam = `%${search}%`;
                params.push(searchParam, searchParam, searchParam, searchParam, searchParam);

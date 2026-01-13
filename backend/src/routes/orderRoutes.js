@@ -9,7 +9,8 @@ const {
     updateOrderStatus,
     cancelOrder,
     deleteOrder,
-    exportOrders
+    exportOrders,
+    trackOrder
 } = require('../controllers/orderController');
 const { authenticate, authorize, optionalAuthenticate } = require('../middlewares/authMiddleware');
 
@@ -31,15 +32,15 @@ const orderValidator = require('../validators/orderValidator');
 
 // Routes
 // Public Routes
-// router.post('/track', trackOrder);
+router.post('/track', trackOrder);
 
 // Protected Routes (User)
 // Allow optional authentication for checkout so guest users can place orders.
 router.post('/', optionalAuthenticate, orderValidator.create, createOrder);
 // Download invoice PDF
-router.get('/:id/invoice', authenticate, orderValidator.getById, downloadInvoice);
+router.get('/:id/invoice', optionalAuthenticate, orderValidator.getById, downloadInvoice);
 router.get('/', authenticate, getMyOrders);
-router.get('/:id', authenticate, orderValidator.getById, getOrderById); // Controller handles permission check for owner/admin
+router.get('/:id', optionalAuthenticate, orderValidator.getById, getOrderById); // Controller handles permission check for owner/admin
 router.post('/:id/cancel', authenticate, orderValidator.cancel, cancelOrder);
 
 // Admin Routes

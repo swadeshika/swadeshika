@@ -36,7 +36,7 @@ interface ProductGridProps {
 
 export function ProductGrid({
   category,
-  priceRange = [0, 2000],
+  priceRange = [0, 10000],
   selectedCategories = [],
   selectedBrands = [],
   selectedTags = [],
@@ -47,6 +47,9 @@ export function ProductGrid({
 
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalProducts, setTotalProducts] = useState(0)
   const [total, setTotal] = useState(0)
 
   useEffect(() => {
@@ -61,8 +64,8 @@ export function ProductGrid({
         
         // Prepare query params
         const params: any = {
-          page: 1, // TODO: Add pagination support
-          limit: 100, // Fetch more for now since we don't have pagination UI yet
+          page: currentPage,
+          limit: 20,
           sort: sortParam,
           search: searchQuery,
           min_price: priceRange[0],
@@ -109,6 +112,8 @@ export function ProductGrid({
 
         setProducts(mappedProducts)
         setTotal(data.total)
+        setTotalPages(data.pages || 1)
+        setTotalProducts(data.total || 0)
       } catch (error) {
         console.error("Failed to fetch products:", error)
       } finally {
@@ -122,6 +127,11 @@ export function ProductGrid({
     }, 500)
 
     return () => clearTimeout(timeoutId)
+  }, [category, priceRange, selectedCategories, selectedBrands, selectedTags, sortBy, searchQuery, currentPage])
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
   }, [category, priceRange, selectedCategories, selectedBrands, selectedTags, sortBy, searchQuery])
 
 
@@ -237,6 +247,40 @@ export function ProductGrid({
             >
               Back to shop
             </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && !loading && products.length > 0 && (
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-t-2 border-[#E8DCC8] pt-6">
+          <p className="text-sm text-[#8B6F47]">
+            Page {currentPage} of {totalPages} ({totalProducts} products total)
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setCurrentPage(prev => Math.max(1, prev - 1))
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
+              disabled={currentPage === 1}
+              className="px-4 py-2 rounded-lg border-2 border-[#E8DCC8] text-[#6B4423] hover:bg-[#2D5F3F] hover:text-white hover:border-[#2D5F3F] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Previous
+            </button>
+            <span className="px-4 py-2 text-sm font-medium text-[#6B4423]">
+              {currentPage}
+            </span>
+            <button
+              onClick={() => {
+                setCurrentPage(prev => Math.min(totalPages, prev + 1))
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 rounded-lg border-2 border-[#E8DCC8] text-[#6B4423] hover:bg-[#2D5F3F] hover:text-white hover:border-[#2D5F3F] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+            </button>
           </div>
         </div>
       )}

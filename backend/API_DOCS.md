@@ -30,6 +30,7 @@ This document provides comprehensive details about the database schema, API endp
    - [Newsletter](#15-newsletter-endpoints)
    - [Analytics](#16-analytics-endpoints)
    - [Order Tracking](#17-order-tracking-endpoint)
+   - [Notifications](#18-notifications-endpoints-admin)
 6. [Implementation Guidelines](#implementation-guidelines)
 7. [Error Handling](#error-handling)
 8. [Testing](#testing)
@@ -552,6 +553,22 @@ CREATE TABLE IF NOT EXISTS reports (
   INDEX idx_type (report_type),
   INDEX idx_status (status),
   INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 25. NOTIFICATIONS TABLE (Real-time Admin Alerts)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS notifications (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  type ENUM('stock_alert', 'new_order', 'system') NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  data JSON,
+  `read` BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_type (type),
+  INDEX idx_read (`read`),
+  INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
@@ -2915,6 +2932,107 @@ POST /api/v1/orders/track
   }
 }
 ```
+
+---
+
+### 18. Notifications Endpoints (Admin)
+
+Real-time notification system using Socket.IO for admin alerts. All endpoints require admin authentication.
+
+#### 18.1 Get All Notifications
+```http
+GET /api/v1/notifications
+Auth: Required (Admin)
+```
+
+**Query Parameters:**
+- `limit` (number): Items per page (default: 50)
+- `offset` (number): Pagination offset (default: 0)
+- `type` (string): Filter by type (`stock_alert`, `new_order`, `system`)
+- `read` (boolean): Filter by read status
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "type": "new_order",
+      "title": "New Order Received",
+      "description": "Order #ORD-2025-001 - ₹1,250",
+      "data": {
+        "orderId": "uuid",
+        "orderNumber": "ORD-2025-001",
+        "totalAmount": 1250,
+        "customerEmail": "customer@example.com"
+      },
+      "read": false,
+      "created_at": "2025-01-16T10:00:00.000Z"
+    }
+  ],
+  "unreadCount": 5,
+  "count": 1
+}
+```
+
+#### 18.2 Mark Notification as Read
+```http
+PATCH /api/v1/notifications/:id/read
+Auth: Required (Admin)
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Notification marked as read"
+}
+```
+
+#### 18.3 Mark All as Read
+```http
+PATCH /api/v1/notifications/mark-all-read
+Auth: Required (Admin)
+```
+
+#### 18.4 Clear All Notifications
+```http
+DELETE /api/v1/notifications
+Auth: Required (Admin)
+```
+
+#### 18.5 Delete Single Notification
+```http
+DELETE /api/v1/notifications/:id
+Auth: Required (Admin)
+```
+
+#### 18.6 Manual Stock Check
+```http
+POST /api/v1/notifications/check-stock
+Auth: Required (Admin)
+```
+
+Creates alerts for products below stock threshold.
+
+**Response:** `{ "success": true, "count": 3 }`
+
+#### 18.7 Socket.IO Real-time
+
+**Connection:**
+```javascript
+const socket = io('http://localhost:5000', {
+  auth: { token: 'jwt-token' }
+});
+
+socket.on('notification', (data) => {
+  console.log('New notification:', data);
+});
+```
+
+**Events:** `connect`, `disconnect`, `notification`  
+**Types:** `stock_alert`, `new_order`, `system`
 
 ---
 

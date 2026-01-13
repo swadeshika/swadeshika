@@ -101,5 +101,22 @@ export const productService = {
 
     async deleteProduct(id: number) {
         await api.delete(`/products/${id}`);
+    },
+
+    /**
+     * Get all categories
+     */
+    async getAllCategories() {
+        const response = await api.get<Category[]>('/categories');
+        return response.data.data;
     }
 };
+
+export interface Category {
+    id: number;
+    name: string;
+    slug: string;
+    description?: string;
+    image_url?: string;
+    parent_id?: number;
+}

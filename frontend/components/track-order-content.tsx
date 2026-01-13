@@ -96,18 +96,27 @@ export default function TrackOrderContent() {
 
     setLoading(true)
     try {
-      const data = await ordersService.trackOrder(orderId, email);
+      const response: any = await ordersService.trackOrder(orderId, email);
+      
+      // The backend returns { order: { ... } } inside the data object
+      const orderData = response.order;
 
-      // Map backend response to component TrackingData if needed
-      // Backend returns: { orderId, status, trackingNumber, carrier, estimatedDelivery, currentLocation, timeline: [...] }
-      // Component expects: same structure mostly. 
-      // Need to ensure types match.
-      // Component TrackingData: { orderId, status, estimatedDelivery, carrier, trackingNumber, currentLocation, timeline: TimelineStep[] }
-      // Backend timeline items: { status, label, date, completed }
-      // Component timeline items: { status, label, location?, date?, completed }
-      // Looks compatible.
+      if (!orderData) {
+        throw new Error("Invalid response format");
+      }
 
-      setTracking(data as unknown as TrackingData);
+      // Map backend fields to frontend TrackingData structure
+      const mappedData: TrackingData = {
+        orderId: orderData.orderNumber || orderData.id,
+        status: orderData.status,
+        estimatedDelivery: orderData.estimatedDeliveryDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Default +7 days
+        carrier: orderData.carrier || "Standard Shipping",
+        trackingNumber: orderData.trackingNumber || "Pending",
+        currentLocation: orderData.currentLocation || "Processing Center",
+        timeline: orderData.timeline || []
+      };
+
+      setTracking(mappedData);
     } catch (error) {
       setOrderIdError("Could not find order with provided details");
       setTracking(null);

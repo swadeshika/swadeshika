@@ -60,7 +60,6 @@ class Order {
                     orderId, item.product_id, item.variant_id || null, item.product_name,
                     item.variant_name || null, item.sku, item.quantity, item.price, item.subtotal
                 ];
-                console.log("DEBUG: Inserting Item:", itemParams);
 
                 await connection.execute(
                     `INSERT INTO order_items (
@@ -289,7 +288,8 @@ class Order {
     static async getCartItems(userId) {
         const [items] = await db.query(
             `SELECT ci.*, p.name as product_name, p.sku, pv.name as variant_name, 
-            CAST(COALESCE(pv.price, p.price) AS DECIMAL(10,2)) as price 
+            CAST(COALESCE(pv.price, p.price) AS DECIMAL(10,2)) as price,
+            (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = TRUE LIMIT 1) as image
        FROM cart_items ci
        JOIN products p ON ci.product_id = p.id
        LEFT JOIN product_variants pv ON ci.variant_id = pv.id

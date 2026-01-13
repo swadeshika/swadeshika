@@ -39,7 +39,7 @@ const TOKEN_ERRORS = {
 const COOKIE_OPTIONS = {
   httpOnly: true,                             // JavaScript cannot access cookie (prevents XSS)
   secure: process.env.NODE_ENV === 'production', // Send only over HTTPS in production
-  sameSite: 'strict',                         // Prevent CSRF by not sending cookie cross-site
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Allow cross-site usage in production (Vercel -> Render)
   maxAge: 30 * 24 * 60 * 60 * 1000,           // Cookie expiry = 30 days (changed from 7)
   path: '/',                                  // Cookie valid for entire domain
 };

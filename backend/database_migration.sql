@@ -808,5 +808,33 @@ INSERT INTO home_banners (type, title, subtitle, image_url, button_text, button_
 ('small', 'Farmers to get more back to Your Roots', NULL, '/pattern-leaves.jpg', 'ORDER NOW', '/about/farmers', 3);
 
 
+-- ============================================================
+-- 26. NOTIFICATIONS TABLE (Real-time Admin Alerts)
+-- ============================================================
+-- Purpose: Store real-time notifications for admin users
+-- Features:
+--   - Stock alerts when products run low
+--   - New order notifications
+--   - System notifications
+--   - Read/unread tracking
+-- ============================================================
+CREATE TABLE IF NOT EXISTS notifications (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  type ENUM('stock_alert', 'new_order', 'system') NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  data JSON,
+  `read` BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_type (type),
+  INDEX idx_read (`read`),
+  INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Sample notification for testing
+INSERT INTO notifications (type, title, description, data) 
+VALUES ('system', 'Notifications System Activated', 'Real-time notifications are now enabled', '{}');
+
+
 COMMIT;
 

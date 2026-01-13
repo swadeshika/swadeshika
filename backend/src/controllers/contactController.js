@@ -13,12 +13,6 @@ const ContactService = require('../services/contactService');
  */
 exports.submitContactForm = async (req, res, next) => {
     try {
-        // DEBUGGING LOGS
-        console.log('--- Contact Submission Debug ---');
-        console.log('Headers Content-Type:', req.headers['content-type']);
-        console.log('Body keys:', Object.keys(req.body));
-        console.log('File:', req.file);
-
         const { name, email, subject, message } = req.body;
 
         if (!name || !email || !subject || !message) {

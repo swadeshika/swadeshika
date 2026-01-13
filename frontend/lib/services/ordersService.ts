@@ -73,7 +73,7 @@ export const ordersService = {
         if (params.limit) query.append('limit', String(params.limit));
         if (params.status && params.status !== 'all') query.append('status', params.status);
         if (params.search) query.append('search', params.search);
-        if (params.customer) query.append('customerId', params.customer); // ✅ Filter by customer ID
+        if (params.customer) query.append('customer', params.customer); // ✅ Filter by customer ID (Backend expects 'customer')
 
         const res = await api.get<{ orders: Order[]; pagination: any }>(`/orders/admin/all?${query.toString()}`);
         return res.data.data;

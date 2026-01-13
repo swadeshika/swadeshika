@@ -131,6 +131,34 @@ class UserModel {
     }
 
     /**
+     * Update password with verification
+     * 
+     * @param {string} id - User ID
+     * @param {string} oldPassword - Current password
+     * @param {string} newPassword - New password
+     */
+    static async updatePassword(id, oldPassword, newPassword) {
+        const user = await this.findById(id);
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // Verify old password
+        // We need to fetch the password explicitly as findById might exclude it or we need verify against DB record
+        const userWithAuth = await this.findByEmail(user.email); // Re-fetch to get password
+        const { comparePasswords } = require('../utils/hash'); // Lazy load to avoid circular ref if any
+        
+        const isMatch = await comparePasswords(oldPassword, userWithAuth.password);
+        if (!isMatch) {
+            throw new Error('Incorrect current password');
+        }
+
+        const hashedPassword = await hashPassword(newPassword);
+        await db.query(`UPDATE users SET password = ? WHERE id = ?`, [hashedPassword, id]);
+        return true;
+    }
+
+    /**
      * Delete user
      * 
      * @param {number|string} id - User ID

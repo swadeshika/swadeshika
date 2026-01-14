@@ -87,7 +87,7 @@ export const authService = {
     /**
      * Update user profile
      */
-    async updateProfile(data: { name: string; phone?: string }) {
+    async updateProfile(data: { name: string; email?: string; phone?: string }) {
         const response = await api.put<AuthResponse>('/users/profile', data);
         return response.data.data;
     },

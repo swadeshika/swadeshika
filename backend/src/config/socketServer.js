@@ -11,13 +11,16 @@ let io;
 function initSocketServer(httpServer) {
   io = new Server(httpServer, {
     cors: {
-      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+      origin: '*', // Temporarily allow all origins for debugging
       credentials: true,
       methods: ['GET', 'POST']
     },
+    path: '/socket.io/', // Explicit path
+    transports: ['websocket', 'polling'], // Allow both transports
     // Add ping timeout to handle disconnections
     pingTimeout: 60000,
-    pingInterval: 25000
+    pingInterval: 25000,
+    allowEIO3: true // Support older clients
   });
 
   // Authentication middleware for Socket.IO
@@ -50,7 +53,10 @@ function initSocketServer(httpServer) {
 
   // Connection handler
   io.on('connection', (socket) => {
-    console.log(`✅ Admin connected: ${socket.userEmail} (ID: ${socket.userId})`);
+    const userIdentifier = socket.userEmail || socket.userId || 'Unknown';
+    console.log(`✅ Admin connected: ${userIdentifier} (ID: ${socket.userId})`);
+    console.log(`   Role: ${socket.userRole}, Email: ${socket.userEmail || 'N/A'}`);
+    
     
     // Join admin room (for broadcasting to all admins)
     socket.join('admins');

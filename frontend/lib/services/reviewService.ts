@@ -25,7 +25,7 @@ export const reviewService = {
      * Get reviews for a product
      */
     getProductReviews: async (productId: string | number) => {
-        const res = await api.get<{ data: Review[] }>(`/reviews/product/${productId}`);
+        const res = await api.get<Review[]>(`/reviews/product/${productId}`);
         return res.data.data;
     },
 
@@ -33,7 +33,7 @@ export const reviewService = {
      * Get current user's reviews
      */
     getMyReviews: async () => {
-        const res = await api.get<{ data: Review[] }>('/reviews/me');
+        const res = await api.get<Review[]>('/reviews/me');
         return res.data.data;
     },
 

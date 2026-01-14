@@ -51,7 +51,7 @@ export function OrderReviewsList() {
 	return (
 		<div className="space-y-6">
 			{orders.map((order) => (
-				<Card key={order.orderId} className="py-6 rounded-2xl border-2 border-[#E8DCC8]">
+				<Card key={order.id} className="py-6 rounded-2xl border-2 border-[#E8DCC8]">
 					<CardHeader className="flex flex-row items-center justify-between">
 						<div>
 							<CardTitle className="text-[#6B4423]">{order.orderNumber}</CardTitle>
@@ -62,15 +62,15 @@ export function OrderReviewsList() {
 						<Badge className="bg-[#2D5F3F]/10 text-[#2D5F3F] border-0">{order.status}</Badge>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						{order.items.map((item) => (
+						{(order.items || []).map((item, index) => (
 							<div
-								key={item.id}
+								key={`${order.id}-${item.id || item.product_id || item.productId || 'item'}-${index}`}
 								className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-2 border-[#E8DCC8] rounded-xl"
 							>
 								{/* content block: image then text; stacked on mobile, inline on desktop */}
 								<div className="flex w-full flex-col sm:flex-row sm:items-center gap-3">
 									<img
-										src={(item as any).image_url || (item as any).image || "/placeholder.svg"}
+										src={item.image_url || item.image || "/placeholder.svg"}
 										alt={item.productName}
 										className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
 									/>

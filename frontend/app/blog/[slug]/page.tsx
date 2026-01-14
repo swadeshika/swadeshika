@@ -14,14 +14,14 @@ import { blogService, BlogPost } from '@/lib/blogService'
 import { format } from 'date-fns'
 
 interface BlogPostProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 export default function BlogPostPage({ params }: BlogPostProps) {
   // Use React.use() to unwrap the params Promise
-  const unwrappedParams = React.use(params)
+  const unwrappedParams = React.use(params) as { slug: string }
   return <BlogPostContent slug={unwrappedParams.slug} />
 }
 

@@ -30,6 +30,8 @@ import { useCartStore } from "@/lib/cart-store"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { ProductReviewForm } from "@/components/product-review-form"
+import { ProductReviews } from "@/components/product-reviews"
+import { useWishlistStore } from "@/lib/wishlist-store"
 import type { Review, ProductVariant } from "@/lib/products-data"
 
 /**
@@ -227,10 +229,11 @@ export function ProductDetailClientOptimized({
     product.variants?.[0] || null
   )
   const [quantity, setQuantity] = useState(1)
-  const [isWishlisted, setIsWishlisted] = useState(false)
+  // const [isWishlisted, setIsWishlisted] = useState(false) // Moved to store
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [actualReviewCount, setActualReviewCount] = useState(product.reviewCount || 0)
 
   // Cart store for add to cart functionality
   const addItem = useCartStore((state) => state.addItem)
@@ -271,13 +274,16 @@ export function ProductDetailClientOptimized({
         price,
         image: product.images[0],
         category: product.category,
+        quantity: quantity, // Fixed: Pass quantity from state
       }
       if (selectedVariant) {
-        payload.variant = selectedVariant.name
+        payload.variantId = selectedVariant.id
+        payload.variantName = selectedVariant.name
         payload.sku = selectedVariant.sku
       }
 
-      addItem(payload)
+      console.log('[ProductDetail] Adding to cart:', { payload, selectedVariant });
+      addItem(payload, quantity) // Ensure quantity is passed separately if needed by store logic
 
       toast.success(
         selectedVariant
@@ -296,13 +302,23 @@ export function ProductDetailClientOptimized({
     }
   }, [selectedVariant, product, addItem])
 
+  // Wishlist store
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore()
+  const isWishlisted = isInWishlist(product.id)
+
   /**
    * Toggle wishlist status
    */
-  const handleWishlistToggle = useCallback(() => {
-    setIsWishlisted(!isWishlisted)
-    toast.success(isWishlisted ? "Removed from wishlist" : "Added to wishlist")
-  }, [isWishlisted])
+  const handleWishlistToggle = useCallback(async () => {
+    if (isWishlisted) {
+        const success = await removeFromWishlist(product.id)
+        if (!success) {
+             // Toast handled in store usually, or we can add extra handling here
+        }
+    } else {
+        const success = await addToWishlist(product.id)
+    }
+  }, [isWishlisted, product.id, addToWishlist, removeFromWishlist])
 
   /**
    * Handle review form toggle with smooth scroll
@@ -660,7 +676,7 @@ export function ProductDetailClientOptimized({
                 value="reviews"
                 className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white cursor-pointer"
               >
-                Reviews ({reviews.length})
+                Reviews ({actualReviewCount})
               </TabsTrigger>
             </TabsList>
                   </div>
@@ -723,112 +739,12 @@ export function ProductDetailClientOptimized({
             {/* Reviews Tab with Lazy Loading */}
             <TabsContent value="reviews" className="mt-8">
               <Suspense fallback={<div className="h-64 bg-gray-200 rounded animate-pulse"></div>}>
-                <div className="space-y-8">
-                  <Card className="border-2 border-[#E8DCC8] shadow-lg">
-                    <CardContent className="p-4">
-                      <div className="grid lg:grid-cols-3 gap-6">
-                        {/* Rating Summary */}
-                        <div className="space-y-6">
-                          <div className="text-center p-6 bg-[#F5F1E8] rounded-xl">
-                            <div className="text-5xl font-bold mb-2 text-[#6B4423]">{product.rating}</div>
-                            <div className="flex items-center justify-center gap-1 mb-2">
-                              {[...Array(5)].map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={cn(
-                                    "h-5 w-5",
-                                    i < Math.floor(product.rating) ? "fill-[#FF7E00] text-[#FF7E00]" : "text-gray-300",
-                                  )}
-                                />
-                              ))}
-                            </div>
-                            <p className="text-sm text-[#8B6F47]">Based on {product.reviewCount} reviews</p>
-                          </div>
-                          <Button
-                            onClick={handleReviewFormToggle}
-                            className="w-full h-12 text-base font-semibold bg-[#FF7E00] hover:bg-[#E67300] text-white cursor-pointer"
-                          >
-                            <Edit3 className="mr-2 h-5 w-5" />
-                            {showReviewForm ? "Cancel" : "Write a Review"}
-                          </Button>
-                        </div>
-
-                        {/* Reviews List */}
-                        <div className="lg:col-span-2 space-y-6">
-                          <h3 className="font-sans text-2xl font-bold text-[#6B4423]">Customer Reviews</h3>
-                          
-                          {/* Review Form - Appears at the top when active */}
-                          {showReviewForm && (
-                            <div
-                              id="review-form-section"
-                              // Remove background on small screens, keep gradient and padding on md+
-                              className={cn(
-                                  "bg-transparent p-6 max-md:p-0 md:bg-gradient-to-r md:from-[#FF7E00]/5 md:to-[#2D5F3F]/5 md:rounded-lg md:border-2 md:border-[#FF7E00]/20"
-                                )}
-                            >
-                              <div className="flex items-center gap-2 mb-4">
-                                <Edit3 className="h-5 w-5 text-[#FF7E00]" />
-                                <h4 className="font-semibold text-lg text-[#6B4423]">Write Your Review</h4>
-                              </div>
-                              <ProductReviewForm
-                                productId={product.id}
-                                onReviewSubmit={() => {
-                                  setShowReviewForm(false)
-                                  toast.success("Review submitted successfully!")
-                                }}
-                              />
-                            </div>
-                          )}
-
-                          {/* Existing Reviews */}
-                          {reviews.length > 0 ? (
-                            <div className="space-y-6">
-                              {reviews.map((review) => (
-                                <div key={review.id} className="border-b border-[#E8DCC8] pb-6 last:border-0">
-                                  <div className="flex items-start justify-between mb-3">
-                                    <div className="min-w-0">
-                                      <p className="font-semibold text-lg text-[#6B4423]">{review.userName}</p>
-                                      <div className="flex items-center gap-2 mt-1 flex-nowrap">
-                                        <div className="flex items-center gap-1">
-                                          {[...Array(5)].map((_, i) => (
-                                            <Star
-                                              key={i}
-                                              className={cn(
-                                                "h-4 w-4",
-                                                i < review.rating ? "fill-[#FF7E00] text-[#FF7E00]" : "text-gray-300",
-                                              )}
-                                            />
-                                          ))}
-                                        </div>
-                                        {review.verified && (
-                                          <span className="text-xs text-[#2D5F3F] font-medium bg-[#2D5F3F]/10 px-2 py-1 rounded whitespace-nowrap flex-shrink-0">
-                                            Verified Purchase
-                                          </span>
-                                        )}
-                                      </div>
-                                      <div className="text-sm text-[#8B6F47] mt-1">{review.date}</div>
-                                    </div>
-                                  </div>
-                                  <h4 className="font-semibold text-base mb-2 text-[#6B4423]">{review.title}</h4>
-                                  <p className="text-[#6B4423] leading-relaxed">{review.comment}</p>
-                                  {review.helpful > 0 && (
-                                    <p className="text-sm text-[#8B6F47] mt-3">
-                                      {review.helpful} people found this helpful
-                                    </p>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-center py-12">
-                              <p className="text-[#8B6F47] text-lg">Reviews coming soon...</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                <ProductReviews 
+                  productId={product.id} 
+                  initialRating={product.rating} 
+                  initialReviewCount={product.reviewCount} 
+                  onCountChange={setActualReviewCount}
+                />
               </Suspense>
             </TabsContent>
           </Tabs>

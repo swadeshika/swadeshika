@@ -94,6 +94,7 @@ export function AccountSettings() {
     try {
       await authService.updateProfile({
         name: profile.fullName,
+        email: profile.email,
         phone: profile.phone
       })
       toast({ title: "Profile saved", description: "Your profile information has been updated." })

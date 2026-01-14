@@ -50,6 +50,8 @@ interface ProductCardProps {
   sizes?: string[] // Optional array of size variants
   showWishlistAction?: boolean // Optional logic to hide wishlist button (default: true)
   onAddToCart?: (id: number) => void // Optional custom add to cart handler
+  inStock?: boolean
+  stockQuantity?: number
 }
 
 export function ProductCard({
@@ -67,6 +69,8 @@ export function ProductCard({
   sizes,
   showWishlistAction = true,
   onAddToCart,
+  inStock = true,
+  stockQuantity,
 }: ProductCardProps) {
   // Access cart store's addItem function for adding products to cart
   const addItem = useCartStore((state) => state.addItem)
@@ -80,6 +84,7 @@ export function ProductCard({
   const [isWishlistLoading, setIsWishlistLoading] = useState(false)
 
   const inWishlist = isInWishlist(id)
+  const isOutOfStock = inStock === false || (stockQuantity !== undefined && stockQuantity <= 0)
 
   /**
    * Handle add to cart click
@@ -165,7 +170,11 @@ export function ProductCard({
         />
 
         {/* Badge overlay (Best Seller, Trending, etc.) */}
-        {badge && (
+        {isOutOfStock ? (
+             <Badge className="absolute top-3 left-3 bg-gray-500 hover:bg-gray-600 text-white font-medium px-3 py-1 text-xs shadow-md">
+               Out of Stock
+             </Badge>
+        ) : badge && (
           <Badge className="absolute top-3 left-3 bg-green-600 hover:bg-green-700 text-white font-medium px-3 py-1 text-xs shadow-md">
             {badge}
           </Badge>
@@ -256,12 +265,15 @@ export function ProductCard({
           <Button
             className={cn(
               "bg-green-700 hover:bg-green-800 text-white font-medium rounded-lg h-11 cursor-pointer",
-              isListView ? "w-auto px-6" : "w-full"
+              isListView ? "w-auto px-6" : "w-full",
+              isOutOfStock && "bg-gray-400 hover:bg-gray-400 cursor-not-allowed opacity-70"
             )}
-            onClick={handleAddToCart}
-            disabled={isLoading}
+            onClick={isOutOfStock ? (e) => e.preventDefault() : handleAddToCart}
+            disabled={isLoading || isOutOfStock}
           >
-            {isLoading ? (
+            {isOutOfStock ? (
+               "OUT OF STOCK"
+            ) : isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...
               </>

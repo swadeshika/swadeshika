@@ -110,6 +110,7 @@ export function CheckoutForm() {
         productId: item.productId,
         productName: item.name,
         variantId: item.variantId,
+        variantName: item.variantName || null, // Explicitly send variant name
         quantity: item.quantity,
         price: Number(item.price),
         image: item.image
@@ -129,6 +130,11 @@ export function CheckoutForm() {
 
     try {
       const response = await ordersService.createOrder(orderData as any);
+      
+      // Clear cart after successful order
+      const { clearCart } = useCartStore.getState();
+      await clearCart();
+      
       toast({
         title: "Order Placed Successfully",
         description: "Thank you for your purchase!",
@@ -403,6 +409,9 @@ export function CheckoutForm() {
                   <div key={item.id} className="flex items-start gap-3">
                     <div className="flex-1">
                       <p className="font-medium text-sm">{item.name}</p>
+                      {item.variantName && (
+                        <p className="text-xs text-[#2D5F3F] font-bold">Variation: {item.variantName}</p>
+                      )}
                       <p className="text-sm text-muted-foreground">
                         Qty: {item.quantity}
                       </p>

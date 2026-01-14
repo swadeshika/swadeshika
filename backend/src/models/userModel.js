@@ -108,7 +108,7 @@ class UserModel {
 
         if (data.name) { updates.push('name = ?'); params.push(data.name); }
         if (data.phone) { updates.push('phone = ?'); params.push(data.phone); }
-        // Add more fields if needed, but NOT password here (use specific method)
+        if (data.email) { updates.push('email = ?'); params.push(data.email); }
 
         if (updates.length === 0) return false;
 

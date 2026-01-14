@@ -107,7 +107,9 @@ export function ProductGrid({
           category: p.category_name || 'Uncategorized', // Need category name for display
           badge: p.is_featured ? 'Featured' : null,
           reviews: p.review_count || 0,
-          comparePrice: p.compare_price
+          comparePrice: p.compare_price,
+          inStock: p.in_stock,
+          stockQuantity: p.stock_quantity
         }))
 
         setProducts(mappedProducts)
@@ -226,6 +228,8 @@ export function ProductGrid({
               rating={product.rating}
               reviews={product.reviews}
               className={viewMode === 'list' ? 'flex-row' : ''}
+              inStock={product.inStock}
+              stockQuantity={product.stockQuantity}
             />
           ))}
         </div>

@@ -22,7 +22,10 @@ export interface CartItem {
   image: string
   quantity: number
   category?: string
+  category_name?: string // Added to fix Property 'category_name' does not exist error
   variantId?: number | null
+  variantName?: string | null // Added for checkout payload
+  categoryId?: number | null // Added to fix lint error
   userId?: string
 }
 
@@ -59,6 +62,7 @@ export const useCartStore = create<CartStore>()(
             category: item.category_name || item.category || "Product", // prefer backend category name if available
             categoryId: item.category_id || item.categoryId || null,
             variantId: item.variant_id,
+            variantName: item.variant_name, // Map variant name
             userId: item.user_id as unknown as string // Map backend user_id to frontend userId
           }))
           set({ items: mappedItems })
@@ -133,6 +137,7 @@ export const useCartStore = create<CartStore>()(
             quantity: item.quantity,
             category: "Product",
             variantId: item.variant_id,
+            variantName: item.variant_name, // Map variant name
             userId: item.user_id as unknown as string
           }))
 
@@ -175,13 +180,16 @@ export const useCartStore = create<CartStore>()(
         } else {
           // Local Logic
           const items = get().items
+          const itemName = item.variantName ? `${item.name} - ${item.variantName}` : item.name;
+          const localId = item.variantId ? (productId * 10000 + item.variantId) : productId;
+
           const existingItem = items.find((i) => i.productId === productId && i.variantId === item.variantId)
 
           if (existingItem) {
             set({
               items: items.map((i) =>
                 (i.productId === productId && i.variantId === item.variantId)
-                  ? { ...i, quantity: i.quantity + quantity }
+                  ? { ...i, ...item, name: itemName, id: localId, quantity: i.quantity + quantity }
                   : i
               ),
             })
@@ -189,11 +197,13 @@ export const useCartStore = create<CartStore>()(
             set({
               items: [...items, {
                 ...item,
+                name: itemName,
                 productId,
-                id: productId, // In local mode, ID is ProductID
+                id: localId,
                 categoryId: (item as any).categoryId ?? (item as any).category_id ?? null,
+                variantName: item.variantName || null,
                 quantity: quantity
-              }]
+              } as CartItem]
             })
           }
         }
@@ -260,3 +270,4 @@ export const useCartStore = create<CartStore>()(
     },
   ),
 )
+

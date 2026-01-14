@@ -36,21 +36,27 @@ class Order {
                 payment_method,
                 payment_status = 'pending',
                 payment_id = null,
-                notes = null
+                notes = null,
+                // Snapshot fields
+                shipping_full_name, shipping_phone, shipping_address_line1, shipping_address_line2,
+                shipping_city, shipping_state, shipping_postal_code, shipping_country
             } = orderData;
 
-            // Insert Order
             // Insert Order
             const [orderResult] = await connection.execute(
                 `INSERT INTO orders (
           id, order_number, user_id, guest_email, guest_phone, address_id, billing_address_id, subtotal, discount_amount, 
           shipping_fee, tax_amount, total_amount, coupon_code, payment_method, 
-          payment_status, payment_id, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          payment_status, payment_id, notes,
+          shipping_full_name, shipping_phone, shipping_address_line1, shipping_address_line2,
+          shipping_city, shipping_state, shipping_postal_code, shipping_country
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     orderId, orderNumber, user_id, guest_email, guest_phone, address_id, billing_address_id, subtotal, discount_amount,
                     shipping_fee, tax_amount, total_amount, coupon_code, payment_method,
-                    payment_status, payment_id, notes
+                    payment_status, payment_id, notes,
+                    shipping_full_name, shipping_phone, shipping_address_line1, shipping_address_line2,
+                    shipping_city, shipping_state, shipping_postal_code, shipping_country
                 ]
             );
 
@@ -73,20 +79,24 @@ class Order {
                 let stockResult;
                 if (item.variant_id) {
                     // Update Variant Stock
+                    console.log(`[Stock] Updating variant stock: variant_id=${item.variant_id}, quantity=${item.quantity}`);
                     [stockResult] = await connection.execute(
                         `UPDATE product_variants 
                          SET stock_quantity = stock_quantity - ? 
                          WHERE id = ? AND stock_quantity >= ?`,
                         [item.quantity, item.variant_id, item.quantity]
                     );
+                    console.log(`[Stock] Variant stock update result: affectedRows=${stockResult.affectedRows}`);
                 } else {
                     // Update Product Stock
+                    console.log(`[Stock] Updating product stock: product_id=${item.product_id}, quantity=${item.quantity}`);
                     [stockResult] = await connection.execute(
                         `UPDATE products 
                          SET stock_quantity = stock_quantity - ? 
                          WHERE id = ? AND stock_quantity >= ?`,
                         [item.quantity, item.product_id, item.quantity]
                     );
+                    console.log(`[Stock] Product stock update result: affectedRows=${stockResult.affectedRows}`);
                 }
 
                 // 3. Check for Insufficient Stock
@@ -202,10 +212,26 @@ class Order {
             WHERE oi.order_id = ?
         `, [id]);
 
-        // Fetch address details if needed, but usually address_id is enough or we join. 
-        // Let's fetch address for convenience if possible, or just return what we have.
-        // The requirement says "fetching the order etc", implying full details.
-        const [address] = await db.query('SELECT * FROM addresses WHERE id = ?', [order.address_id]);
+        // Fetch address details from snapshot if available, otherwise join
+        let address = null;
+        if (order.shipping_full_name) {
+            // Use snapshot
+            address = {
+                id: order.address_id, // Keep ID for reference
+                full_name: order.shipping_full_name,
+                phone: order.shipping_phone,
+                address_line1: order.shipping_address_line1,
+                address_line2: order.shipping_address_line2,
+                city: order.shipping_city,
+                state: order.shipping_state,
+                postal_code: order.shipping_postal_code,
+                country: order.shipping_country
+            };
+        } else {
+             // Fallback to address table join
+             const [addrRows] = await db.query('SELECT * FROM addresses WHERE id = ?', [order.address_id]);
+             address = addrRows[0] || null;
+        }
         
         let billingAddress = null;
         if (order.billing_address_id) {
@@ -213,7 +239,7 @@ class Order {
              billingAddress = billing[0] || null;
         }
 
-        return { ...order, items, address: address[0] || null, billingAddress };
+        return { ...order, items, address, billingAddress };
     }
 
     /**
@@ -335,7 +361,24 @@ class Order {
             LEFT JOIN product_images pi ON oi.product_id = pi.product_id AND pi.is_primary = 1
             WHERE oi.order_id = ?
         `, [order.id]);
-        const [address] = await db.query('SELECT * FROM addresses WHERE id = ?', [order.address_id]);
+        // Fetch address details from snapshot if available, otherwise join
+        let address = null;
+        if (order.shipping_full_name) {
+             address = {
+                id: order.address_id,
+                full_name: order.shipping_full_name,
+                phone: order.shipping_phone,
+                address_line1: order.shipping_address_line1,
+                address_line2: order.shipping_address_line2,
+                city: order.shipping_city,
+                state: order.shipping_state,
+                postal_code: order.shipping_postal_code,
+                country: order.shipping_country
+            };
+        } else {
+            const [addrRows] = await db.query('SELECT * FROM addresses WHERE id = ?', [order.address_id]);
+            address = addrRows[0] || null;
+        }
 
         let billingAddress = null;
         if (order.billing_address_id) {
@@ -343,7 +386,7 @@ class Order {
              billingAddress = billing[0] || null;
         }
 
-        return { ...order, items, address: address[0] || null, billingAddress };
+        return { ...order, items, address, billingAddress };
     }
     /**
      * Link guest orders to a registered user

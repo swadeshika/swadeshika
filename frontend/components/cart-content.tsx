@@ -128,6 +128,9 @@ export function CartContent() {
                   <div className="flex items-start justify-between">
                     <div>
                       <h3 className="font-sans font-bold text-lg text-[#6B4423]">{item.name}</h3>
+                      {item.variantName && (
+                        <p className="text-sm font-bold text-[#2D5F3F]">Variation: {item.variantName}</p>
+                      )}
                       <p className="text-sm text-[#8B6F47]">{item.category}</p>
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)} className="hover:bg-[#2D5F3F] cursor-pointer">
@@ -165,9 +168,18 @@ export function CartContent() {
           </Card>
         ))}
 
-        <Button variant="outline" asChild className="w-full bg-transparent cursor-pointer">
-          <Link href="/shop">Continue Shopping</Link>
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Button variant="outline" asChild className="flex-1 bg-transparent cursor-pointer">
+            <Link href="/shop">Continue Shopping</Link>
+          </Button>
+          <Button 
+            variant="ghost" 
+            onClick={() => useCartStore.getState().clearCart()} 
+            className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer border-2 border-transparent hover:border-red-200"
+          >
+            Clear Cart
+          </Button>
+        </div>
       </div>
 
       {/* Order Summary */}

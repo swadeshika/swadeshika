@@ -171,12 +171,23 @@ exports.createOrder = async (req, res, next) => {
             shipping_fee: shippingFee,
             tax_amount: taxAmount,
             total_amount: totalAmount,
-            coupon_code: couponCode,
             payment_method: paymentMethod,
-            notes
+            notes,
+            // Pass full address snapshot details
+            shipping_full_name: shippingAddress.fullName || shippingAddress.full_name,
+            shipping_phone: shippingAddress.phone,
+            shipping_address_line1: shippingAddress.addressLine1 || shippingAddress.address_line1,
+            shipping_address_line2: shippingAddress.addressLine2 || shippingAddress.address_line2,
+            shipping_city: shippingAddress.city,
+            shipping_state: shippingAddress.state,
+            shipping_postal_code: shippingAddress.postalCode || shippingAddress.postal_code,
+            shipping_country: shippingAddress.country || 'India'
         };
 
         const newOrder = await Order.create(orderData, orderItems);
+
+        // Define recipient email early for use in notifications and emails
+        const recipientEmail = email || guest_email || (req.user && req.user.email);
 
         // 📦 Real-time Notification: New Order Alert
         try {
@@ -218,13 +229,12 @@ exports.createOrder = async (req, res, next) => {
         }
 
         // 6. Send Confirmation Email (Async - don't block response)
-        const recipientEmail = email || guest_email || (req.user && req.user.email);
         
         if (recipientEmail) {
             const emailHtml = `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2 style="color: #2D5F3F;">Order Confirmed!</h2>
-                    <p>Namaste <strong>${shippingAddress.full_name}</strong>,</p>
+                    <p>Namaste <strong>${shippingAddress.fullName}</strong>,</p>
                     <p>Thank you for shopping with Swadeshika. Your order has been placed successfully.</p>
                     
                     <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
@@ -305,8 +315,8 @@ exports.getAllOrders = async (req, res, next) => {
                      c.first_name,
                      c.last_name,
                      c.email AS customer_table_email,
-                     -- Prefer customers table name; fall back to user's name then user's email for display if no customer name
-                     COALESCE(NULLIF(CONCAT(c.first_name, ' ', COALESCE(c.last_name, '')), ''), NULLIF(u.name, ''), u.email, 'Guest') AS customer_name,
+                     -- Prefer customers table name; fall back to user's name, then user's email, then 'Guest' for display
+                     COALESCE(NULLIF(CONCAT(c.first_name, ' ', COALESCE(c.last_name, '')), ''), u.name, u.email, 'Guest') AS customer_name,
                      COALESCE(c.email, u.email, o.guest_email) AS customer_email
             FROM orders o
             LEFT JOIN users u ON o.user_id = u.id
@@ -828,8 +838,8 @@ exports.trackOrder = async (req, res, next) => {
     try {
         const { orderId, email } = req.body;
 
-        if (!orderId) {
-            return res.status(400).json({ success: false, message: 'Order ID is required' });
+        if (!orderId || !email) {
+            return res.status(400).json({ success: false, message: 'Order ID and Email are required' });
         }
 
         // Try to find by orderNumber or ID
@@ -844,25 +854,18 @@ exports.trackOrder = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'Order not found' });
         }
 
-        // Variable strictness on email check.
-        // Usually tracking pages ask for Email OR Phone to verify ownership if public.
-        // For now, if email is provided, we check it.
-        if (email && order.user_email && order.user_email.toLowerCase() !== email.toLowerCase()) {
-            // If we joined user table we might have email, check findByOrderNumber implementation
-            // findByOrderNumber does join users. findById does not in current implementation above.
-            // Let's rely on findByOrderNumber returns for public tracking if possible, or just return basic info.
-
-            // If findByOrderNumber was used it has user_email.
-            // If findById was used (UUID), it might not have email directly unless we fetched it.
-            // For safety, let's just return what we have if it matches, or 404/403.
-            return res.status(404).json({ success: false, message: 'Order search details do not match records.' });
+        // Security Check: Verify Email
+        const orderEmail = order.user_email || order.guest_email;
+        if (!orderEmail || orderEmail.toLowerCase() !== email.toLowerCase()) {
+             // Return 404 to avoid enumerating valid orders
+            return res.status(404).json({ success: false, message: 'Order details do not match.' });
         }
 
         // Construct timeline based on status
         const timeline = [
             { status: 'placed', label: 'Order Placed', date: order.created_at, completed: true },
-            { status: 'confirmed', label: 'Order Confirmed', date: order.created_at, completed: true }, // Assumed confirmed immed for now
-            { status: 'processing', label: 'Packing', date: null, completed: ['processing', 'shipped', 'delivered'].includes(order.status) },
+            { status: 'confirmed', label: 'Order Confirmed', date: order.created_at, completed: true },
+            { status: 'processing', label: 'Processing', date: null, completed: ['processing', 'shipped', 'delivered'].includes(order.status) },
             { status: 'shipped', label: 'Shipped', date: order.shipped_at, completed: ['shipped', 'delivered'].includes(order.status) },
             { status: 'delivered', label: 'Delivered', date: order.delivered_at, completed: order.status === 'delivered' }
         ];
@@ -873,11 +876,18 @@ exports.trackOrder = async (req, res, next) => {
             data: {
                 orderId: order.order_number,
                 status: order.status,
+                totalAmount: order.total_amount,
                 trackingNumber: order.tracking_number,
                 carrier: order.carrier || 'Blue Dart',
                 estimatedDelivery: order.estimated_delivery_date || new Date(new Date(order.created_at).setDate(new Date(order.created_at).getDate() + 5)),
                 currentLocation: order.status === 'delivered' ? 'Delivered' : 'In Transit',
-                timeline
+                timeline,
+                items: order.items.map(item => ({
+                     name: item.product_name,
+                     variantName: item.variant_name,
+                     quantity: item.quantity,
+                     image: item.image
+                }))
             }
         });
     } catch (error) {
@@ -944,54 +954,6 @@ exports.deleteOrder = async (req, res, next) => {
             success: true,
             message: 'Order deleted successfully'
         });
-    } catch (error) {
-        next(error);
-    }
-};
-
-/**
- * Track order by ID or Order Number
- */
-exports.trackOrder = async (req, res, next) => {
-    try {
-        const { orderId } = req.body;
-        if (!orderId) {
-             return res.status(400).json({ success: false, message: 'Order ID or Number is required' });
-        }
-
-        let order = await Order.findByOrderNumber(orderId);
-        if (!order) {
-            // Try by ID
-            order = await Order.findById(orderId);
-        }
-
-        if (!order) {
-            return res.status(404).json({ success: false, message: 'Order not found' });
-        }
-
-        // Construct timeline
-        const timeline = [
-            { status: 'placed', label: 'Order Placed', date: order.created_at, completed: true },
-            { status: 'confirmed', label: 'Order Confirmed', date: order.created_at, completed: true },
-            { status: 'processing', label: 'Packing', date: null, completed: ['processing', 'shipped', 'delivered'].includes(order.status) },
-            { status: 'shipped', label: 'Shipped', date: order.shipped_at, completed: ['shipped', 'delivered'].includes(order.status) },
-            { status: 'delivered', label: 'Delivered', date: order.delivered_at, completed: order.status === 'delivered' }
-        ];
-
-        res.status(200).json({
-            success: true,
-            data: {
-                order: {
-                    id: order.id,
-                    orderNumber: order.order_number,
-                    status: order.status,
-                    totalAmount: order.total_amount,
-                    items: order.items, // Show items for verification
-                    timeline
-                }
-            }
-        });
-
     } catch (error) {
         next(error);
     }

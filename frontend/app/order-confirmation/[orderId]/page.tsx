@@ -120,18 +120,16 @@ export default function OrderConfirmationPage() {
                                     <h2 className="font-semibold text-lg">Order Items</h2>
                                     {order.items?.map((item, index) => (
                                         <div key={index} className="flex gap-4">
-                                            {/* Placeholder for image if not available in API response yet */}
                                             <div className="relative w-20 h-20 flex-shrink-0 overflow-hidden rounded-md bg-muted flex items-center justify-center border">
-                                                {/* 
-                           Since OrderItem interface in ordersService doesn't have image by default (unless I added it), 
-                           I should handle it. 
-                           However, `Order.getCartItems` joins products, but `createOrder` saves to `order_items` which might not have image URL unless saved or joined.
-                           `Order.findById` joins `order_items`. `order_items` usually doesn't have image.
-                           For now, use placeholder or if backend provided it.
-                           Backend `getOrderById` controller MAPS `item.image` but comments say it might not be there.
-                           I'll use placeholder.
-                        */}
-                                                <Package className="h-8 w-8 text-muted-foreground" />
+                                                {item.image ? (
+                                                    <img 
+                                                        src={item.image} 
+                                                        alt={item.productName} 
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <Package className="h-8 w-8 text-muted-foreground" />
+                                                )}
                                             </div>
                                             <div className="flex-1">
                                                 <p className="font-medium">{item.productName}</p>

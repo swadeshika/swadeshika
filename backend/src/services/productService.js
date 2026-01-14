@@ -11,7 +11,7 @@ class ProductService {
 
         // 1. Handle 'view' presets
         if (view === 'list') {
-            selectedFields = ['name', 'price', 'primary_image', 'average_rating', 'weight'];
+            selectedFields = ['name', 'price', 'primary_image', 'average_rating', 'weight', 'stock_quantity', 'in_stock', 'slug'];
         } else if (view === 'admin') {
             /**
              * CRITICAL FIX: Missing in_stock in Admin View

@@ -25,6 +25,8 @@ export interface Product {
     meta_description?: string;
     created_at?: string;
     primary_image?: string; // from View
+    category?: string; // added to fix missing property errors
+    category_name?: string; // added to fix missing property errors
     images?: ProductImage[];
     features?: string[];
     specifications?: Record<string, string>;

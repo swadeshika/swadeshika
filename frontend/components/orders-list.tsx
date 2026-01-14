@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ordersService, Order } from "@/lib/services/ordersService"
-import { Heart, Loader2 } from "lucide-react"
+import { Heart, Loader2, RotateCcw } from "lucide-react"
 import { useWishlistStore } from "@/lib/wishlist-store"
 import { toast } from "@/hooks/use-toast"
 import { useAuthStore } from "@/lib/auth-store"
@@ -28,18 +28,20 @@ export function OrdersList() {
 	const { isAuthenticated } = useAuthStore()
 	const [togglingId, setTogglingId] = useState<number | string | null>(null)
 
-	useEffect(() => {
-		const fetchOrders = async () => {
-			try {
-				const data = await ordersService.getMyOrders();
-				setOrders(data.orders);
-			} catch (error) {
-				console.error("Failed to fetch orders:", error);
-			} finally {
-				setLoading(false);
-			}
-		};
+	const fetchOrders = async () => {
+		setLoading(true);
+		try {
+			const data = await ordersService.getMyOrders();
+			setOrders(data.orders || []);
+		} catch (error) {
+			console.error("Failed to fetch orders:", error);
+			toast({ title: "Error", description: "Failed to load orders. Please try again.", variant: "destructive" })
+		} finally {
+			setLoading(false);
+		}
+	};
 
+	useEffect(() => {
 		fetchOrders();
 	}, []);
 
@@ -69,12 +71,36 @@ export function OrdersList() {
 		</div>;
 	}
 
-	if (orders.length === 0) {
-		return <div className="text-center py-10 text-[#8B6F47]">No orders found.</div>;
+	if (orders.length === 0 && !loading) {
+		return (
+			<div className="text-center py-10 text-[#8B6F47] space-y-4">
+				<p>No orders found.</p>
+				<Button 
+					variant="outline" 
+					onClick={fetchOrders}
+					className="border-[#E8DCC8] hover:bg-[#F5F1E8]"
+				>
+					Refresh Orders
+				</Button>
+			</div>
+		);
 	}
 
 	return (
 		<div className="space-y-6">
+			<div className="flex justify-between items-center">
+				<h2 className="text-xl font-bold text-[#6B4423]">My Orders ({orders.length})</h2>
+				<Button 
+					variant="ghost" 
+					size="sm" 
+					onClick={fetchOrders}
+					disabled={loading}
+					className="text-[#2D5F3F] hover:bg-[#2D5F3F]/10"
+				>
+					{loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RotateCcw className="h-4 w-4 mr-2" />}
+					Refresh
+				</Button>
+			</div>
 			{orders.map((order) => (
 				<Card key={order.id} className="rounded-2xl py-5 border-2 border-[#E8DCC8]">
 					<CardContent className="p-6 space-y-4">
@@ -89,11 +115,11 @@ export function OrdersList() {
 
 						{/* Order Items */}
 						<div className="space-y-3">
-							{order.items?.map((item, index) => (
-								<div key={index} className="flex gap-4">
+							{(order.items || []).map((item, index) => (
+								<div key={`${order.id}-${item.id || item.product_id || 'item'}-${index}`} className="flex gap-4">
 									<div className="relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-md bg-[#F5F1E8] border-2 border-[#E8DCC8]">
 										<img
-											src={(item as any).image || "/placeholder.svg"}
+											src={item.image || item.image_url || "/placeholder.svg"}
 											alt={item.productName}
 											className="object-cover w-full h-full"
 										/>
@@ -106,17 +132,17 @@ export function OrdersList() {
 											</p>
 										</div>
 										<button
-											onClick={(e) => handleWishlistToggle((item as any).product_id || (index + 1), e)}
+											onClick={(e) => handleWishlistToggle(item.product_id || (index + 1), e)}
 											className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
-											title={isInWishlist(Number((item as any).product_id || (index + 1))) ? "Remove from wishlist" : "Add to wishlist"}
+											title={isInWishlist(Number(item.product_id || (index + 1))) ? "Remove from wishlist" : "Add to wishlist"}
 										>
-											{togglingId === ((item as any).product_id || (index + 1)) ? (
+											{togglingId === (item.product_id || (index + 1)) ? (
 												<Loader2 className="h-4 w-4 animate-spin text-gray-400" />
 											) : (
 												<Heart
 													className={cn(
 														"h-4 w-4 transition-colors",
-														isInWishlist(Number((item as any).product_id || (index + 1)))
+														isInWishlist(Number(item.product_id || (index + 1)))
 															? "fill-red-500 text-red-500"
 															: "text-gray-400 hover:text-red-500"
 													)}

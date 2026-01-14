@@ -26,6 +26,7 @@ type TrackingData = {
   trackingNumber: string
   currentLocation: string
   timeline: TimelineStep[]
+  items?: any[]
 }
 
 const statusIcon: Record<TimelineStep["status"], any> = {
@@ -113,7 +114,8 @@ export default function TrackOrderContent() {
         carrier: orderData.carrier || "Standard Shipping",
         trackingNumber: orderData.trackingNumber || "Pending",
         currentLocation: orderData.currentLocation || "Processing Center",
-        timeline: orderData.timeline || []
+        timeline: orderData.timeline || [],
+        items: orderData.items || []
       };
 
       setTracking(mappedData);
@@ -221,6 +223,30 @@ export default function TrackOrderContent() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Items */}
+              {tracking.items && tracking.items.length > 0 && (
+                <Card className="rounded-2xl border-2 border-[#E8DCC8] py-6">
+                  <CardHeader>
+                    <CardTitle className="text-[#6B4423]">Order Items</CardTitle>
+                    <CardDescription>Items in this shipment</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {(tracking.items || []).map((item: any, idx: number) => (
+                      <div key={idx} className="flex gap-4">
+                        <div className="relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-lg bg-[#F5F1E8] border border-[#E8DCC8]">
+                          <img src={item.image || "/placeholder.svg"} alt={item.name} className="object-cover w-full h-full" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-[#6B4423]">{item.name}</p>
+                          {item.variantName && <p className="text-sm text-[#8B6F47]">{item.variantName}</p>}
+                          <p className="text-sm text-[#8B6F47]">Quantity: {item.quantity}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Timeline */}
               <Card className="rounded-2xl border-2 border-[#E8DCC8] py-6">

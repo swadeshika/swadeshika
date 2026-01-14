@@ -14,6 +14,10 @@ export interface CartItem {
     image_url: string;
     variant_name: string | null;
     variant_price: number | null;
+    category_name?: string; // Added to fix missing property error
+    category?: string;
+    category_id?: number | null;
+    categoryId?: number | null;
 }
 
 export const cartService = {

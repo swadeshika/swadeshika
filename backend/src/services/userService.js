@@ -45,6 +45,16 @@ class UserService {
             throw new Error('User not found');
         }
 
+        // Check for email uniqueness if email is changing
+        if (data.email && data.email !== user.email) {
+            const existingUser = await UserModel.findByEmail(data.email);
+            if (existingUser && existingUser.id !== id) {
+                const error = new Error('Email is already in use by another account');
+                error.statusCode = 409; // Conflict
+                throw error;
+            }
+        }
+
         await UserModel.update(id, data);
         return await UserModel.findById(id);
     }

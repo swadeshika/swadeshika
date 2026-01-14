@@ -28,12 +28,15 @@ class ReviewController {
      */
     static async getProductReviews(req, res, next) {
         try {
+            console.log(`[ReviewController] Fetching reviews for product ID: ${req.params.productId}`);
             const reviews = await ReviewService.getProductReviews(req.params.productId);
+            console.log(`[ReviewController] Found ${reviews.length} reviews`);
             res.status(200).json({
                 success: true,
                 data: reviews
             });
         } catch (error) {
+            console.error(`[ReviewController] Error:`, error);
             next(error);
         }
     }

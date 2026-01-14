@@ -28,7 +28,7 @@ export function useNotifications() {
         if (!token) return;
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/v1/notifications`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/notifications`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
@@ -112,7 +112,7 @@ export function useNotifications() {
 
         try {
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/v1/notifications/${id}/read`,
+                `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/notifications/${id}/read`,
                 {
                     method: 'PATCH',
                     headers: {
@@ -138,7 +138,7 @@ export function useNotifications() {
 
         try {
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/v1/notifications/mark-all-read`,
+                `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/notifications/mark-all-read`,
                 {
                     method: 'PATCH',
                     headers: {
@@ -162,7 +162,7 @@ export function useNotifications() {
 
         try {
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/v1/notifications`,
+                `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/notifications`,
                 {
                     method: 'DELETE',
                     headers: {

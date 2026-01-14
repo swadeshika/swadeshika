@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { Star, Loader2 } from "lucide-react"
-import { ordersService } from "@/lib/services/ordersService"
+import { ordersService, OrderItem } from "@/lib/services/ordersService"
 import { reviewService } from "@/lib/services/reviewService"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useRouter } from "next/navigation"
@@ -20,7 +20,7 @@ interface OrderReviewContentProps {
 export default function OrderReviewContent({ orderId }: OrderReviewContentProps) {
   const { toast } = useToast()
   const router = useRouter()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<OrderItem[]>([])
   const [loading, setLoading] = useState(true)
   const [reviews, setReviews] = useState<Record<string, { title: string; rating: number; comment: string }>>({})
   const [submitting, setSubmitting] = useState(false)
@@ -34,7 +34,7 @@ export default function OrderReviewContent({ orderId }: OrderReviewContentProps)
         setItems(order.items || [])
         // Initialize reviews state
         const initialReviews = Object.fromEntries(
-          (order.items || []).map((item: any) => [item.id || item.product_id, { title: "", rating: 0, comment: "" }])
+          (order.items || []).map((item) => [item.id || item.product_id || item.productId, { title: "", rating: 0, comment: "" }])
         )
         setReviews(initialReviews)
       } catch (error) {
@@ -57,18 +57,19 @@ export default function OrderReviewContent({ orderId }: OrderReviewContentProps)
   const handleSubmit = async () => {
     // Basic validation
     for (const item of items) {
-      const itemId = item.id || item.product_id
-      const r = reviews[itemId]
+      const itemId = item.id || item.product_id || item.productId
+      if (!itemId) continue;
+      const r = reviews[itemId as string]
       if (!r || !r.title.trim()) {
-        toast({ title: "Title required", description: `Please add a review title for ${item.productName || item.name}.`, variant: "destructive" })
+        toast({ title: "Title required", description: `Please add a review title for ${item.productName}.`, variant: "destructive" })
         return
       }
       if (r.rating === 0) {
-        toast({ title: "Rating required", description: `Please select a rating for ${item.productName || item.name}.`, variant: "destructive" })
+        toast({ title: "Rating required", description: `Please select a rating for ${item.productName}.`, variant: "destructive" })
         return
       }
       if (r.comment.trim().length < 20) {
-        toast({ title: "Review too short", description: `Please write at least 20 characters for ${item.productName || item.name}.`, variant: "destructive" })
+        toast({ title: "Review too short", description: `Please write at least 20 characters for ${item.productName}.`, variant: "destructive" })
         return
       }
     }
@@ -76,10 +77,14 @@ export default function OrderReviewContent({ orderId }: OrderReviewContentProps)
     try {
       // Submit each review
       for (const item of items) {
-        const itemId = item.id || item.product_id
-        const r = reviews[itemId]
+        const itemId = item.id || item.product_id || item.productId
+        if (!itemId) continue;
+        const r = reviews[itemId as string]
+        const productId = item.product_id || item.productId || item.id;
+        console.log('[Review Debug] Item:', { item, productId, itemId });
+        if (!productId) continue;
         await reviewService.createReview({
-          product_id: item.product_id, // Map correctly
+          product_id: productId as string | number, // Support both naming conventions
           order_id: orderId,
           rating: r.rating,
           title: r.title,
@@ -114,23 +119,24 @@ export default function OrderReviewContent({ orderId }: OrderReviewContentProps)
         </div>
       ) : (
       <div className="space-y-6">
-        {items.map((item) => {
-          const itemId = item.id || item.product_id
+        {items.map((item, index) => {
+          const itemId = item.id || item.product_id || item.productId
+          const itemIdStr = String(itemId)
           return (
-          <Card key={itemId} className="border-2 border-[#E8DCC8] py-6">
+          <Card key={`${itemIdStr}-${index}`} className="border-2 border-[#E8DCC8] py-6">
             <CardHeader>
-              <CardTitle className="text-[#6B4423]">{item.productName || item.name}</CardTitle>
+              <CardTitle className="text-[#6B4423]">{item.productName}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-start gap-4">
-                <img src={item.image_url || item.image || "/placeholder.svg"} alt={item.productName || item.name} className="w-20 h-20 object-cover rounded-lg" />
+                <img src={item.image_url || item.image || "/placeholder.svg"} alt={item.productName} className="w-20 h-20 object-cover rounded-lg" />
                 <div className="flex-1 space-y-4">
                   <div className="space-y-2">
                     <Label className="text-[#6B4423]">Your Rating</Label>
                     <div className="flex items-center gap-2">
                       {[1,2,3,4,5].map((s) => {
-                        const currentRating = reviews[itemId]?.rating || 0
-                        const hoverRating = hovered[itemId] || 0
+                        const currentRating = reviews[itemIdStr]?.rating || 0
+                        const hoverRating = hovered[itemIdStr] || 0
                         const isHovering = hoverRating > 0
                         const activeUpTo = isHovering ? hoverRating : currentRating
                         const colorClass = isHovering ? "fill-[#FF7E00] text-[#FF7E00]" : "fill-[#FF7E00] text-[#FF7E00]"
@@ -138,9 +144,9 @@ export default function OrderReviewContent({ orderId }: OrderReviewContentProps)
                           <button
                             key={s}
                             type="button"
-                            onClick={() => setRating(itemId, s)}
-                            onMouseEnter={() => setHovered((h) => ({ ...h, [itemId]: s }))}
-                            onMouseLeave={() => setHovered((h) => ({ ...h, [itemId]: 0 }))}
+                            onClick={() => setRating(itemIdStr, s)}
+                            onMouseEnter={() => setHovered((h) => ({ ...h, [itemIdStr]: s }))}
+                            onMouseLeave={() => setHovered((h) => ({ ...h, [itemIdStr]: 0 }))}
                             className="transition-transform hover:scale-110"
                           >
                             <Star className={`h-7 w-7 ${s <= activeUpTo ? colorClass : "text-gray-300"}`} />
@@ -149,29 +155,29 @@ export default function OrderReviewContent({ orderId }: OrderReviewContentProps)
                       })}
                     </div>
                   </div>
-
+ 
                   {/* Review Title */}
                   <div className="space-y-2">
-                    <Label htmlFor={`title-${itemId}`} className="text-[#6B4423]">Review Title</Label>
+                    <Label htmlFor={`title-${itemIdStr}`} className="text-[#6B4423]">Review Title</Label>
                     <Input
-                      id={`title-${itemId}`}
+                      id={`title-${itemIdStr}`}
                       placeholder="Summarize your experience (e.g., Excellent quality ghee)"
-                      value={reviews[itemId]?.title || ""}
-                      onChange={(e) => setTitle(itemId, e.target.value)}
+                      value={reviews[itemIdStr]?.title || ""}
+                      onChange={(e) => setTitle(itemIdStr, e.target.value)}
                       className="border-2 border-[#E8DCC8] focus:border-[#2D5F3F] h-12"
                     />
                   </div>
-
+ 
                   <div className="space-y-2">
-                    <Label htmlFor={`comment-${itemId}`} className="text-[#6B4423]">Your Review</Label>
+                    <Label htmlFor={`comment-${itemIdStr}`} className="text-[#6B4423]">Your Review</Label>
                     <Textarea
-                      id={`comment-${itemId}`}
+                      id={`comment-${itemIdStr}`}
                       placeholder="Share your experience with this product..."
-                      value={reviews[itemId]?.comment || ""}
-                      onChange={(e) => setComment(itemId, e.target.value)}
+                      value={reviews[itemIdStr]?.comment || ""}
+                      onChange={(e) => setComment(itemIdStr, e.target.value)}
                       className="border-2 border-[#E8DCC8] focus:border-[#2D5F3F] min-h-28"
                     />
-                    <p className="text-xs text-[#8B6F47]">Minimum 20 characters ({reviews[itemId]?.comment.length || 0}/20)</p>
+                    <p className="text-xs text-[#8B6F47]">Minimum 20 characters ({reviews[itemIdStr]?.comment?.length || 0}/20)</p>
                   </div>
                 </div>
               </div>

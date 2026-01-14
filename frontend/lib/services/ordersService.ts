@@ -7,7 +7,10 @@ export interface OrderItem {
     price: string;
     subtotal: string;
     image?: string;
+    image_url?: string;
     id?: string | number;
+    product_id?: string | number;
+    productId?: string | number;
 }
 
 export interface OrderAddress {
@@ -169,7 +172,7 @@ export const ordersService = {
         couponCode?: string | null;
         notes?: string;
     }) => {
-        const res = await api.post<{ message: string; orderId: string }>(`/orders`, orderData);
+        const res = await api.post<{ orderId: string }>(`/orders`, orderData);
         return res.data;
     },
 

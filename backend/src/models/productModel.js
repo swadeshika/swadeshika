@@ -99,12 +99,16 @@ class ProductModel {
     }
 
     let sql = `
-      SELECT ${finalSelectClause}, c.name as category_name, c.slug as category_slug,
-             (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      WHERE 1=1
-    `;
+    SELECT ${finalSelectClause}, c.name as category_name, c.slug as category_slug,
+           (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image,
+           COALESCE(
+             (SELECT SUM(stock_quantity) FROM product_variants WHERE product_id = p.id),
+             p.stock_quantity
+           ) as stock_quantity
+    FROM products p
+    LEFT JOIN categories c ON p.category_id = c.id
+    WHERE 1=1
+  `;
 
     if (category) {
       sql += ` AND c.slug = ?`;

@@ -75,13 +75,20 @@ export function OrdersList() {
 		return (
 			<div className="text-center py-10 text-[#8B6F47] space-y-4">
 				<p>No orders found.</p>
-				<Button 
-					variant="outline" 
-					onClick={fetchOrders}
-					className="border-[#E8DCC8] hover:bg-[#F5F1E8]"
-				>
-					Refresh Orders
-				</Button>
+				<div className="flex justify-center gap-4">
+					<Button 
+						variant="outline" 
+						onClick={fetchOrders}
+						className="border-[#E8DCC8] hover:bg-[#F5F1E8]"
+					>
+						Refresh Orders
+					</Button>
+					<Link href="/shop">
+						<Button className="bg-[#2D5F3F] hover:bg-[#234A32] text-white">
+							Shop Now
+						</Button>
+					</Link>
+				</div>
 			</div>
 		);
 	}

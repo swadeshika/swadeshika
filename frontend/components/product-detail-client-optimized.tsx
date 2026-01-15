@@ -301,7 +301,7 @@ export function ProductDetailClientOptimized({
       }
       setLoading(false)
     }
-  }, [selectedVariant, product, addItem])
+  }, [selectedVariant, product, addItem, quantity])
 
   // Wishlist store
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore()

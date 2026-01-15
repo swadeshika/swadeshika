@@ -1,3 +1,6 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
@@ -5,6 +8,7 @@ import { SiteFooter } from "@/components/site-footer"
 import { ProductCard } from "@/components/product-card"
 import { HeroSlider } from "@/components/hero-slider"
 import { Star, Truck, Shield, Leaf, Award } from "lucide-react"
+import { productService, Product } from "@/lib/services/productService"
 
 /**
  * Homepage Component for Swadeshika E-commerce Platform
@@ -19,68 +23,46 @@ const quickLinks = [
   { name: "All Products", icon: "📦", href: "/shop" },
 ]
 
-const featuredProducts = [
-  {
-    id: 1,
-    name: "Pure Desi Cow Ghee",
-    slug: "pure-desi-cow-ghee",
-    price: 850,
-    memberPrice: 799,
-    comparePrice: 1000,
-    image: "/golden-ghee-in-glass-jar.jpg",
-    badge: "Best Seller",
-    badgeColor: "bg-emerald-600",
-    category: "Ghee",
-    rating: 4.9,
-    reviews: 234,
-    sizes: ["500g", "1kg", "2kg"],
-  },
-  {
-    id: 2,
-    name: "Organic Turmeric Powder",
-    slug: "organic-turmeric-powder",
-    price: 180,
-    memberPrice: 165,
-    comparePrice: 220,
-    image: "/turmeric-powder-in-bowl.jpg",
-    badge: "6% GST OFF",
-    badgeColor: "bg-yellow-600",
-    category: "Spices",
-    rating: 4.8,
-    reviews: 156,
-    sizes: ["100g", "250g", "500g"],
-  },
-  {
-    id: 3,
-    name: "Premium Kashmiri Almonds",
-    slug: "premium-kashmiri-almonds",
-    price: 650,
-    memberPrice: 599,
-    image: "/kashmiri-almonds.jpg",
-    badge: "Trending",
-    badgeColor: "bg-orange-600",
-    category: "Dry Fruits",
-    rating: 4.9,
-    reviews: 189,
-    sizes: ["250g", "500g", "1kg"],
-  },
-  {
-    id: 4,
-    name: "Cold Pressed Coconut Oil",
-    slug: "cold-pressed-coconut-oil",
-    price: 320,
-    memberPrice: 299,
-    image: "/coconut-oil-in-glass-bottle.jpg",
-    badge: "Hot Deals",
-    badgeColor: "bg-pink-600",
-    category: "Oils",
-    rating: 4.7,
-    reviews: 98,
-    sizes: ["500ml", "1L"],
-  },
-]
-
 export default function HomePage() {
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true)
+        const response = await productService.getAllProducts({ 
+          sort: 'popular', 
+          limit: 4,
+          page: 1
+        })
+        
+        if (response && Array.isArray(response.products)) {
+           // Transform API product to UI product exactly like ProductGrid
+           const mappedProducts = response.products.map((p: any) => ({
+              ...p,
+              // Map backend fields to UI props
+              image: p.primary_image || p.image || '/placeholder.jpg',
+              category: p.category_name || 'Uncategorized',
+              badge: p.is_featured ? 'Featured' : (p.review_count > 50 ? 'Popular' : null),
+              reviews: p.review_count || 0,
+              rating: p.average_rating || 0, 
+              comparePrice: p.compare_price,
+              inStock: p.in_stock,
+              stockQuantity: p.stock_quantity,
+              hasVariants: p.variant_count > 0,
+              variants: p.variants || []
+           }))
+           setFeaturedProducts(mappedProducts)
+        }
+      } catch (error) {
+        console.error("Failed to fetch home products:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchProducts()
+  }, [])
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -304,11 +286,37 @@ export default function HomePage() {
 
             {/* Products grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center md:justify-items-stretch">
-              {featuredProducts.map((product) => (
-                <div key={product.id} className="w-full max-w-sm md:max-w-none">
-                  <ProductCard {...product} sizes={product.variants} />
+              {loading ? (
+                // Skeleton Loader
+                [...Array(4)].map((_, i) => (
+                   <div key={i} className="w-full h-[400px] bg-gray-200 animate-pulse rounded-lg"></div>
+                ))
+              ) : featuredProducts.length > 0 ? (
+                featuredProducts.map((product: any) => (
+                  <div key={product.id} className="w-full max-w-sm md:max-w-none">
+                    <ProductCard 
+                      id={Number(product.id)}
+                      name={product.name}
+                      slug={product.slug}
+                      price={product.price}
+                      comparePrice={product.comparePrice}
+                      image={product.image}
+                      badge={product.badge}
+                      category={product.category}
+                      rating={product.rating}
+                      reviews={product.reviews}
+                      hasVariants={product.hasVariants}
+                      variants={product.variants}
+                      inStock={product.inStock}
+                      stockQuantity={product.stockQuantity} 
+                    />
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-10 text-muted-foreground">
+                  No popular products found right now. Check back later!
                 </div>
-              ))}
+              )}
             </div>
 
             {/* Mobile CTA */}

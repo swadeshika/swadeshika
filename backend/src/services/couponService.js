@@ -150,6 +150,11 @@ class CouponService {
             }
         }
 
+        // Check if coupon applies to any items in cart
+        if ((productIds.length > 0 || categoryIds.length > 0) && applicableAmount === 0) {
+            throw { statusCode: 400, message: 'This coupon does not apply to any items in your cart' };
+        }
+
         if (coupon.min_order_amount && applicableAmount < coupon.min_order_amount) {
             throw { statusCode: 400, message: `Minimum applicable amount of ₹${coupon.min_order_amount} required` };
         }
@@ -177,6 +182,19 @@ class CouponService {
             discountAmount: discount,
             applicableAmount
         };
+    }
+    /**
+     * Record coupon usage
+     * @param {string|number} couponId 
+     * @param {string} userId 
+     * @param {string} orderId 
+     * @param {number} discountAmount 
+     */
+    static async recordCouponUsage(couponId, userId, orderId, discountAmount) {
+        await CouponModel.incrementUsage(couponId);
+        if (userId) { // Record specific usage log if user is known
+             await CouponModel.recordUsage(couponId, userId, orderId, discountAmount);
+        }
     }
 }
 

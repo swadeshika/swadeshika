@@ -21,8 +21,9 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Star, Loader2, Check, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -47,11 +48,13 @@ interface ProductCardProps {
   rating?: number // Default 4.5 if not provided
   reviews?: number // Default 120 if not provided
   className?: string // Allow custom styling from parent
-  sizes?: string[] // Optional array of size variants
+  sizes?: string[] // Optional array of size variants (deprecated - use variants)
+  variants?: Array<{id?: number, variant_name: string, price: number, compare_price?: number, stock_quantity?: number}> // Full variant objects with pricing
   showWishlistAction?: boolean // Optional logic to hide wishlist button (default: true)
   onAddToCart?: (id: number) => void // Optional custom add to cart handler
   inStock?: boolean
   stockQuantity?: number
+  hasVariants?: boolean // Whether product has variants that need to be selected
 }
 
 export function ProductCard({
@@ -67,13 +70,41 @@ export function ProductCard({
   reviews = 120,
   className,
   sizes,
+  variants,
   showWishlistAction = true,
   onAddToCart,
   inStock = true,
   stockQuantity,
+  hasVariants = false,
 }: ProductCardProps) {
+  // State for selected variant and dynamic pricing
+  const [selectedVariant, setSelectedVariant] = useState<any>(null)
+  const [displayPrice, setDisplayPrice] = useState(price)
+  const [displayComparePrice, setDisplayComparePrice] = useState(comparePrice)
+
+  // Initialize with first variant if available
+  useEffect(() => {
+    if (variants && variants.length > 0 && !selectedVariant) {
+      const firstVariant = variants[0]
+      setSelectedVariant(firstVariant)
+      setDisplayPrice(firstVariant.price)
+      setDisplayComparePrice(firstVariant.compare_price)
+    }
+  }, [variants])
+
+  // Handle variant selection change
+  const handleVariantChange = (variantName: string) => {
+    const variant = variants?.find(v => v.variant_name === variantName)
+    if (variant) {
+      setSelectedVariant(variant)
+      setDisplayPrice(variant.price)
+      setDisplayComparePrice(variant.compare_price)
+    }
+  }
+
   // Access cart store's addItem function for adding products to cart
   const addItem = useCartStore((state) => state.addItem)
+  const router = useRouter()
 
   // Access wishlist store
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlistStore()
@@ -88,10 +119,22 @@ export function ProductCard({
 
   /**
    * Handle add to cart click
-   * Prevents navigation to product page, adds item to cart, and shows toast notification
+   * If product has variants, redirect to product detail page
+   * Otherwise, add item to cart and show toast notification
    */
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault() // Prevent Link navigation when clicking button
+    
+    // If product has variants but none is selected, show error
+    if (hasVariants && variants && variants.length > 0 && !selectedVariant) {
+      toast({
+        title: "Please select a variant",
+        description: "Choose a size/variant before adding to cart",
+        variant: "destructive"
+      })
+      return
+    }
+    
     try {
       setIsLoading(true)
       const start = Date.now()
@@ -99,10 +142,29 @@ export function ProductCard({
       if (onAddToCart) {
         onAddToCart(id)
       } else {
-        addItem({ id, productId: id, name, price, image, category })
+        // Prepare cart item with variant information if applicable
+        const cartItem: any = {
+          id,
+          productId: id,
+          name,
+          price: displayPrice, // Use the variant-specific price
+          image,
+          category
+        }
+
+        // Add variant information if a variant is selected
+        if (selectedVariant) {
+          cartItem.variantId = selectedVariant.id
+          cartItem.variantName = selectedVariant.variant_name
+          cartItem.variantSku = selectedVariant.sku
+        }
+
+        addItem(cartItem)
         toast({
           title: "Added to cart",
-          description: `${name} has been added to your cart.`,
+          description: selectedVariant 
+            ? `${name} (${selectedVariant.variant_name}) has been added to your cart.`
+            : `${name} has been added to your cart.`,
         })
       }
 
@@ -236,21 +298,33 @@ export function ProductCard({
               variant="secondary"
               className="bg-green-100 text-green-800 hover:bg-green-100 font-semibold px-2 py-0.5"
             >
-              ₹{price}
+              ₹{displayPrice}
             </Badge>
             {/* Original Price - Strikethrough to show savings */}
-            {comparePrice && <span className="text-sm text-gray-500 line-through">₹{comparePrice}</span>}
+            {displayComparePrice && <span className="text-sm text-gray-500 line-through">₹{displayComparePrice}</span>}
           </div>
           {/* Discount Percentage Badge - Calculated dynamically */}
-          {comparePrice && (
+          {displayComparePrice && (
             <Badge variant="outline" className="text-xs border-green-600 text-green-700">
-              {Math.round(((comparePrice - price) / comparePrice) * 100)}% OFF
+              {Math.round(((displayComparePrice - displayPrice) / displayComparePrice) * 100)}% OFF
             </Badge>
           )}
         </div>
 
-        {/* Size Selector Dropdown - Only shown if sizes are provided */}
-        {sizes && sizes.length > 0 && (
+        {/* Size/Variant Selector Dropdown - Only shown if variants or sizes are provided */}
+        {variants && variants.length > 0 ? (
+          <select 
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white cursor-pointer"
+            value={selectedVariant?.variant_name || ''}
+            onChange={(e) => handleVariantChange(e.target.value)}
+          >
+            {variants.map((variant) => (
+              <option key={variant.id || variant.variant_name} value={variant.variant_name}>
+                {variant.variant_name}
+              </option>
+            ))}
+          </select>
+        ) : sizes && sizes.length > 0 ? (
           <select className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
             {sizes.map((size) => (
               <option key={size} value={size}>
@@ -258,7 +332,7 @@ export function ProductCard({
               </option>
             ))}
           </select>
-        )}
+        ) : null}
 
         {/* Add to Cart Button - Primary CTA */}
         <div className={cn(isListView ? "flex justify-end mt-2" : "")}>

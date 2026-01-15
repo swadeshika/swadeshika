@@ -21,15 +21,8 @@ exports.submitContactForm = async (req, res, next) => {
 
         const data = { ...req.body };
 
-        // Handle file upload
-        if (req.file) {
-            // Construct public URL
-            // If served from localhost:5000/uploads/...
-            // We'll just store the relative path or full URL. 
-            // Storing relative path /uploads/contacts/filename is better.
-            data.attachment_url = `/uploads/contacts/${req.file.filename}`;
-            data.attachment_name = req.file.originalname;
-        }
+        // File upload removed as per request
+        // if (req.file) { ... }
 
         await ContactService.createSubmission(data);
 

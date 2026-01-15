@@ -69,10 +69,12 @@ export const couponService = {
                });
                return response.data.data;
           } catch (error: any) {
+               // Extract error message from backend response
+               const errorMessage = error.response?.data?.message || error.message || 'Invalid coupon';
                return {
                     isValid: false,
                     discountAmount: 0,
-                    message: error.message || 'Invalid coupon'
+                    message: errorMessage
                };
           }
      },

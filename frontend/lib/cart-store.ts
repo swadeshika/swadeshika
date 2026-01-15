@@ -31,6 +31,7 @@ export interface CartItem {
 
 interface CartStore {
   items: CartItem[]
+  appliedCoupon: { code: string; discountAmount: number } | null
   addItem: (item: Omit<CartItem, "quantity" | "id"> & { id?: number }, quantity?: number) => Promise<void>
   removeItem: (id: number) => Promise<void>
   updateQuantity: (id: number, quantity: number) => Promise<void>
@@ -39,12 +40,15 @@ interface CartStore {
   getTotalPrice: () => number
   fetchCart: () => Promise<void> // New action to sync with backend
   mergeLocalCart: () => Promise<void> // Merge local items to backend after login
+  applyCoupon: (code: string, discountAmount: number) => void
+  removeCoupon: () => void
 }
 
 export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
+      appliedCoupon: null,
 
       fetchCart: async () => {
         const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null
@@ -65,7 +69,8 @@ export const useCartStore = create<CartStore>()(
             variantName: item.variant_name, // Map variant name
             userId: item.user_id as unknown as string // Map backend user_id to frontend userId
           }))
-          set({ items: mappedItems })
+          set({ items: mappedItems }) // fetchCart preserves coupon to allow refresh, but specific actions will clear it
+
         } catch (error) {
           console.error("Failed to fetch cart:", error)
         }
@@ -141,7 +146,7 @@ export const useCartStore = create<CartStore>()(
             userId: item.user_id as unknown as string
           }))
 
-          set({ items: mappedItems })
+          set({ items: mappedItems, appliedCoupon: null })
         } catch (error) {
           console.error('[CartStore] Merge failed:', error)
           // Fallback: Just fetch cart if merge fails
@@ -172,6 +177,7 @@ export const useCartStore = create<CartStore>()(
               quantity: quantity,
               userId: userId // Adding userId as requested
             })
+            set({ appliedCoupon: null }) // Clear coupon on modification
             await get().fetchCart()
           } catch (error) {
             console.error("Add to cart failed", error)
@@ -192,6 +198,7 @@ export const useCartStore = create<CartStore>()(
                   ? { ...i, ...item, name: itemName, id: localId, quantity: i.quantity + quantity }
                   : i
               ),
+              appliedCoupon: null, // Clear coupon
             })
           } else {
             set({
@@ -203,7 +210,8 @@ export const useCartStore = create<CartStore>()(
                 categoryId: (item as any).categoryId ?? (item as any).category_id ?? null,
                 variantName: item.variantName || null,
                 quantity: quantity
-              } as CartItem]
+              } as CartItem],
+              appliedCoupon: null, // Clear coupon
             })
           }
         }
@@ -215,12 +223,13 @@ export const useCartStore = create<CartStore>()(
         if (token) {
           try {
             await cartService.removeFromCart(id)
+            set({ appliedCoupon: null }) // Clear coupon
             await get().fetchCart()
           } catch (error) {
             console.error("Remove failed", error)
           }
         } else {
-          set({ items: get().items.filter((i) => i.id !== id) })
+          set({ items: get().items.filter((i) => i.id !== id), appliedCoupon: null })
         }
       },
 
@@ -234,6 +243,7 @@ export const useCartStore = create<CartStore>()(
         if (token) {
           try {
             await cartService.updateCartItem(id, quantity)
+            set({ appliedCoupon: null }) // Clear coupon
             await get().fetchCart()
           } catch (error) {
             console.error("Update failed", error)
@@ -241,6 +251,7 @@ export const useCartStore = create<CartStore>()(
         } else {
           set({
             items: get().items.map((i) => (i.id === id ? { ...i, quantity } : i)),
+            appliedCoupon: null, // Clear coupon
           })
         }
       },
@@ -250,10 +261,10 @@ export const useCartStore = create<CartStore>()(
         if (token) {
           try {
             await cartService.clearCart()
-            set({ items: [] })
+            set({ items: [], appliedCoupon: null })
           } catch (e) { console.error(e) }
         } else {
-          set({ items: [] })
+          set({ items: [], appliedCoupon: null })
         }
       },
 
@@ -263,6 +274,14 @@ export const useCartStore = create<CartStore>()(
 
       getTotalPrice: () => {
         return get().items.reduce((total, item) => total + item.price * item.quantity, 0)
+      },
+
+      applyCoupon: (code: string, discountAmount: number) => {
+        set({ appliedCoupon: { code, discountAmount } })
+      },
+
+      removeCoupon: () => {
+        set({ appliedCoupon: null })
       },
     }),
     {

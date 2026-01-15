@@ -50,7 +50,7 @@ export default function CategoryPage() {
   const categoryParam = Array.isArray(params.category) ? params.category[0] : params.category
   const info = categoryInfo[categoryParam] || { title: "Products", description: "Browse our collection" }
 
-  const [priceRange, setPriceRange] = useState([0, 2000])
+  const [priceRange, setPriceRange] = useState([0, 10000])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([categoryParam])
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])

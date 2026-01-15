@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const AddressModel = require('../models/addressModel'); // Import AddressModel
 
 const AdminSettingsService = require('../services/adminSettingsService'); // Import AdminSettingsService
+const CouponService = require('../services/couponService');
 const sendEmail = require('../utils/email');
 
 exports.createOrder = async (req, res, next) => {
@@ -15,22 +16,37 @@ exports.createOrder = async (req, res, next) => {
         // 1. Handle Address Creation if shippingAddress provided
         if (shippingAddress) {
             try {
-                const newAddress = await AddressModel.create({
-                    user_id: userId,
-                    full_name: shippingAddress.fullName,
-                    phone: shippingAddress.phone,
-                    address_line1: shippingAddress.addressLine1,
-                    address_line2: shippingAddress.addressLine2,
-                    city: shippingAddress.city,
-                    state: shippingAddress.state,
-                    postal_code: shippingAddress.postalCode,
-                    country: 'India', // Default
-                    address_type: 'home', // Default
-                    is_default: false
+                // Check if identical address exists
+                const existingAddress = await AddressModel.findExactMatch(userId, {
+                  full_name: shippingAddress.fullName,
+                  phone: shippingAddress.phone,
+                  address_line1: shippingAddress.addressLine1,
+                  address_line2: shippingAddress.addressLine2,
+                  city: shippingAddress.city,
+                  state: shippingAddress.state,
+                  postal_code: shippingAddress.postalCode
                 });
-                addressId = newAddress.id;
+
+                if (existingAddress) {
+                    addressId = existingAddress.id;
+                } else {
+                    const newAddress = await AddressModel.create({
+                        user_id: userId,
+                        full_name: shippingAddress.fullName,
+                        phone: shippingAddress.phone,
+                        address_line1: shippingAddress.addressLine1,
+                        address_line2: shippingAddress.addressLine2,
+                        city: shippingAddress.city,
+                        state: shippingAddress.state,
+                        postal_code: shippingAddress.postalCode,
+                        country: 'India', // Default
+                        address_type: 'home', // Default
+                        is_default: false
+                    });
+                    addressId = newAddress.id;
+                }
             } catch (addrErr) {
-                console.error("Failed to create address:", addrErr);
+                console.error("Failed to process address:", addrErr);
                 return res.status(400).json({ success: false, message: 'Invalid address data' });
             }
         }
@@ -39,24 +55,38 @@ exports.createOrder = async (req, res, next) => {
         let billingAddressId = null;
         if (billingAddress) {
             try {
-                const newBilling = await AddressModel.create({
-                    user_id: userId,
+                // Check for existing billing address
+                 const existingBilling = await AddressModel.findExactMatch(userId, {
                     full_name: billingAddress.fullName,
                     phone: billingAddress.phone,
                     address_line1: billingAddress.addressLine1,
                     address_line2: billingAddress.addressLine2,
                     city: billingAddress.city,
                     state: billingAddress.state,
-                    postal_code: billingAddress.postalCode,
-                    country: 'India',
-                    address_type: 'billing', // distinguish type
-                    is_default: false
+                    postal_code: billingAddress.postalCode
                 });
-                billingAddressId = newBilling.id;
+
+                if (existingBilling) {
+                    billingAddressId = existingBilling.id;
+                } else {
+                    const newBilling = await AddressModel.create({
+                        user_id: userId,
+                        full_name: billingAddress.fullName,
+                        phone: billingAddress.phone,
+                        address_line1: billingAddress.addressLine1,
+                        address_line2: billingAddress.addressLine2,
+                        city: billingAddress.city,
+                        state: billingAddress.state,
+                        postal_code: billingAddress.postalCode,
+                        country: 'India',
+                        address_type: 'billing', // distinguish type
+                        is_default: false
+                    });
+                    billingAddressId = newBilling.id;
+                }
             } catch (addrErr) {
                  console.error("Failed to create billing address:", addrErr);
-                 // If billing address was attempted but failed, we should probably ERROR out rather than falling back silently.
-                 // But for now, let's just log it and fallback, BUT we must ensure the `billingAddress` check above is robust.
+                 // Fallback to shipping address if failing (though ideally should act stricter)
                  billingAddressId = addressId;
             }
         } else {
@@ -149,7 +179,25 @@ exports.createOrder = async (req, res, next) => {
 
         console.log(`DEBUG: Subtotal: ${subtotal}, Threshold: ${shippingThreshold}, FlatRate: ${flatRate}`);
 
-        const discountAmount = 0;
+        let discountAmount = 0;
+        let appliedCouponId = null;
+
+        // Apply Coupon if provided
+        if (couponCode) {
+            try {
+                const couponResult = await CouponService.validateCoupon(couponCode, subtotal, userId, orderItems);
+                discountAmount = couponResult.discountAmount;
+                appliedCouponId = couponResult.coupon.id;
+                
+                // If we also want to track usage properly, we should call a method to increment usage.
+                // Assuming validateCoupon doesn't increment usage, we might need a separate call or do it here.
+                // Typically, usage is incremented AFTER successful order payment/creation. 
+                // For now, let's assume simple validation is enough to set the price.
+            } catch (err) {
+                // If coupon is invalid but was sent, fail the order creation so user knows price is wrong
+                return res.status(400).json({ success: false, message: `Invalid Coupon: ${err.message}` });
+            }
+        }
         const shippingFee = subtotal >= shippingThreshold ? 0 : flatRate;
 
         // Tax logic based on settings (GST %)
@@ -168,6 +216,7 @@ exports.createOrder = async (req, res, next) => {
             billing_address_id: billingAddressId,
             subtotal,
             discount_amount: discountAmount,
+            coupon_code: couponCode || null, // Create this field in DB if not saving
             shipping_fee: shippingFee,
             tax_amount: taxAmount,
             total_amount: totalAmount,
@@ -185,6 +234,16 @@ exports.createOrder = async (req, res, next) => {
         };
 
         const newOrder = await Order.create(orderData, orderItems);
+
+        // Record Coupon Usage if applicable
+        if (appliedCouponId) {
+            try {
+                await CouponService.recordCouponUsage(appliedCouponId, userId, newOrder.id, discountAmount);
+            } catch (couponErr) {
+                console.error('Failed to record coupon usage:', couponErr);
+                // Don't fail the order for this, just log it
+            }
+        }
 
         // Define recipient email early for use in notifications and emails
         const recipientEmail = email || guest_email || (req.user && req.user.email);
@@ -241,6 +300,7 @@ exports.createOrder = async (req, res, next) => {
                         <p><strong>Order Number:</strong> ${newOrder.order_number}</p>
                         <p><strong>Total Amount:</strong> Rs. ${newOrder.total_amount}</p>
                         <p><strong>Payment Method:</strong> ${paymentMethod.toUpperCase()}</p>
+                        ${couponCode ? `<p><strong>Coupon Applied:</strong> ${couponCode} (-Rs. ${discountAmount})</p>` : ''}
                     </div>
 
                     <h3>Order Summary</h3>
@@ -254,6 +314,19 @@ exports.createOrder = async (req, res, next) => {
                                 <td style="padding: 10px; text-align: right;">Rs. ${item.subtotal}</td>
                             </tr>
                         `).join('')}
+                        <tr>
+                             <td style="padding: 10px; text-align: right; font-weight: bold;">Subtotal:</td>
+                             <td style="padding: 10px; text-align: right;">Rs. ${subtotal}</td>
+                        </tr>
+                        ${discountAmount > 0 ? `
+                        <tr>
+                             <td style="padding: 10px; text-align: right; color: green;">Discount:</td>
+                             <td style="padding: 10px; text-align: right; color: green;">- Rs. ${discountAmount}</td>
+                        </tr>` : ''}
+                         <tr>
+                             <td style="padding: 10px; text-align: right;">Shipping:</td>
+                             <td style="padding: 10px; text-align: right;">Rs. ${shippingFee}</td>
+                        </tr>
                     </table>
 
                     <p style="margin-top: 20px;">We will notify you once your order is shipped.</p>
@@ -376,7 +449,9 @@ exports.getAllOrders = async (req, res, next) => {
             },
             totalAmount: order.total_amount,
             status: order.status,
-            createdAt: order.created_at
+            createdAt: order.created_at,
+            couponCode: order.coupon_code || null,
+            discountAmount: order.discount_amount || 0
         }));
 
         res.status(200).json({
@@ -612,6 +687,7 @@ exports.getOrderById = async (req, res, next) => {
             tax: order.tax_amount,
             total: order.total_amount,
             totalAmount: order.total_amount, // Added for frontend
+            couponCode: order.coupon_code, // Added coupon code validation field
             trackingNumber: order.tracking_number,
             estimatedDeliveryDate: order.estimated_delivery_date || new Date(new Date(order.created_at).setDate(new Date(order.created_at).getDate() + 5)),
             createdAt: order.created_at,
@@ -836,10 +912,10 @@ exports.updateOrderStatus = async (req, res, next) => {
  */
 exports.trackOrder = async (req, res, next) => {
     try {
-        const { orderId, email } = req.body;
+        const { orderId } = req.body;
 
-        if (!orderId || !email) {
-            return res.status(400).json({ success: false, message: 'Order ID and Email are required' });
+        if (!orderId) {
+            return res.status(400).json({ success: false, message: 'Order ID is required' });
         }
 
         // Try to find by orderNumber or ID
@@ -854,12 +930,11 @@ exports.trackOrder = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'Order not found' });
         }
 
-        // Security Check: Verify Email
-        const orderEmail = order.user_email || order.guest_email;
-        if (!orderEmail || orderEmail.toLowerCase() !== email.toLowerCase()) {
-             // Return 404 to avoid enumerating valid orders
-            return res.status(404).json({ success: false, message: 'Order details do not match.' });
-        }
+        // Security Check: Verify Email - REMOVED as per request to allow tracking by ID only
+        // const orderEmail = order.user_email || order.guest_email;
+        // if (!orderEmail || orderEmail.toLowerCase() !== email.toLowerCase()) {
+        //      return res.status(404).json({ success: false, message: 'Order details do not match.' });
+        // }
 
         // Construct timeline based on status
         const timeline = [

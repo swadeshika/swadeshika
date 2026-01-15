@@ -13,13 +13,10 @@ import { useState, useEffect } from "react"
 import { settingsService, AppSettings } from "@/lib/services/settingsService"
 
 export function CartContent() {
-  const { items, updateQuantity, removeItem } = useCartStore()
+  const { items, updateQuantity, removeItem, appliedCoupon, applyCoupon, removeCoupon } = useCartStore()
   const [couponCode, setCouponCode] = useState("")
   const [isValidating, setIsValidating] = useState(false)
-  const [appliedCoupon, setAppliedCoupon] = useState<{
-    code: string;
-    discountAmount: number;
-  } | null>(null)
+  const [couponError, setCouponError] = useState<string | null>(null)
   const { toast } = useToast()
 
   const handleApplyCoupon = async () => {
@@ -38,16 +35,15 @@ export function CartContent() {
       const result = await couponService.validateCoupon(couponCode, subtotal, cartItemsForApi)
 
       if (result.isValid) {
-        setAppliedCoupon({
-          code: couponCode,
-          discountAmount: result.discountAmount
-        })
+        applyCoupon(couponCode, result.discountAmount)
+        setCouponError(null)
         toast({
           title: "Coupon Applied!",
           description: `You saved ₹${result.discountAmount}`,
         })
       } else {
-        setAppliedCoupon(null)
+        removeCoupon()
+        setCouponError(result.message || "This coupon code is not valid.")
         toast({
           title: "Invalid Coupon",
           description: result.message || "This coupon code is not valid.",
@@ -55,7 +51,8 @@ export function CartContent() {
         })
       }
     } catch (error) {
-      setAppliedCoupon(null)
+      removeCoupon()
+      setCouponError("Failed to validate coupon. Please try again.")
       toast({
         title: "Error",
         description: "Failed to validate coupon. Please try again.",
@@ -67,7 +64,7 @@ export function CartContent() {
   }
 
   const handleRemoveCoupon = () => {
-    setAppliedCoupon(null)
+    removeCoupon()
     setCouponCode("")
     toast({
       title: "Coupon Removed",
@@ -175,7 +172,7 @@ export function CartContent() {
           <Button 
             variant="ghost" 
             onClick={() => useCartStore.getState().clearCart()} 
-            className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer border-2 border-transparent hover:border-red-200"
+            className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer border-2 border-red-200 hover:border-red-200"
           >
             Clear Cart
           </Button>
@@ -244,7 +241,10 @@ export function CartContent() {
                   <Input
                     placeholder="Enter code"
                     value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    onChange={(e) => {
+                      setCouponCode(e.target.value.toUpperCase())
+                      setCouponError(null) // Clear error when typing
+                    }}
                     className="flex-1"
                   />
                   <Button
@@ -255,6 +255,14 @@ export function CartContent() {
                   >
                     {isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
                   </Button>
+                </div>
+              )}
+              
+              {/* Error Message Display */}
+              {couponError && !appliedCoupon && (
+                <div className="text-sm text-red-600 mt-1 flex items-start gap-1">
+                  <span className="text-red-600">⚠</span>
+                  <span>{couponError}</span>
                 </div>
               )}
             </div>

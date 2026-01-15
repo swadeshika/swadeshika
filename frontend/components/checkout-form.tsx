@@ -27,7 +27,7 @@ export function CheckoutForm() {
   const { toast } = useToast()
 
   // Stores
-  const { items: cartItems, getTotalPrice } = useCartStore()
+  const { items: cartItems, getTotalPrice, appliedCoupon } = useCartStore()
   const { user } = useAuthStore()
 
   // State
@@ -35,6 +35,7 @@ export function CheckoutForm() {
   const [paymentMethod, setPaymentMethod] = useState("cod")
   const [placing, setPlacing] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
   // Data
   const [addresses, setAddresses] = useState<Address[]>([])
@@ -56,7 +57,10 @@ export function CheckoutForm() {
   const gstPercent = Number(settings?.gst_percent ?? 0)
   const tax = Math.round(subtotal * (gstPercent / 100))
 
-  const total = subtotal + shipping + tax;
+  // Coupon discount
+  const discount = appliedCoupon ? appliedCoupon.discountAmount : 0
+
+  const total = subtotal + shipping + tax - discount;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -124,7 +128,7 @@ export function CheckoutForm() {
       totalAmount: Number(total),
       phone: formData.get("phone"),
       email: formData.get("email"),
-      couponCode: null,
+      couponCode: appliedCoupon ? appliedCoupon.code : null,
       notes: formData.get("notes")
     }
 
@@ -151,6 +155,46 @@ export function CheckoutForm() {
       router.push(`/order-confirmation/${response.data.orderId}`)
     } catch (error: any) {
       console.error("Order creation failed", error);
+
+      // Parse validation errors if present (from error.errors array)
+      if (error.errors && Array.isArray(error.errors)) {
+        const errors: Record<string, string> = {};
+        
+        // Field name mapping (backend -> frontend)
+        const fieldMapping: Record<string, string> = {
+          'addressLine1': 'address1',
+          'addressLine2': 'address2',
+          'postalCode': 'pincode'
+        };
+        
+        error.errors.forEach((err: any) => {
+          const backendFieldName = err.field?.split('.').pop() || err.field;
+          const frontendFieldName = fieldMapping[backendFieldName] || backendFieldName;
+          errors[frontendFieldName] = err.message;
+        });
+        setValidationErrors(errors);
+        
+        // Show user-friendly message
+        toast({
+          title: "Please check your form",
+          description: "Some fields need your attention. Please review and correct them.",
+          variant: "destructive"
+        });
+        
+        // Scroll to first error field
+        const firstBackendField = error.errors[0]?.field?.split('.').pop();
+        const firstErrorField = fieldMapping[firstBackendField] || firstBackendField;
+        if (firstErrorField) {
+          setTimeout(() => {
+            const element = document.querySelector(`[name="${firstErrorField}"]`);
+            element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            (element as HTMLInputElement)?.focus();
+          }, 100);
+        }
+        
+        setPlacing(false);
+        return;
+      }
 
       const errorMessage = error.response?.data?.message || error.message || "Something went wrong. Please try again.";
 
@@ -200,6 +244,23 @@ export function CheckoutForm() {
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Checkout Form */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Validation Error Alert */}
+          {Object.keys(validationErrors).length > 0 && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+              <strong className="font-bold">Please correct the following errors:</strong>
+              <ul className="mt-1 list-disc list-inside text-sm">
+                {Object.entries(validationErrors).map(([field, message]) => (
+                  <li key={field}>
+                    {field === 'totalAmount' ? 
+                      `Total Mismatch: ${message} - Please refresh the page.` : 
+                      `${field.charAt(0).toUpperCase() + field.slice(1)}: ${message}`
+                    }
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Contact Information */}
           <Card className="rounded-2xl py-5 border-2 border-[#E8DCC8]">
             <CardHeader>
@@ -216,18 +277,54 @@ export function CheckoutForm() {
                     placeholder="your@email.com"
                     required
                     defaultValue={user?.email || ""}
+                    className={validationErrors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
+                    onChange={() => {
+                       if (validationErrors.email) {
+                         const newErrors = {...validationErrors};
+                         delete newErrors.email;
+                         setValidationErrors(newErrors);
+                       }
+                    }}
                   />
+                  {validationErrors.email && (
+                    <p className="text-sm text-red-600 flex items-start gap-1">
+                      <span>⚠</span>
+                      <span>{validationErrors.email}</span>
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number *</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    placeholder="+91 1234567890"
-                    required
-                    defaultValue={user?.phone || defaultAddress?.phone || ""}
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">+91</span>
+                    <Input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      placeholder="1234567890"
+                      required
+                      maxLength={10}
+                      defaultValue={user?.phone || defaultAddress?.phone || ""}
+                      className={`pl-12 ${validationErrors.phone ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    onInput={(e) => {
+                      const input = e.target as HTMLInputElement;
+                      input.value = input.value.replace(/[^0-9]/g, '').slice(0, 10);
+                    }}
+                    onChange={() => {
+                       if (validationErrors.phone) {
+                         const newErrors = {...validationErrors};
+                         delete newErrors.phone;
+                         setValidationErrors(newErrors);
+                       }
+                    }}
                   />
+                  </div>
+                  {validationErrors.phone && (
+                    <p className="text-sm text-red-600 flex items-start gap-1">
+                      <span>⚠</span>
+                      <span>{validationErrors.phone}</span>
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -247,7 +344,21 @@ export function CheckoutForm() {
                   placeholder="John Doe"
                   required
                   defaultValue={defaultAddress?.name || user?.name || ""}
+                  className={validationErrors.fullName ? "border-red-500 focus-visible:ring-red-500" : ""}
+                  onChange={() => {
+                     if (validationErrors.fullName) {
+                       const newErrors = {...validationErrors};
+                       delete newErrors.fullName;
+                       setValidationErrors(newErrors);
+                     }
+                  }}
                 />
+                {validationErrors.fullName && (
+                  <p className="text-sm text-red-600 flex items-start gap-1">
+                    <span>⚠</span>
+                    <span>{validationErrors.fullName}</span>
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -255,10 +366,22 @@ export function CheckoutForm() {
                 <Input
                   id="address1"
                   name="address1"
-                  placeholder="Street address"
+                  placeholder="Street address (minimum 5 characters)"
                   required
                   defaultValue={defaultAddress?.addressLine1 || ""}
+                  className={validationErrors.address1 ? "border-red-500 focus-visible:ring-red-500" : ""}
+                  onChange={() => {
+                    const newErrors = {...validationErrors};
+                    delete newErrors.address1;
+                    setValidationErrors(newErrors);
+                  }}
                 />
+                {validationErrors.address1 && (
+                  <p className="text-sm text-red-600 flex items-start gap-1">
+                    <span>⚠</span>
+                    <span>{validationErrors.address1}</span>
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -280,7 +403,21 @@ export function CheckoutForm() {
                     placeholder="Mumbai"
                     required
                     defaultValue={defaultAddress?.city || ""}
+                    className={validationErrors.city ? "border-red-500 focus-visible:ring-red-500" : ""}
+                    onChange={() => {
+                       if (validationErrors.city) {
+                         const newErrors = {...validationErrors};
+                         delete newErrors.city;
+                         setValidationErrors(newErrors);
+                       }
+                    }}
                   />
+                  {validationErrors.city && (
+                    <p className="text-sm text-red-600 flex items-start gap-1">
+                      <span>⚠</span>
+                      <span>{validationErrors.city}</span>
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="state">State *</Label>
@@ -290,17 +427,43 @@ export function CheckoutForm() {
                     placeholder="Maharashtra"
                     required
                     defaultValue={defaultAddress?.state || ""}
+                    className={validationErrors.state ? "border-red-500 focus-visible:ring-red-500" : ""}
+                    onChange={() => {
+                       if (validationErrors.state) {
+                         const newErrors = {...validationErrors};
+                         delete newErrors.state;
+                         setValidationErrors(newErrors);
+                       }
+                    }}
                   />
+                  {validationErrors.state && (
+                    <p className="text-sm text-red-600 flex items-start gap-1">
+                      <span>⚠</span>
+                      <span>{validationErrors.state}</span>
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pincode">PIN Code *</Label>
                   <Input
                     id="pincode"
                     name="pincode"
-                    placeholder="400001"
+                    placeholder="400001 (6 digits)"
                     required
                     defaultValue={defaultAddress?.postalCode || ""}
+                    className={validationErrors.pincode ? "border-red-500 focus-visible:ring-red-500" : ""}
+                    onChange={() => {
+                      const newErrors = {...validationErrors};
+                      delete newErrors.pincode;
+                      setValidationErrors(newErrors);
+                    }}
                   />
+                  {validationErrors.pincode && (
+                    <p className="text-sm text-red-600 flex items-start gap-1">
+                      <span>⚠</span>
+                      <span>{validationErrors.pincode}</span>
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -437,6 +600,12 @@ export function CheckoutForm() {
                   <span className="text-muted-foreground">GST ({gstPercent}%)</span>
                   <span className="font-medium">₹{tax}</span>
                 </div>
+                {appliedCoupon && (
+                  <div className="flex items-center justify-between text-green-700">
+                    <span className="font-medium">Discount ({appliedCoupon.code})</span>
+                    <span className="font-medium">-₹{discount}</span>
+                  </div>
+                )}
               </div>
 
               <Separator />

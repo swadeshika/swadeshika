@@ -33,7 +33,7 @@ const featuredProducts = [
     category: "Ghee",
     rating: 4.9,
     reviews: 234,
-    variants: ["500g", "1kg", "2kg"],
+    sizes: ["500g", "1kg", "2kg"],
   },
   {
     id: 2,
@@ -48,7 +48,7 @@ const featuredProducts = [
     category: "Spices",
     rating: 4.8,
     reviews: 156,
-    variants: ["100g", "250g", "500g"],
+    sizes: ["100g", "250g", "500g"],
   },
   {
     id: 3,
@@ -62,7 +62,7 @@ const featuredProducts = [
     category: "Dry Fruits",
     rating: 4.9,
     reviews: 189,
-    variants: ["250g", "500g", "1kg"],
+    sizes: ["250g", "500g", "1kg"],
   },
   {
     id: 4,
@@ -76,7 +76,7 @@ const featuredProducts = [
     category: "Oils",
     rating: 4.7,
     reviews: 98,
-    variants: ["500ml", "1L"],
+    sizes: ["500ml", "1L"],
   },
 ]
 

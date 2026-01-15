@@ -116,14 +116,22 @@ export function SignupForm() {
 
           <div className="space-y-2">
             <Label htmlFor="phone">Phone Number</Label>
-            <Input 
-              id="phone" 
-              type="tel" 
-              placeholder="+91 1234567890" 
-              value={formData.phone}
-              onChange={handleChange}
-              required 
-            />
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">+91</span>
+              <Input 
+                id="phone" 
+                type="tel" 
+                maxLength={10}
+                className="pl-12"
+                placeholder="9876543210" 
+                value={formData.phone}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+                  setFormData((prev) => ({ ...prev, phone: val }));
+                }}
+                required 
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

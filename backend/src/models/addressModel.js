@@ -64,6 +64,46 @@ class AddressModel {
     }
 
     /**
+     * Find exact match for an address 
+     * @param {string} userId - User ID
+     * @param {Object} addressData - Address fields to match
+     * @returns {Promise<Object|null>} Matching address or null
+     */
+    static async findExactMatch(userId, addressData) {
+        const {
+            full_name, phone, address_line1, address_line2, city, state, postal_code
+        } = addressData;
+
+        // Use safe comparison for NULL address_line2
+        // IF address_line2 is provided, match it. If it is null/empty, match NULL or empty string
+        // Actually, simpler to just query matching fields
+        
+        let query = `
+            SELECT * FROM addresses 
+            WHERE user_id = ? 
+            AND full_name = ? 
+            AND phone = ? 
+            AND address_line1 = ? 
+            AND city = ? 
+            AND state = ? 
+            AND postal_code = ?
+        `;
+        
+        const params = [userId, full_name, phone, address_line1, city, state, postal_code];
+
+        if (address_line2) {
+            query += ` AND address_line2 = ?`;
+            params.push(address_line2);
+        } else {
+             // If incoming address_line2 is empty/null, find rows where it is also empty or null
+             query += ` AND (address_line2 IS NULL OR address_line2 = '')`;
+        }
+
+        const [rows] = await db.query(query, params);
+        return rows[0];
+    }
+
+    /**
      * Update an address
      * @param {string} id - Address ID
      * @param {Object} updateData - Data to update

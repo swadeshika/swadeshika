@@ -11,11 +11,11 @@ class ContactModel {
      * @returns {Promise<number>} Insert ID
      */
     static async create(data) {
-        const { name, email, phone, subject, order_number, message, attachment_url, attachment_name } = data;
+        const { name, email, phone, subject, order_number, message } = data;
         const [result] = await db.query(
-            `INSERT INTO contact_submissions (name, email, phone, subject, order_number, message, attachment_url, attachment_name) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [name, email, phone || null, subject, order_number || null, message, attachment_url || null, attachment_name || null]
+            `INSERT INTO contact_submissions (name, email, phone, subject, order_number, message) 
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [name, email, phone || null, subject, order_number || null, message]
         );
         return result.insertId;
     }

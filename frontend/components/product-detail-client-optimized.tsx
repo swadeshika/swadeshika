@@ -71,6 +71,7 @@ interface Product {
   images: string[]
   badge?: string
   category: string
+  categorySlug?: string
   description: string
   shortDescription: string
   features: string[]
@@ -392,7 +393,7 @@ export function ProductDetailClientOptimized({
               Shop
             </Link>
             <span>/</span>
-            <Link href={`/shop/${product.category.toLowerCase()}`} className="hover:text-[#2D5F3F] transition-colors cursor-pointer">
+            <Link href={`/shop/${product.categorySlug || product.category.toLowerCase().replace(/\s+/g, '-')}`} className="hover:text-[#2D5F3F] transition-colors cursor-pointer">
               {product.category}
             </Link>
             <span>/</span>

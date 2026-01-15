@@ -121,4 +121,5 @@ export interface Category {
     description?: string;
     image_url?: string;
     parent_id?: number;
+    is_active?: boolean;
 }

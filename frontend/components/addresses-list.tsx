@@ -11,6 +11,16 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { addressService, type Address } from "@/lib/services/addressService"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export function AddressesList() {
   const { toast } = useToast()
@@ -18,6 +28,7 @@ export function AddressesList() {
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Address | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   // Form state matches the fields we support editing in the UI
   const [form, setForm] = useState<{
@@ -82,7 +93,7 @@ export function AddressesList() {
 
   const validate = () => {
     if (!form.name.trim()) return "Full name is required"
-    if (!/^\+?\d[\d\s-]{7,}$/.test(form.phone.trim())) return "Enter a valid phone number"
+    if (!/^\d{10}$/.test(form.phone.trim())) return "Enter a valid 10-digit phone number"
     if (!form.addressLine1.trim()) return "Address Line 1 is required"
     if (!form.city.trim()) return "City is required"
     if (!form.state.trim()) return "State is required"
@@ -123,17 +134,18 @@ export function AddressesList() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    const confirm = window.confirm("Delete this address?")
-    if (!confirm) return
+  const confirmDelete = async () => {
+    if (!deleteId) return
 
     try {
-      await addressService.deleteAddress(id)
+      await addressService.deleteAddress(deleteId)
       toast({ title: "Address deleted" })
       await fetchAddresses()
     } catch (error: any) {
       console.error("Delete failed:", error)
       toast({ title: "Error", description: "Failed to delete address", variant: "destructive" })
+    } finally {
+      setDeleteId(null)
     }
   }
 
@@ -216,7 +228,7 @@ export function AddressesList() {
                     variant="outline"
                     size="sm"
                     className="flex-1 gap-2 text-destructive hover:text-white bg-transparent border-2 border-[#E8DCC8]"
-                    onClick={() => handleDelete(address.id)}
+                    onClick={() => setDeleteId(address.id)}
                   >
                     <Trash2 className="h-4 w-4" />
                     Delete
@@ -250,7 +262,20 @@ export function AddressesList() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">+91</span>
+                  <Input 
+                    id="phone" 
+                    value={form.phone} 
+                    maxLength={10}
+                    className="pl-12"
+                    placeholder="9876543210"
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+                      setForm({ ...form, phone: val });
+                    }} 
+                  />
+                </div>
               </div>
             </div>
             <div className="space-y-2">
@@ -294,6 +319,26 @@ export function AddressesList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[#6B4423]">Delete Address?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this address from your account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent border-2 border-[#E8DCC8] hover:bg-accent">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={confirmDelete}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

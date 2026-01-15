@@ -17,6 +17,7 @@ export interface OrderAddress {
     fullName: string;
     phone: string;
     addressLine1: string;
+    addressLine2?: string;
     city: string;
     state: string;
     postalCode: string;
@@ -37,10 +38,14 @@ export interface Order {
     paymentStatus?: 'pending' | 'paid' | 'failed';
     totalAmount?: string; // For list view
     createdAt?: string; // For list view
+    couponCode?: string; // Added
+    discountAmount?: string | number; // Added
     customer?: { id: string; name: string; email: string }; // For list view (backend returns 'customer' now)
     user?: { id: string; name?: string; email?: string }; // Fallback/Legacy
     items?: OrderItem[]; // Detail view
-    address?: OrderAddress; // Detail view
+    address?: OrderAddress; // Detail view (Shipping)
+    shippingAddress?: OrderAddress; // Detail view (Explicit)
+    billingAddress?: OrderAddress; // Detail view
     summary?: OrderSummary; // Detail view
     trackingNumber?: string;
     estimatedDeliveryDate?: string | Date;
@@ -210,8 +215,8 @@ export const ordersService = {
     /**
      * Track Order (Public)
      */
-    trackOrder: async (orderId: string, email: string) => {
-        const res = await api.post<{ data: any }>(`/orders/track`, { orderId, email });
+    trackOrder: async (orderId: string) => {
+        const res = await api.post<{ data: any }>(`/orders/track`, { orderId });
         return res.data.data;
     }
 };

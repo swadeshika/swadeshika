@@ -263,6 +263,7 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
                 <CardContent className="space-y-2 text-sm">
                   <p className="font-medium">{order.address?.fullName}</p>
                   <p className="text-muted-foreground">{order.address?.addressLine1}</p>
+                  {order.address?.addressLine2 && <p className="text-muted-foreground">{order.address?.addressLine2}</p>}
                   <p className="text-muted-foreground">
                     {order.address?.city}, {order.address?.state} - {order.address?.postalCode}
                   </p>
@@ -270,18 +271,25 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
                 </CardContent>
               </Card>
 
-              {/* Same for Billing for now as we don't have separate billing address in backend yet. */}
               <Card className="rounded-2xl border-2 border-[#E8DCC8] bg-white py-5">
                 <CardHeader>
                   <CardTitle>Billing Address</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
-                  <p className="font-medium">{order.address?.fullName}</p>
-                  <p className="text-muted-foreground">{order.address?.addressLine1}</p>
-                  <p className="text-muted-foreground">
-                    {order.address?.city}, {order.address?.state} - {order.address?.postalCode}
-                  </p>
-                  <p className="text-muted-foreground">{order.address?.phone}</p>
+                  {(() => {
+                    const billing = order.billingAddress || order.address;
+                    return (
+                        <>
+                          <p className="font-medium">{billing?.fullName}</p>
+                          <p className="text-muted-foreground">{billing?.addressLine1}</p>
+                          {billing?.addressLine2 && <p className="text-muted-foreground">{billing?.addressLine2}</p>}
+                          <p className="text-muted-foreground">
+                            {billing?.city}, {billing?.state} - {billing?.postalCode}
+                          </p>
+                          <p className="text-muted-foreground">{billing?.phone}</p>
+                        </>
+                    );
+                  })()}
                 </CardContent>
               </Card>
             </div>

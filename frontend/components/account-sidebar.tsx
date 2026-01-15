@@ -1,13 +1,15 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { User, Package, MapPin, Heart, Settings, LogOut, Star } from "lucide-react"
 import { authService } from "@/lib/authService"
+import { useAuthStore } from "@/lib/auth-store"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { toast } from "sonner"
 
 const menuItems = [
 	{ icon: User, label: "Account Overview", href: "/account" },
@@ -20,6 +22,8 @@ const menuItems = [
 
 export function AccountSidebar() {
 	const pathname = usePathname()
+	const router = useRouter()
+	const logout = useAuthStore((state) => state.logout)
 	const [user, setUser] = useState<{ name: string; email: string } | null>(null)
 
 	useEffect(() => {
@@ -35,6 +39,17 @@ export function AccountSidebar() {
 		}
 		loadUser()
 	}, [])
+
+	const handleLogout = async () => {
+		try {
+			await logout()
+			toast.success("Signed out successfully")
+			router.push("/login")
+		} catch (error) {
+			console.error("Logout failed", error)
+			toast.error("Failed to sign out")
+		}
+	}
 
 	return (
 		// make sidebar full-width on small screens and fixed-width on md+ to avoid overflow
@@ -78,6 +93,7 @@ export function AccountSidebar() {
 				<Button
 					variant="ghost"
 					className="w-full justify-start gap-3 text-destructive hover:text-white"
+					onClick={handleLogout}
 				>
 					<LogOut className="h-5 w-5 max-[370px]:h-4 max-[370px]:w-4" />
 					<span className="text-sm max-[370px]:text-sm font-medium truncate">Sign Out</span>

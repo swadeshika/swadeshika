@@ -252,7 +252,11 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
                       <div className="flex items-start justify-between">
                         <div>
                           <h4 className="font-medium">{item.productName}</h4>
-                          <p className="text-sm text-muted-foreground">{item.variantName}</p>
+                          {item.variantName && (
+                             <p className="text-sm text-muted-foreground">
+                               <span className="font-medium text-[#6B4423]">Variant:</span> {item.variantName}
+                             </p>
+                          )}
                           <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
                         </div>
                         {/* Wishlist button removed for now as it needs product ID which might differ from item ID */}
@@ -280,6 +284,21 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
                 <span className="text-muted-foreground">Subtotal</span>
                 <span>₹{Number(order.summary?.subtotal || 0).toLocaleString("en-IN")}</span>
               </div>
+              
+              {(Number(order.summary?.discount || order.discountAmount) > 0) && (
+                <div className="flex justify-between text-sm text-green-600">
+                   <div className="flex items-center gap-2">
+                    <span>Discount</span>
+                    {order.couponCode && (
+                       <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                         {order.couponCode}
+                       </span>
+                    )}
+                  </div>
+                  <span>-₹{Number(order.summary?.discount || order.discountAmount).toLocaleString("en-IN")}</span>
+                </div>
+              )}
+
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Shipping</span>
                 <span>₹{Number(order.summary?.shipping || 0).toLocaleString("en-IN")}</span>
@@ -305,6 +324,7 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
               <div className="space-y-2 text-sm">
                 <p className="font-medium">{order.address?.fullName || "N/A"}</p>
                 <p className="text-muted-foreground">{order.address?.addressLine1}</p>
+                {order.address?.addressLine2 && <p className="text-muted-foreground">{order.address?.addressLine2}</p>}
                 <p className="text-muted-foreground">
                   {order.address?.city}, {order.address?.state} - {order.address?.postalCode}
                 </p>

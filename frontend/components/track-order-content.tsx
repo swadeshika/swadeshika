@@ -73,7 +73,7 @@ export default function TrackOrderContent() {
 
   const handleTrack = async () => {
     setOrderIdError("")
-    setEmailError("")
+    // setEmailError("")
 
     // Validate orderId
     if (!orderId.trim()) {
@@ -85,32 +85,26 @@ export default function TrackOrderContent() {
       return
     }
 
-    // Validate email
-    if (!email.trim()) {
-      setEmailError("Email is required")
-      return
-    }
-    if (!validateEmail(email)) {
-      setEmailError("Please enter a valid email address")
-      return
-    }
+    // Email validation removed as per request
 
     setLoading(true)
     try {
-      const response: any = await ordersService.trackOrder(orderId, email);
+      const response: any = await ordersService.trackOrder(orderId);
       
       // The backend returns { order: { ... } } inside the data object
-      const orderData = response.order;
+      const orderData = response.order || response; // Handle both structures if backend changes
 
+      // ... rest of logic
+      
       if (!orderData) {
         throw new Error("Invalid response format");
       }
 
       // Map backend fields to frontend TrackingData structure
       const mappedData: TrackingData = {
-        orderId: orderData.orderNumber || orderData.id,
+        orderId: orderData.orderNumber || orderData.id || orderData.orderId,
         status: orderData.status,
-        estimatedDelivery: orderData.estimatedDeliveryDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Default +7 days
+        estimatedDelivery: orderData.estimatedDelivery || orderData.estimatedDeliveryDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         carrier: orderData.carrier || "Standard Shipping",
         trackingNumber: orderData.trackingNumber || "Pending",
         currentLocation: orderData.currentLocation || "Processing Center",
@@ -148,7 +142,7 @@ export default function TrackOrderContent() {
         <Card className="lg:col-span-1 rounded-2xl border-2 border-[#E8DCC8] py-6">
           <CardHeader>
             <CardTitle className="text-[#6B4423]">Find your order</CardTitle>
-            <CardDescription>Use order ID and email to locate your shipment</CardDescription>
+            <CardDescription>Enter your Order ID to track status</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -156,11 +150,7 @@ export default function TrackOrderContent() {
               <Input id="orderId" placeholder="ORD-2025-00001" value={orderId} onChange={(e) => setOrderId(e.target.value)} required />
               {orderIdError && <p className="text-sm text-red-500">{orderIdError}</p>}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address *</Label>
-              <Input id="email" type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              {emailError && <p className="text-sm text-red-500">{emailError}</p>}
-            </div>
+            
             <Button onClick={handleTrack} disabled={loading} className="w-full bg-[#2D5F3F] hover:bg-[#234A32] text-white">
               <Search className="h-4 w-4 mr-2" /> {loading ? "Tracking..." : "Track Order"}
             </Button>

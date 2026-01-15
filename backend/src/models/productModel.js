@@ -101,6 +101,7 @@ class ProductModel {
     let sql = `
     SELECT ${finalSelectClause}, c.name as category_name, c.slug as category_slug,
            (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image,
+           (SELECT COUNT(*) FROM product_variants WHERE product_id = p.id AND is_active = 1) as variant_count,
            COALESCE(
              (SELECT SUM(stock_quantity) FROM product_variants WHERE product_id = p.id),
              p.stock_quantity
@@ -152,6 +153,34 @@ class ProductModel {
     params.push(parseInt(limit), parseInt(offset));
 
     const [products] = await db.query(sql, params);
+
+    // Fetch variants for all products if any exist
+    if (products.length > 0) {
+      const productIds = products.map(p => p.id);
+      // Create placeholders for IN clause
+      const placeholders = productIds.map(() => '?').join(',');
+      const [variants] = await db.query(
+        `SELECT id, product_id, name as variant_name, sku, price, compare_price, stock_quantity, is_active
+         FROM product_variants 
+         WHERE product_id IN (${placeholders}) AND is_active = 1
+         ORDER BY product_id, id ASC`,
+        productIds
+      );
+
+      // Group variants by product_id
+      const variantsByProduct = {};
+      variants.forEach(v => {
+        if (!variantsByProduct[v.product_id]) {
+          variantsByProduct[v.product_id] = [];
+        }
+        variantsByProduct[v.product_id].push(v);
+      });
+
+      // Attach variants to each product
+      products.forEach(p => {
+        p.variants = variantsByProduct[p.id] || [];
+      });
+    }
 
     // Normalize primary_image URLs to absolute URLs so frontend can load them
     products.forEach(p => {

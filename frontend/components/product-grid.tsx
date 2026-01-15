@@ -104,12 +104,14 @@ export function ProductGrid({
         const mappedProducts = data.products.map((p: any) => ({
           ...p,
           image: p.primary_image || p.image || '/placeholder.jpg',
-          category: p.category_name || 'Uncategorized', // Need category name for display
+          category: p.category_name || 'Uncategorized',
           badge: p.is_featured ? 'Featured' : null,
           reviews: p.review_count || 0,
           comparePrice: p.compare_price,
           inStock: p.in_stock,
-          stockQuantity: p.stock_quantity
+          stockQuantity: p.stock_quantity,
+          hasVariants: p.variant_count > 0,
+          variants: p.variants || []
         }))
 
         setProducts(mappedProducts)
@@ -227,6 +229,8 @@ export function ProductGrid({
               category={product.category}
               rating={product.rating}
               reviews={product.reviews}
+              hasVariants={product.hasVariants}
+              variants={product.variants}
               className={viewMode === 'list' ? 'flex-row' : ''}
               inStock={product.inStock}
               stockQuantity={product.stockQuantity}

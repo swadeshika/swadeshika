@@ -192,28 +192,7 @@ export function ContactForm() {
         />
       </div>
 
-      <div className="space-y-2">
-        <Label>Attachment (optional)</Label>
-        <div className="flex items-center gap-3">
-          <label className="flex items-center justify-center px-4 py-2 border-2 border-dashed rounded-lg cursor-pointer border-[#E8DCC8] hover:bg-[#F5F1E8] transition-colors">
-            <Upload className="h-4 w-4 mr-2 text-[#6B4423]" />
-            <span className="text-sm text-[#6B4423]">{file ? file.name : 'Upload a file'}</span>
-            <input type="file" className="hidden" onChange={handleFileChange} />
-          </label>
-          {file && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-red-500 hover:text-red-600"
-              onClick={() => setFile(null)}
-            >
-              Remove
-            </Button>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground">Max file size: 5MB. Supported formats: JPG, PNG, PDF</p>
-      </div>
+
 
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
         <p className="text-sm text-muted-foreground">

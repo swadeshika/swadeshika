@@ -95,7 +95,7 @@ export function OrdersList() {
 					size="sm" 
 					onClick={fetchOrders}
 					disabled={loading}
-					className="text-[#2D5F3F] hover:bg-[#2D5F3F]/10"
+					className="text-[#2D5F3F] hover:bg-[#2D5F3F]"
 				>
 					{loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RotateCcw className="h-4 w-4 mr-2" />}
 					Refresh
@@ -127,9 +127,8 @@ export function OrdersList() {
 									<div className="flex-1 flex items-start justify-between">
 										<div>
 											<p className="font-medium text-[#6B4423]">{item.productName}</p>
-											<p className="text-sm text-[#8B6F47]">
-												{item.variantName} × {item.quantity}
-											</p>
+												{item.variantName && <span className="mr-2">Variant: {item.variantName}</span>}
+												<span className="text-muted-foreground">Qty: {item.quantity}</span>
 										</div>
 										<button
 											onClick={(e) => handleWishlistToggle(item.product_id || (index + 1), e)}

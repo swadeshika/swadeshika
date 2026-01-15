@@ -183,7 +183,21 @@ export function AccountSettings() {
 
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
-              <Input id="phone" type="tel" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">+91</span>
+                <Input 
+                  id="phone" 
+                  type="tel" 
+                  maxLength={10}
+                  className="pl-12"
+                  placeholder="9876543210"
+                  value={profile.phone} 
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+                    setProfile({ ...profile, phone: val });
+                  }} 
+                />
+              </div>
             </div>
 
             <Button

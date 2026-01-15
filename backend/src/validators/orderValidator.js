@@ -139,6 +139,14 @@ const createOrderValidation = [
 
             // Validate request consistency (frontend-calculated totals).
             // The backend will still compute and store its own totals during order creation.
+            
+            // If a coupon code is provided, we skip the strict total check here because 
+            // the validator cannot verify the coupon discount without a DB lookup.
+            // The controller will perform the final validation and total calculation.
+            if (req.body.couponCode) {
+                return true;
+            }
+
             const shippingCost = Number(req.body.shippingCost ?? req.body.shipping_fee ?? 0);
             const tax = Number(req.body.tax ?? req.body.taxAmount ?? 0);
             const calculatedTotal = itemsSubtotal + (Number.isFinite(shippingCost) ? shippingCost : 0) + (Number.isFinite(tax) ? tax : 0);

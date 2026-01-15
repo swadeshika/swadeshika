@@ -150,6 +150,21 @@ export default function OrderConfirmationPage() {
                                         <span className="text-muted-foreground">Subtotal</span>
                                         <span className="font-medium">₹{order.summary?.subtotal || order.items?.reduce((a, b) => a + Number(b.subtotal), 0)}</span>
                                     </div>
+
+                                    {(Number(order.summary?.discount || order.discountAmount) > 0) && (
+                                        <div className="flex items-center justify-between text-green-600">
+                                            <span className="flex items-center gap-2">
+                                                <span>Discount</span>
+                                                {order.couponCode && (
+                                                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                                                        {order.couponCode}
+                                                    </span>
+                                                )}
+                                            </span>
+                                            <span className="font-medium">-₹{order.summary?.discount || order.discountAmount}</span>
+                                        </div>
+                                    )}
+
                                     <div className="flex items-center justify-between">
                                         <span className="text-muted-foreground">Shipping</span>
                                         <span className="font-medium">

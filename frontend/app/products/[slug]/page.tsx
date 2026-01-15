@@ -93,6 +93,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
       reviewCount: apiProduct.review_count,
       weightUnit: apiProduct.weight_unit || 'kg',
       category: (apiProduct as any).category_name || apiProduct.category_id?.toString() || 'Uncategorized',
+      categorySlug: (apiProduct as any).category_slug || (apiProduct as any).category_name?.toLowerCase().replace(/\s+/g, '-') || '#',
       features: apiProduct.features || [],
       specifications: apiProduct.specifications || {},
       tags: apiProduct.tags || [],

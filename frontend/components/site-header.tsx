@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import {
   Search,
@@ -67,6 +67,41 @@ export function SiteHeader() {
     router.push("/")
   }
 
+  // State for dynamic navigation
+  const [navItems, setNavItems] = useState(mainNav)
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const { productService } = await import("@/lib/services/productService");
+        const categories = await productService.getAllCategories();
+        
+        // Map backend categories to submenu items
+        // Filter out empty or invalid categories if needed
+        const categorySubmenu = categories
+            .filter(c => c.is_active !== false) // Assuming is_active exists, or just show all
+            .slice(0, 10) // Limit to top 10 to clear UI
+            .map(c => ({
+                name: c.name,
+                href: `/shop/${c.slug || c.id}` // Fallback to ID if slug missing
+            }));
+
+        if (categorySubmenu.length > 0) {
+            setNavItems(prev => prev.map(item => {
+                if (item.name === "Categories") {
+                    return { ...item, submenu: categorySubmenu };
+                }
+                return item;
+            }));
+        }
+      } catch (error) {
+        console.error("Failed to fetch menu categories:", error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
   const handleSearch = (e: React.FormEvent, isMobile = false) => {
     e.preventDefault()
     const query = isMobile ? mobileSearchValue.trim() : searchValue.trim()
@@ -80,6 +115,9 @@ export function SiteHeader() {
       }
     }
   }
+
+  // Use navItems instead of mainNav in render
+
 
   return (
     <>
@@ -106,7 +144,7 @@ export function SiteHeader() {
 
               {/* Desktop Navigation */}
               <nav className="hidden lg:flex ml-4 sm:ml-6 lg:ml-10 space-x-6">
-                {mainNav.map((item) => (
+                {navItems.map((item) => (
                   <div key={item.name} className="relative group">
                     <Link
                       href={item.href}
@@ -314,7 +352,7 @@ export function SiteHeader() {
 
               <div className="p-4">
                 <nav className="space-y-2">
-                  {mainNav.map((item) => (
+                  {navItems.map((item) => (
                     <div key={item.name} className="border-b border-gray-100">
                       <Link
                         href={item.href}

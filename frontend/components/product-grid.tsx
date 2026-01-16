@@ -111,7 +111,8 @@ export function ProductGrid({
           inStock: p.in_stock,
           stockQuantity: p.stock_quantity,
           hasVariants: p.variant_count > 0,
-          variants: p.variants || []
+          variants: p.variants || [],
+          rating: Number(p.average_rating) || 0
         }))
 
         setProducts(mappedProducts)

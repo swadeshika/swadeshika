@@ -63,6 +63,8 @@ export function WishlistContent() {
             image={item.image_url}
             // badge={item.badge}
             category=""
+            rating={item.average_rating ? Number(item.average_rating) : 0}
+            reviews={item.review_count || 0}
             showWishlistAction={false}
             onAddToCart={() => moveToCart(item)}
           />

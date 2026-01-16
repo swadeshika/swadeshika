@@ -70,6 +70,9 @@ export async function generateStaticParams() {
   }
 }
 
+// Force revalidation every 10 seconds to ensure fresh review counts
+export const revalidate = 10
+
 /**
  * Product Detail Page Component
  */
@@ -103,7 +106,8 @@ export default async function ProductPage({ params }: { params: { slug: string }
         quantity: v.stock_quantity,
          comparePrice: v.compare_price,
         isActive: true
-      }))
+      })),
+      rating: Number(apiProduct.average_rating) || 0
     }
     
     // Fetch related products (using same category)

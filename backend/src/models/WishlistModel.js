@@ -62,6 +62,8 @@ class WishlistModel {
         p.price,
         p.compare_price,
         p.in_stock,
+        p.average_rating,
+        p.review_count,
         (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as image_url
       FROM wishlist w
       JOIN products p ON w.product_id = p.id

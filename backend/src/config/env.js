@@ -43,6 +43,9 @@ const config = {
   // File Upload Config
   UPLOAD_LIMIT: process.env.UPLOAD_LIMIT || '10mb',
 
+  // Base URL for image paths
+  BASE_URL: process.env.BASE_URL || 'http://localhost:5000',
+
   // Password Hashing
   SALT_ROUNDS: process.env.SALT_ROUNDS || 10,
 };

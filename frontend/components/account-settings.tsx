@@ -257,7 +257,7 @@ export function AccountSettings() {
       </Card>
 
       {/* Notification Preferences */}
-      <Card className="rounded-2xl py-5 border-2 border-[#E8DCC8]">
+      {/* <Card className="rounded-2xl py-5 border-2 border-[#E8DCC8]">
         <CardHeader>
           <CardTitle className="text-[#6B4423]">Notifications</CardTitle>
         </CardHeader>
@@ -284,10 +284,10 @@ export function AccountSettings() {
             <Switch checked={prefs.marketing} onCheckedChange={(v) => persistPrefs({ ...prefs, marketing: v })} />
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Delete Account */}
-      <Card className="rounded-2xl py-5 border-2 border-[#E8DCC8]">
+      {/* <Card className="rounded-2xl py-5 border-2 border-[#E8DCC8]">
         <CardHeader>
           <CardTitle className="text-red-600">Delete Account</CardTitle>
         </CardHeader>
@@ -324,7 +324,7 @@ export function AccountSettings() {
             </AlertDialogContent>
           </AlertDialog>
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   )
 }

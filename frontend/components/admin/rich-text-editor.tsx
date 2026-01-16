@@ -97,6 +97,17 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
     }
   }, [])
 
+  // Disable color and background formats to prevent inline styles
+  useEffect(() => {
+    const quill = editorRef.current?.getQuill()
+    if (quill) {
+      // Remove color and background formats
+      const formats = quill.getFormat()
+      if (formats.color) quill.format('color', false)
+      if (formats.background) quill.format('background', false)
+    }
+  }, [value])
+
   // Memoize the header template to prevent unnecessary re-renders
   const headerTemplate = useCallback(
     () => (
@@ -115,6 +126,7 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
           <option value="" />
           <option value="center" />
           <option value="right" />
+          <option value="justify" />
         </select>
         <button className="ql-link" />
         <button className="ql-image" />

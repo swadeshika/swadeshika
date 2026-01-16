@@ -21,6 +21,13 @@ const reviewValidation = [
 
 // Public routes
 /**
+ * @route GET /featured
+ * @desc Get featured random 5-star reviews
+ * @access Public
+ */
+router.get('/featured', ReviewController.getFeaturedReviews);
+
+/**
  * @route GET /product/:productId
  * @desc Get reviews for a product
  * @access Public
@@ -29,6 +36,27 @@ router.get('/product/:productId', ReviewController.getProductReviews);
 
 // Protected routes
 router.use(authenticate);
+
+/**
+ * @route GET /
+ * @desc Get all reviews (Admin)
+ * @access Private/Admin
+ */
+router.get('/', ReviewController.getAllReviews);
+
+/**
+ * @route PATCH /:id/status
+ * @desc Update review status
+ * @access Private/Admin
+ */
+router.patch('/:id/status', ReviewController.updateStatus);
+
+/**
+ * @route DELETE /:id
+ * @desc Delete review
+ * @access Private/Admin
+ */
+router.delete('/:id', ReviewController.deleteReview);
 
 /**
  * @route POST /

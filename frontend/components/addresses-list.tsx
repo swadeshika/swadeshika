@@ -225,10 +225,12 @@ export function AddressesList() {
                     Edit
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
-                    className="flex-1 gap-2 text-destructive hover:text-white bg-transparent border-2 border-[#E8DCC8]"
                     onClick={() => setDeleteId(address.id)}
+                    disabled={items.length === 1}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={items.length === 1 ? "Cannot delete your only address" : "Delete address"}
                   >
                     <Trash2 className="h-4 w-4" />
                     Delete

@@ -17,6 +17,7 @@ export interface Product {
     stock_quantity: number;
     low_stock_threshold?: number;
     rating: number;
+    average_rating?: number;
     review_count: number;
     badge?: string;
     is_active: boolean;

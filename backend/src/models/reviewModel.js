@@ -23,6 +23,16 @@ class ReviewModel {
     }
 
     /**
+     * Find review by ID
+     * @param {number} id
+     * @returns {Promise<Object>}
+     */
+    static async findById(id) {
+        const [rows] = await db.query('SELECT * FROM reviews WHERE id = ?', [id]);
+        return rows[0];
+    }
+
+    /**
      * Find reviews by product ID
      * @param {number} productId 
      * @returns {Promise<Array>}
@@ -86,6 +96,87 @@ class ReviewModel {
              LEFT JOIN reviews r ON r.order_id = o.id AND r.product_id = oi.product_id AND r.user_id = o.user_id
              WHERE o.user_id = ? AND o.status = 'delivered' AND r.id IS NULL`,
             [userId]
+        );
+        return rows;
+    }
+
+    /**
+     * Get all reviews (Admin)
+     * @param {Object} filters - { status }
+     * @returns {Promise<Array>}
+     */
+    static async getAllReviews(filters = {}) {
+        let sql = `
+            SELECT 
+                r.*, 
+                u.name as user_name, 
+                u.email as user_email,
+                p.name as product_name
+            FROM reviews r
+            JOIN users u ON r.user_id = u.id
+            JOIN products p ON r.product_id = p.id
+        `;
+        
+        const params = [];
+        const whereClauses = [];
+
+        if (filters.status && filters.status !== 'all') {
+            whereClauses.push('r.status = ?');
+            params.push(filters.status);
+        }
+
+        if (whereClauses.length > 0) {
+            sql += ` WHERE ${whereClauses.join(' AND ')}`;
+        }
+
+        sql += ` ORDER BY r.created_at DESC`;
+
+        const [rows] = await db.query(sql, params);
+        return rows;
+    }
+
+    /**
+     * Update review status
+     * @param {number} id 
+     * @param {string} status 
+     * @returns {Promise<Object>}
+     */
+    static async updateStatus(id, status) {
+        // Sync is_approved for backward compatibility
+        const isApproved = status === 'approved' ? 1 : 0;
+        
+        await db.query(
+            'UPDATE reviews SET status = ?, is_approved = ? WHERE id = ?',
+            [status, isApproved, id]
+        );
+        return { id, status, is_approved: isApproved };
+    }
+
+    /**
+     * Delete review
+     * @param {number} id 
+     * @returns {Promise<boolean>}
+     */
+    static async delete(id) {
+        const [result] = await db.query('DELETE FROM reviews WHERE id = ?', [id]);
+        return result.affectedRows > 0;
+    }
+
+    /**
+     * Get featured reviews (High rating, random)
+     * @param {number} limit 
+     * @returns {Promise<Array>}
+     */
+    static async getFeaturedReviews(limit = 3) {
+        const [rows] = await db.query(
+            `SELECT r.*, u.name as user_name, u.role, 
+             (SELECT city FROM addresses WHERE user_id = u.id ORDER BY is_default DESC LIMIT 1) as city
+             FROM reviews r
+             JOIN users u ON r.user_id = u.id
+             WHERE r.rating = 5 AND r.is_approved = TRUE
+             ORDER BY RAND()
+             LIMIT ?`,
+            [limit]
         );
         return rows;
     }

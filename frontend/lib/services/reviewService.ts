@@ -8,6 +8,7 @@ export interface Review {
     title?: string;
     comment?: string;
     user_name?: string;
+    city?: string; // Added city
     is_verified?: boolean;
     created_at?: string;
 }
@@ -42,6 +43,14 @@ export const reviewService = {
      */
     getPendingReviews: async () => {
         const res = await api.get<{ data: any[] }>('/reviews/pending');
+        return res.data.data;
+    },
+
+    /**
+     * Get featured home page reviews
+     */
+    getFeaturedReviews: async () => {
+        const res = await api.get<Review[]>('/reviews/featured');
         return res.data.data;
     }
 };

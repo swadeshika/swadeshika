@@ -77,13 +77,18 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
          */
         if (response.status === 401 && typeof window !== 'undefined') {
             // Check if this is a token expiration (not login failure)
-            const isTokenExpired = data.message?.toLowerCase().includes('token') &&
-                data.message?.toLowerCase().includes('expire');
+            // Check if this is a token expiration OR missing token (which should trigger refresh via cookie)
+            const errorMsg = data.message?.toLowerCase() || '';
+            const isTokenExpired =
+                (errorMsg.includes('token') && errorMsg.includes('expire')) ||
+                errorMsg.includes('token is required') ||
+                errorMsg.includes('invalid token');
 
             // Don't try to refresh on login/register endpoints
             const isAuthEndpoint = endpoint.includes('/auth/login') ||
                 endpoint.includes('/auth/register') ||
-                endpoint.includes('/auth/refresh-token');
+                endpoint.includes('/auth/refresh-token') ||
+                endpoint.includes('/auth/logout');
 
             if (isTokenExpired && !isAuthEndpoint) {
                 console.log('[API] Access token expired, attempting refresh...');
@@ -168,38 +173,37 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 async function handleLogout() {
     if (typeof window === 'undefined') return;
 
-    try {
-        // Clear localStorage tokens
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('user');
+    // CRITICAL: Clear state IMMEDIATELY to prevent infinite loops
+    // Don't wait for API responses that might fail with 401
 
-        // Clear Zustand stores
+    // Clear localStorage tokens
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
+
+    // Clear Zustand stores
+    try {
         const { useAuthStore } = await import('./auth-store');
         const { useCartStore } = await import('./cart-store');
+        const { useWishlistStore } = await import('./wishlist-store');
 
         useAuthStore.getState().logout();
-        await useCartStore.getState().clearCart();
-
-        // Clear Zustand persistence
-        (useAuthStore as any).persist?.clearStorage?.();
-        (useCartStore as any).persist?.clearStorage?.();
-
-        // Show notification
-        const { toast } = await import('@/hooks/use-toast');
-        toast({
-            title: 'Session Expired',
-            description: 'Your session has expired. Please login again to continue.',
-            variant: 'destructive',
-        });
-
-        // Redirect to login
-        setTimeout(() => {
-            window.location.href = '/login';
-        }, 1000);
+        useCartStore.getState().clearCart();
+        useWishlistStore.getState().clearWishlist();
     } catch (error) {
-        console.error('[API] Logout cleanup failed:', error);
-        window.location.href = '/login';
+        console.error('Error clearing stores:', error);
     }
+
+    // Try to call logout endpoint (best effort, don't wait for response)
+    // This clears the refresh token cookie on backend
+    fetch(`${BASE_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+    }).catch(() => {
+        // Silently fail - we've already cleared local state
+    });
+
+    // Redirect immediately
+    window.location.href = '/login';
 }
 
 /**
@@ -213,6 +217,8 @@ export const api = {
     post: <T = any>(endpoint: string, body: any) => request<T>(endpoint, { method: 'POST', body: JSON.stringify(body) }),
     /** Make a PUT request */
     put: <T = any>(endpoint: string, body: any) => request<T>(endpoint, { method: 'PUT', body: JSON.stringify(body) }),
+    /** Make a PATCH request */
+    patch: <T = any>(endpoint: string, body: any) => request<T>(endpoint, { method: 'PATCH', body: JSON.stringify(body) }),
     /** Make a DELETE request */
     delete: <T = any>(endpoint: string) => request<T>(endpoint, { method: 'DELETE' }),
 };

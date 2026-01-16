@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { slugify } = require('../utils/stringUtils');
+const { BASE_URL } = require('../config/env');
 
 class BlogModel {
 
@@ -51,6 +52,13 @@ class BlogModel {
 
         const [posts] = await db.query(sql, params);
 
+        // Format image URLs to absolute paths
+        const formattedPosts = posts.map(post => ({
+            ...post,
+            featured_image: post.featured_image ? `${BASE_URL}${post.featured_image}` : null,
+            author_image: post.author_image ? `${BASE_URL}${post.author_image}` : null
+        }));
+
         // Get total count
         let countSql = `
       SELECT COUNT(*) as total 
@@ -67,7 +75,7 @@ class BlogModel {
         const [countResult] = await db.query(countSql, countParams);
         const total = countResult[0].total;
 
-        return { posts, total, page: parseInt(page), limit: parseInt(limit), pages: Math.ceil(total / limit) };
+        return { posts: formattedPosts, total, page: parseInt(page), limit: parseInt(limit), pages: Math.ceil(total / limit) };
     }
 
     /**
@@ -83,7 +91,15 @@ class BlogModel {
     `;
 
         const [rows] = await db.query(sql, [slug]);
-        return rows[0] || null;
+        const post = rows[0] || null;
+        
+        // Format image URLs to absolute paths
+        if (post) {
+            if (post.featured_image) post.featured_image = `${BASE_URL}${post.featured_image}`;
+            if (post.author_image) post.author_image = `${BASE_URL}${post.author_image}`;
+        }
+        
+        return post;
     }
 
     /**

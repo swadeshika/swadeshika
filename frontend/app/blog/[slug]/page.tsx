@@ -161,7 +161,8 @@ function BlogPostContent({ slug }: { slug: string }) {
   }
   
   // Helper to get read time (estimate)
-  const getReadTime = (content: string) => {
+  const getReadTime = (content: string | null | undefined) => {
+    if (!content) return "1 min read"; // Default to 1 min if no content
     const wordsPerMinute = 200;
     const words = content.trim().split(/\s+/).length;
     const time = Math.ceil(words / wordsPerMinute);
@@ -371,21 +372,39 @@ function BlogPostContent({ slug }: { slug: string }) {
               </div>
               
               {/* Featured Image */}
-              {post.featured_image && (
-                <div className="relative w-full h-64 md:h-[500px] rounded-2xl overflow-hidden shadow-2xl mb-16 group mx-auto max-w-4xl">
-                    <Image
-                    src={post.featured_image}
-                    alt={post.title}
-                    fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-105"
-                    priority
-                    sizes="(max-width: 768px) 100vw, 80vw"
-                    />
-                    <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent flex items-end p-8">
-                    <p className="text-white/80 text-sm">Photo by {post.author_name}</p>
+              {(() => {
+                try {
+                  // Validate image URL
+                  if (!post.featured_image || !post.featured_image.trim()) return null;
+                  const imageUrl = post.featured_image.trim();
+                  // Check if it's a valid URL
+                  if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) return null;
+                  
+                  return (
+                    <div className="relative w-full h-64 md:h-[500px] rounded-2xl overflow-hidden shadow-2xl mb-16 group mx-auto max-w-4xl">
+                      <Image
+                        src={imageUrl}
+                        alt={post.title}
+                        fill
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                        priority
+                        sizes="(max-width: 768px) 100vw, 80vw"
+                        onError={(e) => {
+                          console.error('Featured image failed to load:', imageUrl);
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent flex items-end p-8">
+                        <p className="text-white/80 text-sm">Photo by {post.author_name}</p>
+                      </div>
                     </div>
-                </div>
-              )}
+                  );
+                } catch (err) {
+                  console.error('Error rendering featured image:', err);
+                  return null;
+                }
+              })()}
             </div>
           </div>
         </div>
@@ -395,8 +414,68 @@ function BlogPostContent({ slug }: { slug: string }) {
           <div className="mx-auto px-4 w-full max-w-6xl">
             <div className="grid gap-10 lg:grid-cols-12">
               <article className="lg:col-span-8">
+                <style jsx global>{`
+                  /* Override PrimeReact inline styles */
+                  .blog-content span[style*="background-color"],
+                  .blog-content strong[style*="background-color"],
+                  .blog-content p[style*="background-color"] {
+                    background-color: transparent !important;
+                  }
+                  
+                  .blog-content span[style*="color"],
+                  .blog-content strong[style*="color"],
+                  .blog-content p[style*="color"] {
+                    color: inherit !important;
+                  }
+                  
+                  /* Base typography */
+                  .blog-content p { 
+                    margin-bottom: 1.25em; 
+                    line-height: 1.8;
+                    color: #5A3A1F;
+                  }
+                  
+                  .blog-content h2 { 
+                    font-size: 1.875rem; 
+                    font-weight: 700; 
+                    margin-top: 2.5em; 
+                    margin-bottom: 1em;
+                    color: #2D5F3F;
+                  }
+                  
+                  .blog-content h3 { 
+                    font-size: 1.5rem; 
+                    font-weight: 600; 
+                    margin-top: 2em; 
+                    margin-bottom: 0.75em;
+                    color: #2D5F3F;
+                  }
+                  
+                  /* Quill alignment classes */
+                  .blog-content .ql-align-justify { text-align: justify; }
+                  .blog-content .ql-align-center { text-align: center; }
+                  .blog-content .ql-align-right { text-align: right; }
+                  
+                  /* Text formatting */
+                  .blog-content strong { 
+                    font-weight: 700;
+                    color: #2D5F3F;
+                  }
+                  .blog-content em { font-style: italic; }
+                  
+                  /* Lists */
+                  .blog-content ul, .blog-content ol { 
+                    margin-left: 1.5em; 
+                    margin-bottom: 1.25em;
+                    color: #5A3A1F;
+                  }
+                  .blog-content li { 
+                    margin-bottom: 0.5em;
+                    line-height: 1.75;
+                  }
+                `}</style>
                 <div
-                  className="prose max-w-none w-full prose-p:text-[#5A3A1F] prose-headings:text-[#2D5F3F] prose-a:text-[#6B4423] hover:prose-a:text-[#5A3A1F] prose-strong:text-[#2D5F3F] prose-img:rounded-xl prose-img:shadow-md prose-img:max-w-full"
+                  className="blog-content prose prose-lg max-w-none w-full"
                   dangerouslySetInnerHTML={{ __html: post.content }}
                 />
 

@@ -11,7 +11,9 @@ export interface WishlistItem {
      slug: string
      price: number
      compare_price: number | null
-     in_stock: boolean // backend returns 0 or 1, might need conversion if typed strictly, but let's see
+     in_stock: boolean
+     average_rating?: number
+     review_count?: number
      image_url: string
 }
 
@@ -23,6 +25,7 @@ interface WishlistState {
      removeFromWishlist: (productId: number) => Promise<boolean>
      moveToCart: (item: WishlistItem) => Promise<boolean>
      isInWishlist: (productId: number) => boolean
+     clearWishlist: () => void
 }
 
 export const useWishlistStore = create<WishlistState>((set, get) => ({
@@ -103,6 +106,7 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
           // 1. Add to cart
           cartStore.addItem({
                id: item.product_id,
+               productId: item.product_id,
                name: item.name,
                price: item.price,
                image: item.image_url,
@@ -124,5 +128,9 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
 
      isInWishlist: (productId: number) => {
           return get().items.some((item) => item.product_id === productId)
+     },
+
+     clearWishlist: () => {
+          set({ items: [] })
      },
 }))

@@ -40,21 +40,15 @@ export function ProductReviews({
       const reviewsList = Array.isArray(data) ? data : (data as any).reviews || []
       setReviews(reviewsList)
       
-      // Calculate basic stats if not provided by backend
-      if (!(data as any).stats) {
-        const total = reviewsList.length
-        const avg = total > 0 
-          ? reviewsList.reduce((acc: number, r: any) => acc + r.rating, 0) / total 
-          : 0
-        setStats({
-          averageRating: avg,
-          totalReviews: total
-        })
-        if (onCountChange) onCountChange(total)
-      } else {
-        setStats((data as any).stats)
-        if (onCountChange) onCountChange((data as any).stats.totalReviews)
-      }
+      // Use the initial counts from backend (product.review_count and product.average_rating)
+      // These are calculated server-side and only count approved reviews
+      // Do NOT recalculate based on fetched reviews length
+      setStats({
+        averageRating: initialRating,
+        totalReviews: initialReviewCount
+      })
+      
+      if (onCountChange) onCountChange(initialReviewCount)
     } catch (error) {
       console.error('Failed to fetch reviews:', error)
     } finally {
@@ -123,7 +117,7 @@ export function ProductReviews({
               <div className="flex items-center justify-between border-b border-[#E8DCC8] pb-4">
                 <h3 className="font-sans text-2xl font-bold text-[#6B4423]">Customer Reviews</h3>
                 <span className="text-sm font-medium text-[#8B6F47] bg-[#F5F1E8] px-3 py-1 rounded-full border border-[#E8DCC8]">
-                  {reviews.length} total
+                  {totalReviews} total
                 </span>
               </div>
               

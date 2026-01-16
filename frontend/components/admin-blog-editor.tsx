@@ -240,6 +240,8 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
         })
         
         // Delete old image if it exists and is a server URL (not base64)
+        // DISABLED: Only delete when explicitly removing, not on every upload
+        /*
         if (oldImageUrl && oldImageUrl.startsWith('/uploads/')) {
           try {
             const filename = oldImageUrl.split('/').pop()
@@ -258,6 +260,7 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
             // Don't show error to user, just log it
           }
         }
+        */
         
         toast({ title: "Image uploaded successfully" })
       } catch (error) {

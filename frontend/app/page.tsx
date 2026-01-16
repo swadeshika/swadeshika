@@ -23,9 +23,53 @@ const quickLinks = [
   { name: "All Products", icon: "📦", href: "/shop" },
 ]
 
+import { reviewService, Review } from "@/lib/services/reviewService"
+
+const DEMO_REVIEWS: Review[] = [
+  {
+    product_id: 1,
+    rating: 5,
+    comment: "The ghee quality is exceptional! You can taste the purity in every spoonful. My family loves it.",
+    user_name: "Priya Sharma",
+    city: "Mumbai"
+  },
+  {
+    product_id: 2,
+    rating: 5,
+    comment: "Best organic spices I've ever used. The aroma is incredible and they're completely authentic.",
+    user_name: "Rajesh Kumar",
+    city: "Delhi"
+  },
+  {
+    product_id: 3,
+    rating: 5,
+    comment: "Fast delivery and excellent packaging. The dry fruits are fresh and of premium quality.",
+    user_name: "Anita Patel",
+    city: "Bangalore"
+  }
+]
+
 export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [reviews, setReviews] = useState<Review[]>([])
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const data = await reviewService.getFeaturedReviews()
+        if (data && data.length > 0) {
+          setReviews(data)
+        } else {
+          setReviews(DEMO_REVIEWS)
+        }
+      } catch (error) {
+        console.error("Failed to fetch featured reviews, using demo data", error)
+        setReviews(DEMO_REVIEWS)
+      }
+    }
+    fetchReviews()
+  }, [])
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -139,35 +183,35 @@ export default function HomePage() {
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-2 md:grid-cols-2 md:grid-rows-2 gap-6 h-auto md:h-[600px]">
 
-              {/* Big banner */}
+              {/* Big banner - Ghee */}
               <Link
-                href="/shop/festival"
+                href="/shop/ghee"
                 className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all col-span-2 md:col-span-1 md:row-span-2 h-[260px] sm:h-80 md:h-full cursor-pointer"
               >
                 <div className="absolute inset-0">
                   <img
-                    src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-Ex8VxC2U7ANMfELBQuhxanzrVb8gEz.png"
-                    alt="Festival Special Offers"
+                    src="/banner-ghee.png"
+                    alt="Pure Desi Ghee"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                 </div>
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
 
-                {/* Text container: responsive max-width so text wraps on small screens */}
+                {/* Text container */}
                 <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 text-white">
                   <div className="max-w-[92%] sm:max-w-[70%] md:max-w-[520px] lg:max-w-[640px]">
                     <h2 className="text-xl sm:text-2xl md:text-4xl font-bold mb-3 text-balance leading-tight whitespace-normal break-words">
-                      Festival Special Offers
+                      Pure Desi Ghee
                     </h2>
 
                     <p className="text-xs sm:text-sm md:text-xl text-white/95 mb-6 font-medium whitespace-normal break-words">
-                      Pure Desi Ghee at Best Prices
+                      Traditional Bilona Method from Gir Cows
                     </p>
 
                     <Button
                       size="lg"
-                      className="bg-accent hover:bg-accent/90 text-white font-semibold px-4 sm:px-5 md:px-6 h-9 sm:h-10 rounded-lg shadow-lg whitespace-nowrap text-[10px] sm:text-xs md:text-sm leading-none cursor-pointer"
+                      className="bg-[#FF7E00] hover:bg-[#E67300] text-white font-semibold px-4 sm:px-5 md:px-6 h-9 sm:h-10 rounded-lg shadow-lg whitespace-nowrap text-[10px] sm:text-xs md:text-sm leading-none cursor-pointer"
                     >
                       ORDER NOW
                     </Button>
@@ -176,15 +220,15 @@ export default function HomePage() {
                 </div>
               </Link>
 
-              {/* Small banner 1 */}
+              {/* Small banner 1 - Spices */}
               <Link
-                href="/shop/a2-ghee"
+                href="/shop/spices"
                 className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-56 md:h-auto min-h-[220px] cursor-pointer"
               >
                 <div className="absolute inset-0">
                   <img
-                    src="/hero-slide-2-spices.jpg"
-                    alt="A2 Ghee from Free-Grazing Gir Cows"
+                    src="/banner-spices.png"
+                    alt="Authentic Indian Spices"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                 </div>
@@ -192,14 +236,14 @@ export default function HomePage() {
                 <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white">
                   <div className="max-w-[92%] sm:max-w-[85%] md:max-w-[420px]">
                     <h3 className="text-sm sm:text-xl md:text-3xl font-bold mb-2 text-balance leading-tight whitespace-normal break-words">
-                      A2 Ghee from Free-Grazing Gir Cows
+                      Authentic Spices
                     </h3>
                     <p className="text-xs sm:text-sm md:text-lg text-white/95 mb-4 font-medium whitespace-normal break-words cursor-pointer">
-                      Pure & Authentic
+                      Fresh & Aromatic
                     </p>
                     <Button
                       size="default"
-                      className="bg-primary hover:bg-primary/90 text-white font-semibold px-4 sm:px-5 md:px-6 h-8 sm:h-9 rounded-lg whitespace-nowrap text-[10px] sm:text-xs md:text-sm leading-none cursor-pointer"
+                      className="bg-[#2D5F3F] hover:bg-[#234A32] text-white font-semibold px-4 sm:px-5 md:px-6 h-8 sm:h-9 rounded-lg whitespace-nowrap text-[10px] sm:text-xs md:text-sm leading-none cursor-pointer"
                     >
                       Shop Now
                     </Button>
@@ -208,41 +252,40 @@ export default function HomePage() {
                 </div>
               </Link>
 
-              {/* Small banner 2 */}
+              {/* Small banner 2 - Oils */}
               <Link
-                href="/about/farmers"
-                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-56 md:h-auto min-h-[220px] bg-gradient-to-br from-amber-800 to-amber-950 cursor-pointer"
+                href="/shop/oils"
+                className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-56 md:h-auto min-h-[220px] cursor-pointer"
               >
-                <div className="absolute inset-0 overflow-hidden">
-                  <div
-                    className="absolute inset-0 bg-[url('/pattern-leaves.jpg')] opacity-10 pointer-events-none transform transition-transform duration-700 ease-out group-hover:scale-105"
+                <div className="absolute inset-0">
+                   <img
+                    src="/banner-oil.png"
+                    alt="Cold Pressed Oils"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                 </div>
-                <div className="relative h-full flex flex-col justify-center p-4 sm:p-6 md:p-6 text-white">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
+                
+                <div className="relative h-full flex flex-col justify-end p-4 sm:p-6 md:p-6 text-white">
                   <div className="inline-block mb-3">
                     <span
-                      className="bg-accent text-white font-bold px-3 py-1.5 rounded-md uppercase tracking-wide whitespace-nowrap leading-none inline-flex items-center"
-                      // using Tailwind arbitrary value for responsive clamping:
-                      // font size will clamp between 10px and 13px, scaling with viewport
-                      // (adjust numbers if you want it even smaller/larger)
-                      // If your Tailwind config disallows arbitrary values, you can replace
-                      // text-[clamp(...)] with text-xs / sm:text-sm etc.
+                      className="bg-[#FF7E00] text-white font-bold px-3 py-1.5 rounded-md uppercase tracking-wide whitespace-nowrap leading-none inline-flex items-center"
                       style={{ fontSize: "clamp(10px, 2.2vw, 13px)" }}
                     >
-                      BREAKING NEWS
+                      100% ORGANIC
                     </span>
                   </div>
 
                   <div className="max-w-[92%] sm:max-w-[80%] md:max-w-[420px]">
                     <h3 className="text-sm sm:text-xl md:text-3xl font-bold mb-4 text-balance leading-tight whitespace-normal break-words">
-                      Farmers to get more back to Your Roots
+                       Cold Pressed Oils
                     </h3>
                     <Button
                       size="default"
                       variant="outline"
                       className="bg-white/10 border-white/40 text-white hover:bg-white hover:text-foreground font-semibold px-4 sm:px-5 md:px-6 h-8 sm:h-9 rounded-lg backdrop-blur-sm w-fit whitespace-nowrap text-[10px] sm:text-xs md:text-sm leading-none cursor-pointer"
                     >
-                      ORDER NOW
+                      SHOP COLLECTION
                     </Button>
                   </div>
                 </div>
@@ -341,44 +384,47 @@ export default function HomePage() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-6">
-              {[
-                {
-                  name: "Priya Sharma",
-                  location: "Mumbai",
-                  rating: 5,
-                  text: "The ghee quality is exceptional! You can taste the purity in every spoonful. My family loves it.",
-                },
-                {
-                  name: "Rajesh Kumar",
-                  location: "Delhi",
-                  rating: 5,
-                  text: "Best organic spices I've ever used. The aroma is incredible and they're completely authentic.",
-                },
-                {
-                  name: "Anita Patel",
-                  location: "Bangalore",
-                  rating: 5,
-                  text: "Fast delivery and excellent packaging. The dry fruits are fresh and of premium quality.",
-                },
-              ].map((testimonial, index) => (
-                <div key={index} className="bg-white rounded-2xl p-6 border-2 border-[#E8DCC8] hover:shadow-lg transition-shadow">
-                  <div className="flex gap-1 mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="h-5 w-5 fill-[#FF7E00] text-[#FF7E00]" />
-                    ))}
-                  </div>
-                  <p className="mb-4 leading-relaxed text-[#6B4423]">"{testimonial.text}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#2D5F3F]/10 flex items-center justify-center font-semibold text-[#2D5F3F]">
-                      {testimonial.name.charAt(0)}
+              {reviews.length > 0 ? (
+                reviews.map((review, index) => (
+                  <div key={index} className="bg-white rounded-2xl p-6 border-2 border-[#E8DCC8] hover:shadow-lg transition-shadow">
+                    <div className="flex gap-1 mb-4">
+                      {[...Array(review.rating)].map((_, i) => (
+                        <Star key={i} className="h-5 w-5 fill-[#FF7E00] text-[#FF7E00]" />
+                      ))}
                     </div>
-                    <div>
-                      <p className="font-semibold text-sm text-[#6B4423]">{testimonial.name}</p>
-                      <p className="text-xs text-[#8B6F47]">{testimonial.location}</p>
+                    <p className="mb-4 leading-relaxed text-[#6B4423]">"{review.comment}"</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#2D5F3F]/10 flex items-center justify-center font-semibold text-[#2D5F3F]">
+                        {review.user_name ? review.user_name.charAt(0) : 'U'}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm text-[#6B4423]">{review.user_name || 'Verified Customer'}</p>
+                        <p className="text-xs text-[#8B6F47]">{review.city || 'India'}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                // Skeleton Loading State
+                [1, 2, 3].map((_, i) => (
+                  <div key={i} className="bg-white rounded-2xl p-6 border-2 border-[#E8DCC8] animate-pulse">
+                    <div className="flex gap-1 mb-4">
+                      {[...Array(5)].map((_, j) => (
+                        <div key={j} className="h-5 w-5 bg-gray-200 rounded-full" />
+                      ))}
+                    </div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gray-200"></div>
+                      <div>
+                        <div className="h-3 bg-gray-200 rounded w-24 mb-1"></div>
+                        <div className="h-3 bg-gray-200 rounded w-16"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </section>

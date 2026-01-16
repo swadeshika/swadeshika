@@ -8,8 +8,20 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CheckCircle2, XCircle, Trash2, Search, Star } from "lucide-react"
+import { CheckCircle2, XCircle, Trash2, Search, Star, ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
+import { api } from "@/lib/api"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface Review {
   id: number
@@ -30,14 +42,20 @@ export default function AdminReviewsPage() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
+
 
   const fetchReviews = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/v1/reviews?status=${statusFilter === 'all' ? '' : statusFilter}`)
-      const data = await response.json()
-      setReviews(data.data || [])
+      // Build query string properly - don't add status param if 'all'
+      const queryString = statusFilter === 'all' ? '' : `?status=${statusFilter}`
+      const response = await api.get<Review[]>(`/reviews${queryString}`)
+      setReviews(response.data.data || [])
     } catch (error) {
+      console.error('Failed to fetch reviews:', error)
       toast({ title: "Error", description: "Failed to load reviews", variant: "destructive" })
     } finally {
       setLoading(false)
@@ -50,11 +68,7 @@ export default function AdminReviewsPage() {
 
   const handleStatusUpdate = async (reviewId: number, newStatus: 'approved' | 'rejected') => {
     try {
-      await fetch(`/api/v1/reviews/${reviewId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      })
+      await api.patch(`/reviews/${reviewId}/status`, { status: newStatus })
       toast({ title: "Success", description: `Review ${newStatus}` })
       fetchReviews()
     } catch (error) {
@@ -62,17 +76,17 @@ export default function AdminReviewsPage() {
     }
   }
 
-  const handleDelete = async (reviewId: number) => {
-    if (!confirm("Are you sure you want to delete this review?")) return
+  const confirmDelete = async () => {
+    if (!deleteId) return
     
     try {
-      await fetch(`/api/v1/reviews/${reviewId}`, {
-        method: 'DELETE'
-      })
+      await api.delete(`/reviews/${deleteId}`)
       toast({ title: "Success", description: "Review deleted" })
       fetchReviews()
     } catch (error) {
       toast({ title: "Error", description: "Failed to delete review", variant: "destructive" })
+    } finally {
+      setDeleteId(null)
     }
   }
 
@@ -81,6 +95,16 @@ export default function AdminReviewsPage() {
     review.user_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     review.comment.toLowerCase().includes(searchQuery.toLowerCase())
   )
+
+  // Pagination
+  const totalPages = Math.ceil(filteredReviews.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const paginatedReviews = filteredReviews.slice(startIndex, startIndex + itemsPerPage)
+
+  // Reset page when filter changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [statusFilter, searchQuery])
 
   return (
     <AdminLayout>
@@ -145,7 +169,7 @@ export default function AdminReviewsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredReviews.map((review) => (
+                  paginatedReviews.map((review) => (
                     <TableRow key={review.id}>
                       <TableCell className="font-medium text-[#6B4423]">
                         {review.product_name}
@@ -191,8 +215,10 @@ export default function AdminReviewsPage() {
                               variant="ghost"
                               onClick={() => handleStatusUpdate(review.id, 'approved')}
                               className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                              title="Approve Review"
                             >
-                              <CheckCircle2 className="h-4 w-4" />
+                              <CheckCircle2 className="h-4 w-4 mr-1" />
+                              <span className="text-xs">Approve</span>
                             </Button>
                           )}
                           {review.status !== 'rejected' && (
@@ -201,18 +227,40 @@ export default function AdminReviewsPage() {
                               variant="ghost"
                               onClick={() => handleStatusUpdate(review.id, 'rejected')}
                               className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              title="Reject Review"
                             >
-                              <XCircle className="h-4 w-4" />
+                              <XCircle className="h-4 w-4 mr-1" />
+                              <span className="text-xs">Reject</span>
                             </Button>
                           )}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDelete(review.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <AlertDialog open={!!deleteId && deleteId === review.id} onOpenChange={(open) => !open && setDeleteId(null)}>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setDeleteId(review.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                title="Delete Review Permanently"
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                <span className="text-xs">Delete</span>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Review?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will permanently remove the review from the database.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel onClick={() => setDeleteId(null)}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -220,6 +268,38 @@ export default function AdminReviewsPage() {
                 )}
               </TableBody>
             </Table>
+
+            {/* Pagination Controls - Bottom */}
+            {filteredReviews.length > 0 && (
+              <div className="flex items-center justify-between p-4 mt-4 border-t border-[#E8DCC8]">
+                <div className="text-sm text-[#8B6F47]">
+                  Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredReviews.length)} of {filteredReviews.length} reviews
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="border-[#E8DCC8]"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm text-[#6B4423] font-medium">
+                    Page {currentPage} of {totalPages || 1}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage >= totalPages}
+                    className="border-[#E8DCC8]"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

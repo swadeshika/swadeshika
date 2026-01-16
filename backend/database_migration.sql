@@ -148,7 +148,7 @@ CREATE TABLE products (
   in_stock BOOLEAN DEFAULT TRUE,
   stock_quantity INT DEFAULT 0,
   low_stock_threshold INT DEFAULT 10,
-  rating DECIMAL(3, 2) DEFAULT 0.00,
+  average_rating DECIMAL(3, 2) DEFAULT 0.00,
   review_count INT DEFAULT 0,
   badge VARCHAR(50),
   is_active BOOLEAN DEFAULT TRUE,

@@ -81,7 +81,35 @@ class AddressService {
      */
     static async deleteAddress(id, userId) {
         const address = await this.getAddress(id, userId);
+        
+        // Check total addresses for this user
+        const allAddresses = await AddressModel.findByUserId(userId);
+        
+        // Prevent deletion of last address
+        if (allAddresses.length === 1) {
+            throw { 
+                statusCode: 400, 
+                message: 'Cannot delete your only address. You must have at least one address.' 
+            };
+        }
+        
+        // If deleting the default address, set another as default
+        if (address.is_default && allAddresses.length > 1) {
+            // Find first non-deleted address that isn't the current one
+            const nextDefault = allAddresses.find(addr => addr.id !== id);
+            if (nextDefault) {
+                await AddressModel.setDefault(userId, nextDefault.id);
+            }
+        }
+        
+        // Delete the address
         await AddressModel.delete(id);
+        
+        // If only one address left, make it default automatically
+        const remainingAddresses = await AddressModel.findByUserId(userId);
+        if (remainingAddresses.length === 1) {
+            await AddressModel.setDefault(userId, remainingAddresses[0].id);
+        }
     }
 }
 

@@ -6,9 +6,11 @@ const db = require('../config/db');
 function toAssetUrl(p) {
   if (!p) return p;
   
-  // CRITICAL FIX: Explicitly handle Cloudinary URLs to prevent double-prefixing
+  // CRITICAL FIX: Handle Cloudinary URLs and strip double-prefixes if present
   if (String(p).includes('cloudinary.com')) {
-      return p;
+      // If the URL is double-prefixed (e.g. https://backend...https://res.cloudinary...), strip the prefix
+      const match = String(p).match(/(https?:\/\/res\.cloudinary\.com.*)/);
+      return match ? match[1] : p;
   }
 
   const backendBase = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;

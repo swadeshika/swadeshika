@@ -60,9 +60,10 @@ class BlogModel {
             // Handle featured_image
             if (post.featured_image && post.featured_image.trim()) {
                 const img = post.featured_image.trim();
-                // CRITICAL FIX: Explicitly handle Cloudinary URLs
+                // CRITICAL FIX: Explicitly handle Cloudinary URLs and strip double-prefixes
                 if (img.includes('cloudinary.com')) {
-                    featuredImage = img;
+                     const match = img.match(/(https?:\/\/res\.cloudinary\.com.*)/);
+                     featuredImage = match ? match[1] : img;
                 } else {
                     featuredImage = img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')
                         ? img 
@@ -73,9 +74,10 @@ class BlogModel {
             // Handle author_image
             if (post.author_image && post.author_image.trim()) {
                 const img = post.author_image.trim();
-                // CRITICAL FIX: Explicitly handle Cloudinary URLs
+                // CRITICAL FIX: Explicitly handle Cloudinary URLs and strip double-prefixes
                 if (img.includes('cloudinary.com')) {
-                    authorImage = img;
+                     const match = img.match(/(https?:\/\/res\.cloudinary\.com.*)/);
+                     authorImage = match ? match[1] : img;
                 } else {
                     authorImage = img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')
                         ? img 

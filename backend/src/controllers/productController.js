@@ -47,6 +47,8 @@ const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
+const cloudinary = require('../config/cloudinary');
+
 // Directory where uploaded files are served from (public/uploads)
 const UPLOAD_DIR = path.join(__dirname, '..', '..', 'public', 'uploads');
 
@@ -55,22 +57,17 @@ async function saveDataUrlImage(dataUrl) {
     const match = String(dataUrl).match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
     if (!match) return null;
 
-    const mime = match[1];
-    const base64Data = match[2];
-    const ext = mime.split('/')[1].split('+')[0] || 'png';
-
-    // Ensure upload directory exists
-    await fs.promises.mkdir(UPLOAD_DIR, { recursive: true });
-
-    const filename = `${Date.now()}-${uuidv4()}.${ext}`;
-    const filePath = path.join(UPLOAD_DIR, filename);
-
-    const buffer = Buffer.from(base64Data, 'base64');
-    await fs.promises.writeFile(filePath, buffer);
-
-    // Return the public URL path (served from /uploads)
-    const backendBase = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
-    return `${backendBase}/uploads/${filename}`;
+    try {
+        const result = await cloudinary.uploader.upload(dataUrl, {
+            folder: 'swadeshika/products',
+            allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+            public_id: `product-${Date.now()}-${uuidv4()}`
+        });
+        return result.secure_url;
+    } catch (error) {
+        console.error('Cloudinary upload error:', error);
+        return null; // Fallback or handle error
+    }
 }
 
 /**

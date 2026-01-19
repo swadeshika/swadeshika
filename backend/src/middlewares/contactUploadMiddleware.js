@@ -2,27 +2,23 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure upload directory exists
-const uploadDir = path.join(__dirname, '../../public/uploads/contacts');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../config/cloudinary');
+
+// Ensure upload directory exists (fallback or remove)
+// const uploadDir = path.join(__dirname, '../../public/uploads/contacts');
 
 /**
- * Configure storage for uploaded files
- * - Files saved to: backend/public/uploads/contacts/
- * - Filename format: contact-{timestamp}-{random}.{ext}
+ * Configure Cloudinary Storage
+ * - Files uploaded to: swadeshika/contacts
  */
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDir);
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'swadeshika/contacts',
+        allowed_formats: ['jpg', 'png', 'jpeg', 'pdf'],
+        public_id: (req, file) => `contact-${Date.now()}-${Math.round(Math.random() * 1E9)}`,
     },
-    filename: (req, file, cb) => {
-        // Generate unique filename
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        cb(null, 'contact-' + uniqueSuffix + ext);
-    }
 });
 
 /**

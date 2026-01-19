@@ -5,6 +5,12 @@ const db = require('../config/db');
 // Helper to convert relative upload paths to absolute URLs
 function toAssetUrl(p) {
   if (!p) return p;
+  
+  // CRITICAL FIX: Explicitly handle Cloudinary URLs to prevent double-prefixing
+  if (String(p).includes('cloudinary.com')) {
+      return p;
+  }
+
   const backendBase = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
 
   // If already absolute URL but points to old dev host (127.0.0.1:5000 or localhost:5000), rewrite it

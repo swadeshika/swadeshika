@@ -60,19 +60,27 @@ class BlogModel {
             // Handle featured_image
             if (post.featured_image && post.featured_image.trim()) {
                 const img = post.featured_image.trim();
-                // Only prepend BASE_URL if it's a relative path and not a data URI
-                featuredImage = img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')
-                    ? img 
-                    : `${BASE_URL}${img}`;
+                // CRITICAL FIX: Explicitly handle Cloudinary URLs
+                if (img.includes('cloudinary.com')) {
+                    featuredImage = img;
+                } else {
+                    featuredImage = img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')
+                        ? img 
+                        : `${BASE_URL}${img}`;
+                }
             }
 
             // Handle author_image
             if (post.author_image && post.author_image.trim()) {
                 const img = post.author_image.trim();
-                // Only prepend BASE_URL if it's a relative path and not a data URI
-                authorImage = img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')
-                    ? img 
-                    : `${BASE_URL}${img}`;
+                // CRITICAL FIX: Explicitly handle Cloudinary URLs
+                if (img.includes('cloudinary.com')) {
+                    authorImage = img;
+                } else {
+                    authorImage = img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')
+                        ? img 
+                        : `${BASE_URL}${img}`;
+                }
             }
 
             return {
@@ -121,9 +129,14 @@ class BlogModel {
             // Handle featured_image
             if (post.featured_image && post.featured_image.trim()) {
                 const img = post.featured_image.trim();
-                post.featured_image = img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')
-                    ? img 
-                    : `${BASE_URL}${img}`;
+                // CRITICAL FIX: Explicitly handle Cloudinary URLs
+                if (img.includes('cloudinary.com')) {
+                    post.featured_image = img;
+                } else {
+                    post.featured_image = img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')
+                        ? img 
+                        : `${BASE_URL}${img}`;
+                }
             } else {
                 post.featured_image = null;
             }
@@ -131,9 +144,14 @@ class BlogModel {
             // Handle author_image
             if (post.author_image && post.author_image.trim()) {
                 const img = post.author_image.trim();
-                post.author_image = img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')
-                    ? img 
-                    : `${BASE_URL}${img}`;
+                // CRITICAL FIX: Explicitly handle Cloudinary URLs
+                if (img.includes('cloudinary.com')) {
+                    post.author_image = img;
+                } else {
+                    post.author_image = img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')
+                        ? img 
+                        : `${BASE_URL}${img}`;
+                }
             } else {
                 post.author_image = null;
             }

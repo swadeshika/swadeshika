@@ -91,7 +91,7 @@ export const productService = {
             }
         });
 
-        const response = await api.get<{ products: Product[], total: number, page: number, pages: number }>(`/products?${queryParams.toString()}`);
+        const response = await api.get<{ products: Product[], total: number, page: number, pages: number }>(`/products?${queryParams.toString()}`, { cache: 'no-store' });
         return response.data.data; // The backend returns { success: true, data: { users: [], ... } } - wait, check backend response structure
     },
 
@@ -99,7 +99,7 @@ export const productService = {
      * Get single product by ID or Slug
      */
     async getProduct(idOrSlug: string | number) {
-        const response = await api.get<Product>(`/products/${idOrSlug}`);
+        const response = await api.get<Product>(`/products/${idOrSlug}`, { cache: 'no-store' });
         return response.data.data;
     },
 

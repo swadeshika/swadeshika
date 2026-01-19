@@ -212,7 +212,7 @@ async function handleLogout() {
  */
 export const api = {
     /** Make a GET request */
-    get: <T = any>(endpoint: string) => request<T>(endpoint, { method: 'GET' }),
+    get: <T = any>(endpoint: string, options: RequestInit = {}) => request<T>(endpoint, { method: 'GET', ...options }),
     /** Make a POST request */
     post: <T = any>(endpoint: string, body: any) => request<T>(endpoint, { method: 'POST', body: JSON.stringify(body) }),
     /** Make a PUT request */

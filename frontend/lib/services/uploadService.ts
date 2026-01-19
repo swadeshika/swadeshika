@@ -40,15 +40,31 @@ export const uploadService = {
 
         const data = await response.json();
 
-        console.log('[UploadService] Upload response:', data);
+
 
         if (!data.success) {
             throw new Error(data.message || 'Upload failed');
         }
 
         // Return full URL based on configured backend origin
-        const fullUrl = `${BACKEND_ORIGIN}${data.data.url}`;
-        console.log('[UploadService] Generated URL:', fullUrl);
+        const uploadedUrl = data.data.url;
+
+        // CRITICAL FIX: Handle Cloudinary URLs and strip double-prefixes if present
+        if (uploadedUrl.includes('cloudinary.com')) {
+            const match = uploadedUrl.match(/(https?:\/\/res\.cloudinary\.com.*)/);
+            if (match) {
+
+                return match[1];
+            }
+        }
+
+        if (uploadedUrl.startsWith('http')) {
+
+            return uploadedUrl;
+        }
+
+        const fullUrl = `${BACKEND_ORIGIN}${uploadedUrl}`;
+
         return fullUrl;
     },
 
@@ -78,15 +94,30 @@ export const uploadService = {
 
         const data = await response.json();
 
-        console.log('[UploadService] Multiple upload response:', data);
+
 
         if (!data.success) {
             throw new Error(data.message || 'Upload failed');
         }
 
         // Return full URLs based on configured backend origin
-        const fullUrls = data.data.map((item: any) => `${BACKEND_ORIGIN}${item.url}`);
-        console.log('[UploadService] Generated URLs:', fullUrls);
+        const fullUrls = data.data.map((item: any) => {
+            const uploadedUrl = item.url;
+
+            // CRITICAL FIX: Handle Cloudinary URLs and strip double-prefixes if present
+            if (uploadedUrl.includes('cloudinary.com')) {
+                const match = uploadedUrl.match(/(https?:\/\/res\.cloudinary\.com.*)/);
+                if (match) {
+                    return match[1];
+                }
+            }
+
+            if (uploadedUrl.startsWith('http')) {
+                return uploadedUrl;
+            }
+            return `${BACKEND_ORIGIN}${uploadedUrl}`;
+        });
+
         return fullUrls;
     },
 

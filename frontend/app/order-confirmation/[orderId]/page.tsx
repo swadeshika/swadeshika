@@ -231,7 +231,7 @@ export default function OrderConfirmationPage() {
                         {/* Actions */}
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Button size="lg" asChild className="bg-[#2D5F3F] hover:bg-[#234A32] text-white">
-                                <Link href="/orders">View My Orders</Link>
+                                <Link href="/account/orders">View My Orders</Link>
                             </Button>
                             <Button size="lg" variant="outline" asChild className="bg-transparent border-2 border-[#E8DCC8]">
                                 <Link href="/shop">Continue Shopping</Link>

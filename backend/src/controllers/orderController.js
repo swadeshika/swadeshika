@@ -990,9 +990,11 @@ exports.cancelOrder = async (req, res, next) => {
             return res.status(403).json({ success: false, message: 'Not authorized to cancel this order' });
         }
 
-        // Only pending orders can be cancelled
-        if (order.status !== 'pending') {
-            return res.status(400).json({ success: false, message: 'Only pending orders can be cancelled' });
+        // Allow cancellation for pending, placed, or confirmed orders
+        // (Before processing/shipping)
+        const cancellableStatuses = ['pending', 'placed', 'confirmed'];
+        if (!cancellableStatuses.includes(order.status)) {
+            return res.status(400).json({ success: false, message: 'Order cannot be cancelled at this stage' });
         }
 
         const success = await Order.updateStatus(req.params.id, 'cancelled');

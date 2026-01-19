@@ -18,6 +18,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { authService } from "./authService"
+import { useCartStore } from "./cart-store"
 
 // Define user roles for role-based access control
 export type UserRole = "customer" | "admin"
@@ -122,6 +123,8 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
+
+
       /**
        * Logout function
        * Clears user session and authentication state
@@ -129,6 +132,11 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         try {
           await authService.logout()
+
+          // Clear cart on logout to ensure guest sees fresh state
+          // Token is already removed by authService.logout(), so this only clears local state
+          useCartStore.getState().clearCart()
+
         } catch (error) {
           console.error('Logout error:', error)
         } finally {

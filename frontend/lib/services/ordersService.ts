@@ -104,6 +104,14 @@ export const ordersService = {
     },
 
     /**
+     * Cancel order (User)
+     */
+    cancelOrder: async (id: string) => {
+        const res = await api.post<{ success: boolean, message: string }>(`/orders/${id}/cancel`, {});
+        return res.data;
+    },
+
+    /**
      * Delete order (Admin)
      */
     deleteOrder: async (id: string) => {

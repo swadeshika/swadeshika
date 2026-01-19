@@ -3,6 +3,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Package, Truck, CheckCircle, Clock, XCircle, Download, Phone, Mail, Heart, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useWishlistStore } from "@/lib/wishlist-store"
@@ -230,6 +241,41 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
                   </div>
                 </>
               )}
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  {['placed', 'pending', 'confirmed'].includes(order.status) && (
+                    <Button variant="destructive" size="sm" className="w-full mt-4">
+                      Cancel Order
+                    </Button>
+                  )}
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                   <AlertDialogHeader>
+                     <AlertDialogTitle>Cancel Order</AlertDialogTitle>
+                     <AlertDialogDescription>
+                       Are you sure you want to cancel this order? This action cannot be undone.
+                     </AlertDialogDescription>
+                   </AlertDialogHeader>
+                   <AlertDialogFooter>
+                     <AlertDialogCancel>No, Keep Order</AlertDialogCancel>
+                     <AlertDialogAction onClick={async () => {
+                        try {
+                          toast({ title: 'Cancelling order...', description: 'Please wait' })
+                          await ordersService.cancelOrder(orderId)
+                          toast({ title: 'Order Cancelled', description: 'Your order has been cancelled successfully.' })
+                          // Refresh local state
+                          setOrder(prev => prev ? { ...prev, status: 'cancelled' as any } : null)
+                        } catch (err: any) {
+                           console.error('Cancellation failed', err)
+                           toast({ title: 'Cancellation failed', description: err.response?.data?.message || 'Unable to cancel order', variant: 'destructive' })
+                        }
+                     }} className="bg-red-600 hover:bg-red-700">
+                       Yes, Cancel Order
+                     </AlertDialogAction>
+                   </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </CardContent>
           </Card>
 

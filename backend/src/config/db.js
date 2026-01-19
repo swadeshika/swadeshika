@@ -25,9 +25,11 @@ const pool = mysql.createPool({
   password: DB_PASSWORD,    // DB password
   database: DB_NAME,        // Database name to connect to
 
-  waitForConnections: true, // Queue queries if limit reached
+  waitForConnections: true, // Queue requests if limit reached
   connectionLimit: 10,       // Max active connections
   queueLimit: 0,             // 0 = unlimited queue
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0,
 });
 
 
@@ -93,7 +95,7 @@ module.exports = {
   connectDB,
 
   // Run simple SQL queries
-  query: (sql, params) => pool.execute(sql, params || []),
+  query: (sql, params) => pool.query(sql, params || []),
 
   // For transactions (BEGIN, COMMIT, ROLLBACK)
   getConnection: () => pool.getConnection(),

@@ -24,6 +24,11 @@ interface RichTextEditorProps {
 }
 
 function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEditorProps) {
+  // Debug log to check if content is received
+  useEffect(() => {
+    console.log('RichTextEditor received value length:', value?.length);
+  }, [value]);
+
   // Hidden file inputs for client-side image/video insertion as data URLs
   const imgInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
@@ -40,7 +45,7 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
     if ((Quill as any).__swadeshika_video_blot_registered) return
 
     try {
-      const BlockEmbed = Quill.import("blots/block/embed")
+      const BlockEmbed = Quill.import("blots/block/embed") as any;
       class VideoBlot extends BlockEmbed {
         static create(value: string) {
           const node: HTMLElement = super.create()
@@ -105,6 +110,14 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
       const formats = quill.getFormat()
       if (formats.color) quill.format('color', false)
       if (formats.background) quill.format('background', false)
+      
+      // Force update content if it differs significantly (sanity check)
+      // This helps when loading initial data
+      if (value && quill.root.innerHTML !== value && !quill.hasFocus()) {
+         if (quill.root.innerHTML === '<p><br></p>' || quill.root.innerHTML === '') {
+            quill.clipboard.dangerouslyPasteHTML(value);
+         }
+      }
     }
   }, [value])
 
@@ -361,7 +374,7 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
           ref={videoInputRef}
           type="file"
           accept="video/*"
-          className=""
+          className="hidden" // Hiding the input
           onChange={handleVideoUpload}
         />
       </div>
@@ -411,6 +424,17 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
           ref={editorRef}
           value={value}
           onTextChange={handleTextChange}
+          onLoad={(quill) => {
+             // Robust initial load
+             if (value && quill) {
+                // Directly set innerHTML to ensure content matches exactly
+                // This bypasses any potential Quill delta inconsistencies on load
+                if (quill.root.innerHTML !== value) {
+                   console.log('Force setting content via innerHTML on load');
+                   quill.root.innerHTML = value;
+                }
+             }
+          }}
           headerTemplate={headerTemplate()}
           placeholder={placeholder}
           style={{ minHeight: "250px" }}

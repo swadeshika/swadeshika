@@ -65,20 +65,24 @@ export function CheckoutForm() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [fetchedAddresses, fetchedSettings] = await Promise.all([
-          addressService.getAddresses().catch(() => []),
-          settingsService.getSettings().catch(() => null)
-        ])
-        setAddresses(fetchedAddresses || [])
-        setSettings(fetchedSettings)
+        // Only fetch addresses if user is logged in
+        // This prevents 401 errors and login redirects for guest checkout
+        const fetchedAddresses = user 
+          ? await addressService.getAddresses().catch(() => [])
+          : [];
+        
+        const fetchedSettings = await settingsService.getSettings().catch(() => null);
+        
+        setAddresses(fetchedAddresses || []);
+        setSettings(fetchedSettings);
       } catch (error) {
-        console.error("Failed to load checkout data", error)
+        console.error("Failed to load checkout data", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    fetchData()
-  }, [])
+    };
+    fetchData();
+  }, [user])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()

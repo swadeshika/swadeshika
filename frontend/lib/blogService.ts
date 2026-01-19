@@ -26,6 +26,7 @@ export interface BlogPost {
     featured_image?: string;
     author_name?: string;
     author_image?: string;
+    author_bio?: string;
     category_name?: string;
     category_slug?: string;
     category_id?: number;

@@ -91,7 +91,15 @@ app.use(cookieParser());
    xss() -> Sanitizes input to prevent stored + reflected XSS
    ============================================================ */
 app.use(mongoSanitize());
-app.use(xss());
+// Conditionally apply xss-clean to allow HTML content in blog posts
+app.use((req, res, next) => {
+   // Skip XSS sanitization for admin blog creation/update routes
+   // These routes require HTML content for the rich text editor
+   if (req.path.includes('/admin/blog') && (req.method === 'POST' || req.method === 'PUT')) {
+      return next();
+   }
+   return xss()(req, res, next);
+});
 
 /* ============================================================
    6. SECURITY: Prevent Parameter Pollution

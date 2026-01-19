@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { blogService, BlogPost, BlogCategory } from '@/lib/blogService'
 import { blogAuthorService, BlogAuthor } from '@/lib/blogAuthorService'
 import { useRouter } from 'next/navigation'
@@ -17,8 +17,14 @@ import { format } from 'date-fns'
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { RichTextEditor } from "@/components/admin/rich-text-editor"
+import dynamic from 'next/dynamic'
 import { useToast } from "@/hooks/use-toast"
+
+// Dynamically import RichTextEditor to avoid SSR issues with Quill
+const RichTextEditor = dynamic(
+  () => import('@/components/admin/rich-text-editor').then(mod => mod.RichTextEditor),
+  { ssr: false }
+)
 
 export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: Partial<BlogPost>, isNew?: boolean }) {
   const router = useRouter()

@@ -29,7 +29,7 @@ const footerLinks = {
     { name: "About Us", href: "/about" },
     { name: "Contact", href: "/contact" },
     { name: "Blog", href: "/blog" },
-    { name: "Careers", href: "/careers" },
+    // { name: "Careers", href: "/careers" },
   ],
   // Customer support resources
   support: [
@@ -134,7 +134,7 @@ export function SiteFooter() {
             </p>
 
             {/* Newsletter subscription form */}
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <h3 className="font-semibold">Subscribe to our newsletter</h3>
               <div className="flex gap-2">
                 <Input
@@ -148,7 +148,7 @@ export function SiteFooter() {
                   {subscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Subscribe"}
                 </Button>
               </div>
-            </div>
+            </div> */}
 
             {/* Social media links with icons */}
             <div className="flex gap-4 mt-6">
@@ -160,10 +160,10 @@ export function SiteFooter() {
                 <Instagram className="h-5 w-5" />
                 <span className="sr-only">Instagram</span>
               </Link>
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+              {/* <Link href="#" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer">
                 <Twitter className="h-5 w-5" />
                 <span className="sr-only">Twitter</span>
-              </Link>
+              </Link> */}
             </div>
           </div>
 
@@ -229,7 +229,7 @@ export function SiteFooter() {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <MapPin className="h-5 w-5 text-primary mt-0.5" />
+              <MapPin className="h-5 w-5 min-w-[24px] text-primary mt-0.5" />
               <div>
                 <p className="font-medium">Visit Us</p>
                 <p className="text-muted-foreground">98, 99 Swavalamban Kendra, Karni Nagar, Kudi - Madhuban Main Link Road, Near Kisan Gas Godam, Jodhpur</p>
@@ -238,7 +238,7 @@ export function SiteFooter() {
           </div>
 
           {/* Legal links - horizontal list */}
-          <div className="flex flex-wrap gap-6 mb-6">
+          <div className="flex flex-wrap gap-6 mb-6 justify-center">
             {footerLinks.legal.map((link) => (
               <Link
                 key={link.name}
@@ -253,7 +253,7 @@ export function SiteFooter() {
           {/* Copyright notice with dynamic year */}
           <p className="text-sm text-muted-foreground text-center">
             © {new Date().getFullYear()} Swadeshika. All rights reserved. |
-            👥 Visitors: <span id="visitorCount">{visitorCount !== null ? visitorCount.toLocaleString() : '...'}</span> |
+            👥 Visitors: <span id="visitorCount">{visitorCount !== null ? visitorCount.toLocaleString() : '...'}</span>
           </p>
         </div>
       </div>

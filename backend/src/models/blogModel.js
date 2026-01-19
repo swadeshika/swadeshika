@@ -12,7 +12,7 @@ class BlogModel {
         const params = [];
 
         let sql = `
-      SELECT b.id, b.title, b.slug, b.excerpt, b.featured_image, b.author_id, b.category_id, b.tags, b.status, b.published_at, b.created_at, b.updated_at, c.name as category_name, c.slug as category_slug, u.name as author_name, u.avatar as author_image
+      SELECT b.id, b.title, b.slug, b.excerpt, b.content, b.featured_image, b.author_id, b.category_id, b.tags, b.status, b.published_at, b.created_at, b.updated_at, c.name as category_name, c.slug as category_slug, u.name as author_name, u.avatar as author_image
       FROM blog_posts b
       LEFT JOIN blog_categories c ON b.category_id = c.id
       LEFT JOIN blog_authors u ON b.author_id = u.id
@@ -52,12 +52,35 @@ class BlogModel {
 
         const [posts] = await db.query(sql, params);
 
-        // Format image URLs to absolute paths
-        const formattedPosts = posts.map(post => ({
-            ...post,
-            featured_image: post.featured_image ? `${BASE_URL}${post.featured_image}` : null,
-            author_image: post.author_image ? `${BASE_URL}${post.author_image}` : null
-        }));
+        // Format image URLs to absolute paths (only if not already absolute)
+        const formattedPosts = posts.map(post => {
+            let featuredImage = null;
+            let authorImage = null;
+
+            // Handle featured_image
+            if (post.featured_image && post.featured_image.trim()) {
+                const img = post.featured_image.trim();
+                // Only prepend BASE_URL if it's a relative path and not a data URI
+                featuredImage = img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')
+                    ? img 
+                    : `${BASE_URL}${img}`;
+            }
+
+            // Handle author_image
+            if (post.author_image && post.author_image.trim()) {
+                const img = post.author_image.trim();
+                // Only prepend BASE_URL if it's a relative path and not a data URI
+                authorImage = img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')
+                    ? img 
+                    : `${BASE_URL}${img}`;
+            }
+
+            return {
+                ...post,
+                featured_image: featuredImage,
+                author_image: authorImage
+            };
+        });
 
         // Get total count
         let countSql = `
@@ -93,10 +116,27 @@ class BlogModel {
         const [rows] = await db.query(sql, [slug]);
         const post = rows[0] || null;
         
-        // Format image URLs to absolute paths
+        // Format image URLs to absolute paths (only if not already absolute)
         if (post) {
-            if (post.featured_image) post.featured_image = `${BASE_URL}${post.featured_image}`;
-            if (post.author_image) post.author_image = `${BASE_URL}${post.author_image}`;
+            // Handle featured_image
+            if (post.featured_image && post.featured_image.trim()) {
+                const img = post.featured_image.trim();
+                post.featured_image = img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')
+                    ? img 
+                    : `${BASE_URL}${img}`;
+            } else {
+                post.featured_image = null;
+            }
+
+            // Handle author_image
+            if (post.author_image && post.author_image.trim()) {
+                const img = post.author_image.trim();
+                post.author_image = img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')
+                    ? img 
+                    : `${BASE_URL}${img}`;
+            } else {
+                post.author_image = null;
+            }
         }
         
         return post;

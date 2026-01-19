@@ -329,6 +329,7 @@ CREATE TABLE reviews (
   is_verified BOOLEAN DEFAULT FALSE,
   helpful_count INT DEFAULT 0,
   is_approved BOOLEAN DEFAULT TRUE,
+  status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
@@ -337,7 +338,8 @@ CREATE TABLE reviews (
   UNIQUE KEY unique_review (product_id, user_id, order_id),
   INDEX idx_product (product_id),
   INDEX idx_user (user_id),
-  INDEX idx_approved (is_approved)
+  INDEX idx_approved (is_approved),
+  INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================

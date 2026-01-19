@@ -32,6 +32,19 @@ export interface Product {
     features?: string[];
     specifications?: Record<string, string>;
     tags?: string[];
+    variants?: ProductVariant[];
+}
+
+export interface ProductVariant {
+    id: number | string;
+    product_id?: number;
+    name: string;
+    sku?: string;
+    price: number;
+    compare_price?: number;
+    stock_quantity?: number;
+    is_active?: boolean;
+    image_url?: string;
 }
 
 export interface ProductImage {

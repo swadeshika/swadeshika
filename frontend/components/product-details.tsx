@@ -13,6 +13,7 @@ import useEmblaCarousel from 'embla-carousel-react'
 import { productService, Product } from "@/lib/services/productService"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useCartStore } from "@/lib/cart-store"
 
 interface ProductDetailsProps {
   slug: string
@@ -54,7 +55,7 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
     fetchProduct()
   }, [slug])
 
-  const currentVariant = product?.variants?.find((v: any) => v.id === selectedVariant) || { price: product?.price }
+  const currentVariant = product?.variants?.find((v: any) => v.id === selectedVariant) || { price: product?.price || 0 }
 
   useEffect(() => {
     if (emblaApi) {
@@ -68,9 +69,33 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
     emblaApi?.scrollTo(index)
   }
 
+  const handleAddToCart = () => {
+    if (!product) return;
+    
+    const { addItem } = useCartStore.getState();
+    
+    // Get the selected variant or use base product
+    const variant = product.variants?.find(v => v.id === selectedVariant);
+    
+    addItem({
+      productId: product.id,
+      name: product.name,
+      price: variant?.price || product.price,
+      image: product.images?.[0]?.image_url || product.primary_image || '',
+      variantId: variant?.id ? Number(variant.id) : null,
+      variantName: variant?.name,
+    }, quantity); // Pass quantity as second parameter
+    
+    toast.success(`Added ${quantity} ${product.name} to cart`);
+    
+    // Reset quantity to 1 after adding to cart
+    setQuantity(1);
+  };
+
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Breadcrumb */}
+      {product && (
       <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground transition-colors cursor-pointer">
           Home
@@ -80,12 +105,13 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
           Shop
         </Link>
         <span>/</span>
-        <Link href={`/shop/${product.category.toLowerCase()}`} className="hover:text-foreground transition-colors cursor-pointer">
+        <Link href={`/shop/${product.category?.toLowerCase()}`} className="hover:text-foreground transition-colors cursor-pointer">
           {product.category}
         </Link>
         <span>/</span>
         <span className="text-foreground">{product.name}</span>
       </div>
+      )}
 
       {/* Back button */}
       <Button variant="ghost" asChild className="gap-2">
@@ -117,14 +143,14 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
         <div className="space-y-4">
           <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
             <img
-              src={product.images[selectedImage] || "/placeholder.svg"}
+              src={product.images?.[selectedImage]?.image_url || "/placeholder.svg"}
               alt={product.name}
               className="object-cover w-full h-full"
             />
             {product.badge && <Badge className="absolute top-4 left-4">{product.badge}</Badge>}
           </div>
           <div className="grid grid-cols-4 gap-2 sm:gap-4">
-            {product.images.map((image: string, index: number) => (
+            {product.images?.map((image, index: number) => (
               <button
                 key={index}
                 onClick={() => setSelectedImage(index)}
@@ -133,8 +159,8 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
                 }`}
               >
                 <img
-                  src={image || "/placeholder.svg"}
-                  alt={`${product.name} ${index + 1}`}
+                  src={image.image_url || "/placeholder.svg"}
+                  alt={image.alt_text || `${product.name} ${index + 1}`}
                   className="object-cover w-full h-full"
                 />
               </button>
@@ -154,29 +180,29 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
-                    className={`h-4 sm:h-5 w-4 sm:w-5 ${i < Math.floor(product.rating) ? "fill-primary text-primary" : "text-muted"}`}
+                    className={`h-4 sm:h-5 w-4 sm:w-5 ${i < Math.floor(product.rating || 0) ? "fill-primary text-primary" : "text-muted"}`}
                   />
                 ))}
               </div>
               <span className="text-sm font-medium">{product.rating}</span>
-              <span className="text-sm text-muted-foreground">({product.reviews} reviews)</span>
+              <span className="text-sm text-muted-foreground">({product.review_count || 0} reviews)</span>
             </div>
 
             {/* Price */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
               <span className="text-2xl sm:text-3xl font-bold">₹{currentVariant.price}</span>
-              {product.comparePrice && (
+              {product.compare_price && (
                 <>
-                  <span className="text-lg sm:text-xl text-muted-foreground line-through">₹{product.comparePrice}</span>
+                  <span className="text-lg sm:text-xl text-muted-foreground line-through">₹{product.compare_price}</span>
                   <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    Save {Math.round(((product.comparePrice - currentVariant.price) / product.comparePrice) * 100)}%
+                    Save {Math.round(((product.compare_price - currentVariant.price) / product.compare_price) * 100)}%
                   </Badge>
                 </>
               )}
             </div>
 
             {/* Stock status */}
-            {product.inStock ? (
+            {product.in_stock ? (
               <p className="text-green-600 font-medium mb-6">In Stock</p>
             ) : (
               <p className="text-red-600 font-medium mb-6">Out of Stock</p>
@@ -186,15 +212,16 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
           <Separator />
 
           {/* Variants */}
+          {product.variants && product.variants.length > 0 && (
           <div className="space-y-2 sm:space-y-3">
             <Label className="text-base font-semibold">Select Size</Label>
-            <RadioGroup value={selectedVariant} onValueChange={setSelectedVariant}>
+            <RadioGroup value={selectedVariant.toString()} onValueChange={setSelectedVariant}>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                 {product.variants.map((variant: any) => (
                   <div key={variant.id}>
-                    <RadioGroupItem value={variant.id} id={variant.id} className="peer sr-only" />
+                    <RadioGroupItem value={variant.id.toString()} id={variant.id.toString()} className="peer sr-only" />
                     <Label
-                      htmlFor={variant.id}
+                      htmlFor={variant.id.toString()}
                       className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-background p-3 sm:p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer transition-colors"
                     >
                       <span className="font-semibold">{variant.name}</span>
@@ -205,6 +232,7 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
               </div>
             </RadioGroup>
           </div>
+          )}
 
           {/* Quantity */}
           <div className="space-y-2 sm:space-y-3">
@@ -213,10 +241,9 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
               <Button
                 variant="outline"
                 size="icon"
-                className="cursor-pointer"
+                className="cursor-pointer hover:bg-primary hover:text-white transition-colors"
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
                 disabled={quantity <= 1}
-                className="hover:bg-primary hover:text-white transition-colors"
               >
                 -
               </Button>
@@ -234,7 +261,7 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button size="lg" className="w-full sm:flex-1 cursor-pointer">
+            <Button size="lg" className="w-full sm:flex-1 cursor-pointer" onClick={handleAddToCart}>
               Add to Cart
             </Button>
             <div className="flex gap-3 sm:gap-2">
@@ -252,6 +279,7 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
           <Separator />
 
           {/* Features */}
+          {product.features && product.features.length > 0 && (
           <div className="space-y-2 sm:space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-lg">Key Features</h3>
@@ -319,6 +347,7 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
               ))}
             </ul>
           </div>
+          )}
 
           <Separator />
 
@@ -348,14 +377,16 @@ export function ProductDetails({ slug }: ProductDetailsProps) {
           </div>
         </div>
       </div>
+      )}
 
       {/* Description */}
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <h2 className="font-serif text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Product Description</h2>
-          <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">{product.description}</p>
-        </CardContent>
-      </Card>
+      {product && (
+        <Card>
+          <CardContent className="p-4 sm:p-6">
+            <h2 className="font-serif text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Product Description</h2>
+            <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">{product.description}</p>
+          </CardContent>
+        </Card>
       )}
     </div>
   )

@@ -265,10 +265,10 @@ export default function FaqsPage() {
                 Our customer support team is available to help you with any questions or concerns you may have.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+                <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20" onClick={() => window.location.href = 'mailto:official.swadeshika@gmail.com'}>
                   Contact Support
                 </Button>
-                <Button variant="outline" className="bg-white text-[#2D5F3F] hover:bg-white/90 hover:bg-accent">
+                <Button variant="outline" className="bg-white text-[#2D5F3F] hover:bg-white/90 hover:bg-accent" onClick={() => window.location.href = 'tel:+917300039429'}>
                   Call Us: +91 73000 39429
                 </Button>
               </div>

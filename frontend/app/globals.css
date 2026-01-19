@@ -5,28 +5,36 @@
 
 :root {
   /* Updated to brown, green, orange color palette for organic/natural brand feel */
-  --background: oklch(0.98 0.005 85); /* Warm cream */
-  --foreground: oklch(0.3 0.03 45); /* Rich brown */
+  --background: oklch(0.98 0.005 85);
+  /* Warm cream */
+  --foreground: oklch(0.3 0.03 45);
+  /* Rich brown */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.3 0.03 45);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.3 0.03 45);
-  --primary: oklch(0.5 0.12 145); /* Deep forest green */
+  --primary: oklch(0.5 0.12 145);
+  /* Deep forest green */
   --primary-foreground: oklch(0.98 0.005 85);
-  --secondary: oklch(0.88 0.04 75); /* Soft beige */
+  --secondary: oklch(0.88 0.04 75);
+  /* Soft beige */
   --secondary-foreground: oklch(0.3 0.03 45);
   --muted: oklch(0.94 0.01 75);
   --muted-foreground: oklch(0.5 0.01 75);
-  --accent: oklch(0.65 0.15 45); /* Vibrant orange */
+  --accent: oklch(0.65 0.15 45);
+  /* Vibrant orange */
   --accent-foreground: oklch(0.98 0.005 85);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.88 0.02 75);
   --input: oklch(0.94 0.01 75);
   --ring: oklch(0.5 0.12 145);
-  --chart-1: oklch(0.5 0.12 145); /* Green */
-  --chart-2: oklch(0.65 0.15 45); /* Orange */
-  --chart-3: oklch(0.4 0.05 45); /* Brown */
+  --chart-1: oklch(0.5 0.12 145);
+  /* Green */
+  --chart-2: oklch(0.65 0.15 45);
+  /* Orange */
+  --chart-3: oklch(0.4 0.05 45);
+  /* Brown */
   --chart-4: oklch(0.35 0.06 145);
   --chart-5: oklch(0.75 0.08 75);
   --radius: 0.5rem;
@@ -119,6 +127,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }

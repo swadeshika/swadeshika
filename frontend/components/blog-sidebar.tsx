@@ -57,7 +57,7 @@ export function BlogSidebar({
         </div>
 
         {/* Newsletter Signup */}
-        <div className="rounded-2xl border-2 border-[#E8DCC8] bg-white p-6 shadow-sm">
+        {/* <div className="rounded-2xl border-2 border-[#E8DCC8] bg-white p-6 shadow-sm">
           <div className="text-center mb-4">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#F5F1E8] text-[#6B4423] mb-3">
               <Mail className="h-5 w-5" />
@@ -88,7 +88,7 @@ export function BlogSidebar({
           <p className="text-xs text-[#8B6F47] mt-3 text-center">
             No spam, unsubscribe anytime.
           </p>
-        </div>
+        </div> */}
 
         {/* Popular Posts */}
         <div className="rounded-2xl border border-[#E8DCC8] bg-white p-6">
@@ -108,11 +108,11 @@ export function BlogSidebar({
                       {post.title}
                     </h4>
                     <div className="flex items-center text-xs text-[#8B6F47] mt-1 space-x-2">
-                      <span className="flex items-center">
+                      {/* <span className="flex items-center">
                         <Heart className="h-3 w-3 mr-1" />
                         {post.likes}
                       </span>
-                      <span>•</span>
+                      <span>•</span> */}
                       <span>{post.readTime}</span>
                     </div>
                   </div>
@@ -181,7 +181,7 @@ export function BlogSidebar({
         </div>
 
         {/* Tags */}
-        <div className="rounded-2xl border border-[#E8DCC8] bg-white p-6">
+        {/* <div className="rounded-2xl border border-[#E8DCC8] bg-white p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-[#2D5F3F]">Popular Tags</h3>
             <Award className="h-5 w-5 text-[#8B6F47]" />
@@ -197,7 +197,7 @@ export function BlogSidebar({
               </Link>
             ))}
           </div>
-        </div>
+        </div> */}
       </div>
     </aside>
   )

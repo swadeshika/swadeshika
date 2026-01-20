@@ -552,8 +552,18 @@ export function AdminSettings() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="low-stock">Low Stock Threshold</Label>
-              <Input id="low-stock" type="number" placeholder="10" value={settings.lowStockThreshold as any}
-                onChange={(e) => setSettings({ ...settings, lowStockThreshold: e.target.value === '' ? '' : Number(e.target.value) })}
+              <Input id="low-stock" type="number" min={0} placeholder="10" value={settings.lowStockThreshold as any}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '') {
+                    setSettings({ ...settings, lowStockThreshold: '' })
+                  } else {
+                    const num = Number(val);
+                    if (num >= 0) {
+                      setSettings({ ...settings, lowStockThreshold: num })
+                    }
+                  }
+                }}
                 className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
             </div>
             <div className="flex items-center justify-between">

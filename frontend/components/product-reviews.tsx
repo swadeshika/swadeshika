@@ -1,14 +1,10 @@
 "use client"
 
-import { Star, Edit3 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Star } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { useState, useEffect } from "react"
 import { reviewService } from "@/lib/services/reviewService"
-import { ProductReviewForm } from "@/components/product-review-form"
 import { cn } from "@/lib/utils"
-import { useAuthStore } from "@/lib/auth-store"
-import Link from "next/link"
 
 interface ProductReviewsProps {
   productId: number
@@ -26,9 +22,6 @@ export function ProductReviews({
   const [reviews, setReviews] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<any>(null)
-  const [showReviewForm, setShowReviewForm] = useState(false)
-  
-  const { isAuthenticated } = useAuthStore()
 
   const fetchReviews = async () => {
     try {
@@ -40,15 +33,18 @@ export function ProductReviews({
       const reviewsList = Array.isArray(data) ? data : (data as any).reviews || []
       setReviews(reviewsList)
       
-      // Use the initial counts from backend (product.review_count and product.average_rating)
-      // These are calculated server-side and only count approved reviews
-      // Do NOT recalculate based on fetched reviews length
+      // Calculate stats from fetched reviews
+      const total = reviewsList.length
+      const avg = total > 0 
+        ? reviewsList.reduce((acc: number, r: any) => acc + (Number(r.rating) || 0), 0) / total
+        : 0
+      
       setStats({
-        averageRating: initialRating,
-        totalReviews: initialReviewCount
+        averageRating: avg,
+        totalReviews: total
       })
       
-      if (onCountChange) onCountChange(initialReviewCount)
+      if (onCountChange) onCountChange(total)
     } catch (error) {
       console.error('Failed to fetch reviews:', error)
     } finally {
@@ -92,24 +88,7 @@ export function ProductReviews({
                 <p className="text-base text-[#8B6F47] font-medium">Based on {totalReviews} reviews</p>
               </div>
               
-              {isAuthenticated ? (
-                <Button
-                  onClick={() => setShowReviewForm(!showReviewForm)}
-                  className="w-full h-14 text-lg font-bold bg-[#FF7E00] hover:bg-[#E67300] text-white rounded-xl shadow-lg shadow-[#FF7E00]/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  <Edit3 className="mr-2 h-5 w-5" />
-                  {showReviewForm ? "Cancel" : "Write a Review"}
-                </Button>
-              ) : (
-                <div className="text-center p-4 bg-[#2D5F3F]/5 rounded-xl border border-[#2D5F3F]/10">
-                  <p className="text-sm text-[#2D5F3F] font-medium mb-3">Login to write a review</p>
-                  <Link href="/login">
-                    <Button variant="outline" size="sm" className="w-full border-[#2D5F3F] text-[#2D5F3F] hover:bg-[#2D5F3F] hover:text-white">
-                      Login Now
-                    </Button>
-                  </Link>
-                </div>
-              )}
+              {/* Write Review Button Removed - Reviews restricted to verified purchases via My Orders */}
             </div>
 
             {/* Reviews List */}
@@ -121,24 +100,7 @@ export function ProductReviews({
                 </span>
               </div>
               
-              {/* Review Form */}
-              {showReviewForm && (
-                <div className="p-6 bg-gradient-to-r from-[#FF7E00]/5 to-[#2D5F3F]/5 rounded-2xl border-2 border-[#FF7E00]/20 animate-in fade-in slide-in-from-top-4 duration-300">
-                  <div className="flex items-center gap-2 mb-6">
-                    <div className="p-2 bg-[#FF7E00] rounded-lg">
-                      <Edit3 className="h-5 w-5 text-white" />
-                    </div>
-                    <h4 className="font-bold text-xl text-[#6B4423]">Your Feedback Matters</h4>
-                  </div>
-                  <ProductReviewForm
-                    productId={productId}
-                    onReviewSubmit={() => {
-                      setShowReviewForm(false)
-                      fetchReviews() // Refresh list
-                    }}
-                  />
-                </div>
-              )}
+
 
               {/* Existing Reviews */}
               {reviews.length > 0 ? (

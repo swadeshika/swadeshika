@@ -29,7 +29,7 @@ import { ProductCard } from "@/components/product-card"
 import { useCartStore } from "@/lib/cart-store"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { ProductReviewForm } from "@/components/product-review-form"
+// ProductReviewForm import removed as it is no longer used
 import { ProductReviews } from "@/components/product-reviews"
 import { useWishlistStore } from "@/lib/wishlist-store"
 import type { Review, ProductVariant } from "@/lib/products-data"
@@ -321,28 +321,7 @@ export function ProductDetailClientOptimized({
     }
   }, [isWishlisted, product.id, addToWishlist, removeFromWishlist])
 
-  /**
-   * Handle review form toggle with smooth scroll
-   * Scrolls to review form when opened
-   */
-  const handleReviewFormToggle = useCallback(() => {
-    const newShowReviewForm = !showReviewForm
-    setShowReviewForm(newShowReviewForm)
-    
-    if (newShowReviewForm) {
-      // Small delay to ensure the form is rendered before scrolling
-      setTimeout(() => {
-        const reviewFormElement = document.getElementById('review-form-section')
-        if (reviewFormElement) {
-          reviewFormElement.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start',
-            inline: 'nearest'
-          })
-        }
-      }, 100)
-    }
-  }, [showReviewForm])
+
 
   /**
    * Share product functionality with Web Share API

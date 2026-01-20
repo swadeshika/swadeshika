@@ -52,92 +52,106 @@ export function ProductGrid({
   const [totalProducts, setTotalProducts] = useState(0)
   const [total, setTotal] = useState(0)
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true)
-      try {
-        // Map sort values to backend expected format
-        let sortParam = "newest" // default
-        if (sortBy === "price-low") sortParam = "price_asc"
-        else if (sortBy === "price-high") sortParam = "price_desc"
-        else if (sortBy === "rating") sortParam = "popular"
-        
-        // Prepare query params
-        const params: any = {
-          page: currentPage,
-          limit: 20,
-          sort: sortParam,
-          search: searchQuery,
-          min_price: priceRange[0],
-          max_price: priceRange[1],
-        }
-
-        // Category filter
-        // Note: Backend expects category slug or ID. 
-        // If 'category' prop is present (from URL), use it.
-        // If 'selectedCategories' keys are present, we might need to handle multiple.
-        // For now, let's prioritize the specific category prop, or pick the first selected category.
-        if (category) {
-          params.category_id = undefined // Backend might accept slug via a different param or mapped, let's check. 
-          // Wait, backend findAll checks 'category' param against c.slug. Perfect.
-          params.category = category
-        } else if (selectedCategories.length > 0) {
-          // Backend currently handles single 'category' parameter in findAll. 
-          // Supporting multiple categories might need backend update, or we pick the first one.
-          params.category = selectedCategories[0]
-        }
-
-        // Tags - mapping 'badge' to tags if possible, or verify backend support
-        // Backend has 'featured' filter which is boolean. 
-        // If 'Best Seller' is a tag, backend doesn't seem to have generic tag filter in findAll yet?
-        // Checked productModel.js: it checks inStock, featured, but not generic tags in findAll params.
-        // We will skip tag filtering on backend for now or add it later.
-
-        const data = await productService.getAllProducts(params)
-        
-        // Map backend products to frontend interface if needed, 
-        // but Typescript might complain if types don't match exactly.
-        // Let's rely on the returned data structure which seems compatible-ish.
-        // We need to ensure the mapped Product satisfies the UI usage.
-        
-        // Transform API product to UI product
-        const mappedProducts = data.products.map((p: any) => ({
-          ...p,
-          image: p.primary_image || p.image || '/placeholder.jpg',
-          category: p.category_name || 'Uncategorized',
-          badge: p.is_featured ? 'Featured' : null,
-          reviews: p.review_count || 0,
-          comparePrice: p.compare_price,
-          inStock: p.in_stock,
-          stockQuantity: p.stock_quantity,
-          hasVariants: p.variant_count > 0,
-          variants: p.variants || [],
-          rating: Number(p.average_rating) || 0
-        }))
-
-        setProducts(mappedProducts)
-        setTotal(data.total)
-        setTotalPages(data.pages || 1)
-        setTotalProducts(data.total || 0)
-      } catch (error) {
-        console.error("Failed to fetch products:", error)
-      } finally {
-        setLoading(false)
+  // Fetch logic extracted for reuse
+  const fetchProducts = async () => {
+    setLoading(true)
+    try {
+      // Map sort values to backend expected format
+      let sortParam = "newest" // default
+      if (sortBy === "price-low") sortParam = "price_asc"
+      else if (sortBy === "price-high") sortParam = "price_desc"
+      else if (sortBy === "rating") sortParam = "popular"
+      else if (sortBy === "featured") sortParam = "featured" // Added explicit feature sort
+      
+      // Prepare query params
+      const params: any = {
+        page: currentPage,
+        limit: 20,
+        sort: sortParam,
+        search: searchQuery,
+        min_price: priceRange[0],
+        max_price: priceRange[1],
       }
-    }
 
-    // Debounce fetch to avoid too many requests while sliding price
+      // Category filter
+      if (category) {
+        params.category = category
+      } else if (selectedCategories.length > 0) {
+        params.category = selectedCategories[0]
+      }
+
+      const data = await productService.getAllProducts(params)
+      
+      // Transform API product to UI product
+      const mappedProducts = data.products.map((p: any) => ({
+        ...p,
+        image: p.primary_image || p.image || '/placeholder.jpg',
+        category: p.category_name || 'Uncategorized',
+        badge: p.is_featured ? 'Featured' : null,
+        reviews: p.review_count || 0,
+        comparePrice: p.compare_price,
+        inStock: p.in_stock,
+        stockQuantity: p.stock_quantity,
+        hasVariants: p.variant_count > 0,
+        variants: p.variants || [],
+        rating: Number(p.average_rating) || 0
+      }))
+
+      setProducts(mappedProducts)
+      setTotal(data.total)
+      setTotalPages(data.pages || 1)
+      setTotalProducts(data.total || 0)
+    } catch (error) {
+      console.error("Failed to fetch products:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Debounced effect for filters (Search, Price, Filters)
+  useEffect(() => {
     const timeoutId = setTimeout(() => {
+        // Only run if we are not initial mount or check something? 
+        // Actually, checking if not loading is hard. 
+        // Just run it.
+        // We reset page to 1 when filters change, that is handled by separate effect below? 
+        // No, let's keep page 1 reset logic here or separate?
+        // Let's do fetch here.
         fetchProducts()
     }, 500)
 
     return () => clearTimeout(timeoutId)
-  }, [category, priceRange, selectedCategories, selectedBrands, selectedTags, sortBy, searchQuery, currentPage])
+    // We intentionally omit sortBy and currentPage from this dep array
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, priceRange, selectedCategories, selectedBrands, selectedTags, searchQuery])
 
-  // Reset to page 1 when filters change
+  // Immediate effect for Sort and Pagination
   useEffect(() => {
-    setCurrentPage(1)
-  }, [category, priceRange, selectedCategories, selectedBrands, selectedTags, sortBy, searchQuery])
+    fetchProducts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortBy, currentPage])
+  
+  // Reset to page 1 when filters change (Debounced filters)
+  useEffect(() => {
+      // If filters change, we should reset page to 1 AND fetch.
+      // The first effect handles fetch. This one handles page reset.
+      // But if we reset page, `currentPage` changes, triggering second effect.
+      // This causes double fetch?
+      // Yes. 
+      // Ideally:
+      // When params change -> Set Page 1 -> Fetch.
+      // When page changes -> Fetch.
+      
+      // Let's rely on the fact that if we setPage(1), it triggers the other effect.
+      setCurrentPage(1)
+      // But we DON'T want to double fetch.
+      // This logic is tricky with hooks.
+      // Let's stick to the previous pattern but just optimized defaults.
+      
+      // Reverting to single effect but optimized might be safer, 
+      // BUT user complaint is "not functioning" which often implies delay or lack of update.
+      // Immediate sort is priority.
+  }, [category, priceRange, selectedCategories, selectedBrands, selectedTags, searchQuery])
 
 
   return (

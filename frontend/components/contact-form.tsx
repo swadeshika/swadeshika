@@ -50,19 +50,85 @@ export function ContactForm() {
     e.preventDefault()
     const { name, email, subject, message, orderNumber, phone } = formData
 
-    if (!name.trim() || !email.trim() || !subject.trim() || !message.trim()) {
-      toast({ title: "Required fields missing", description: "Please fill in all required fields.", variant: "destructive" })
+    // Trim whitespace
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    const trimmedSubject = subject.trim();
+    const trimmedMessage = message.trim();
+    const trimmedPhone = phone.trim();
+
+    // 1. Basic Required Fields Check (Granular)
+    if (!trimmedName) {
+      toast({ title: "Name Required", description: "Please enter your full name.", variant: "destructive" })
+      return
+    }
+    if (!trimmedEmail) {
+      toast({ title: "Email Required", description: "Please enter your email address.", variant: "destructive" })
+      return
+    }
+    if (!trimmedPhone) {
+      toast({ title: "Phone Required", description: "Please enter your phone number.", variant: "destructive" })
+      return
+    }
+    if (!trimmedSubject) {
+      toast({ title: "Subject Required", description: "Please select a subject for your inquiry.", variant: "destructive" })
+      return
+    }
+    if (!trimmedMessage) {
+      toast({ title: "Message Required", description: "Please enter your message.", variant: "destructive" })
+      return
+    }
+
+    // 2. Email Validation (Strict)
+    // Basic format check
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    
+    // Check 1: Regex match
+    if (!emailRegex.test(trimmedEmail)) {
+      toast({ title: "Invalid Email", description: "Please enter a valid email address.", variant: "destructive" })
+      return
+    }
+    
+    // Check 2: No double @ (Explicit check, though regex handles it, this catches edge cases regex might miss in some engines)
+    if (trimmedEmail.split('@').length !== 2) {
+      toast({ title: "Invalid Email", description: "Email must contain exactly one '@' symbol.", variant: "destructive" })
+      return
+    }
+
+    // Check 3: No consecutive dots or starting/ending dots
+    if (trimmedEmail.includes('..') || trimmedEmail.startsWith('.') || trimmedEmail.endsWith('.')) {
+       toast({ title: "Invalid Email", description: "Email cannot contain consecutive dots or start/end with a dot.", variant: "destructive" })
+       return
+    }
+
+    // Check 4: Domain part validity (at least one dot after @)
+    const domainPart = trimmedEmail.split('@')[1];
+    if (domainPart.indexOf('.') === -1) {
+       toast({ title: "Invalid Email", description: "Email domain must contain a valid extension (e.g., .com).", variant: "destructive" })
+       return
+    }
+
+    // Check 5: Forbidden special chars often used in attacks or typos
+    if (/[#&,;]/.test(trimmedEmail)) {
+       toast({ title: "Invalid Email", description: "Email contains invalid characters.", variant: "destructive" })
+       return
+    }
+
+    // 3. Phone Validation (10 digits only, numeric)
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(trimmedPhone)) {
+      toast({ title: "Invalid Phone Number", description: "Phone number must be exactly 10 digits.", variant: "destructive" })
       return
     }
 
     setLoading(true)
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append('name', name);
-      formDataToSend.append('email', email);
-      formDataToSend.append('subject', subject);
-      formDataToSend.append('message', message);
-      if (phone) formDataToSend.append('phone', phone);
+      formDataToSend.append('name', trimmedName);
+      formDataToSend.append('email', trimmedEmail);
+      formDataToSend.append('subject', trimmedSubject);
+      formDataToSend.append('message', trimmedMessage);
+      formDataToSend.append('phone', `+91${trimmedPhone}`); // Add static country code
       if (orderNumber) formDataToSend.append('order_number', orderNumber);
       if (file) formDataToSend.append('attachment', file);
 
@@ -139,15 +205,27 @@ export function ContactForm() {
 
       <div className="grid sm:grid-cols-2 gap-5">
         <div className="space-y-2">
-          <Label htmlFor="phone">Phone Number</Label>
-          <Input
-            id="phone"
-            type="tel"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            placeholder="+91 12345 67890"
-          />
+          <Label htmlFor="phone">Phone Number <span className="text-red-500">*</span></Label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground bg-white px-1 font-medium text-sm">
+              +91
+            </span>
+            <Input
+              id="phone"
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, ''); // Only allow numbers
+                if (val.length <= 10) {
+                   setFormData(prev => ({ ...prev, phone: val }))
+                }
+              }}
+              className="pl-12"
+              placeholder="98765 43210"
+              maxLength={10}
+            />
+          </div>
         </div>
         <div className="space-y-2">
           <Label>Subject <span className="text-red-500">*</span></Label>

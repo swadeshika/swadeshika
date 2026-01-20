@@ -18,6 +18,7 @@
  * **/
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Search, Eye, Download, Loader2, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -38,6 +39,10 @@ const statusColors: Record<string, string> = {
 }
 
 export function AdminOrdersList() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const customerId = searchParams.get("customer")
+  
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -50,12 +55,18 @@ export function AdminOrdersList() {
   const fetchOrders = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await ordersService.getAllOrders({
+      const filters: any = {
         page: pagination.page,
         limit: pagination.limit,
         status: statusFilter,
         search: debouncedSearch
-      })
+      }
+      
+      if (customerId) {
+        filters.customer = customerId
+      }
+
+      const data = await ordersService.getAllOrders(filters)
       setOrders(data.orders || [])
       setPagination(prev => ({ ...prev, ...data.pagination }))
     } catch (error) {
@@ -64,11 +75,11 @@ export function AdminOrdersList() {
     } finally {
       setLoading(false)
     }
-  }, [pagination.page, pagination.limit, statusFilter, debouncedSearch])
+  }, [pagination.page, pagination.limit, statusFilter, debouncedSearch, customerId])
 
   useEffect(() => {
     fetchOrders()
-  }, [debouncedSearch, statusFilter, pagination.page])
+  }, [fetchOrders, debouncedSearch, statusFilter, pagination.page])
 
   const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this order?")) {
@@ -115,6 +126,21 @@ export function AdminOrdersList() {
         <div className="mb-4 sm:mb-0">
           <h1 className="font-serif text-3xl font-bold mb-2 text-[#6B4423]">Orders</h1>
           <p className="text-[#8B6F47]">Manage and track customer orders</p>
+          {customerId && (
+            <div className="mt-2 flex items-center gap-2">
+              <Badge variant="outline" className="border-dashed">
+                Filtering by Customer ID: {customerId}
+              </Badge>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => router.push("/admin/orders")}
+              >
+                Clear Filter
+              </Button>
+            </div>
+          )}
         </div>
         <div className="w-full sm:w-auto flex justify-center sm:justify-end mt-3 sm:mt-0">
           <Button onClick={handleExportCsv} disabled={exporting} variant="outline" className="gap-2 bg-transparent border-2 border-[#E8DCC8] hover:bg-accent">

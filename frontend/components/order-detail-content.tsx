@@ -135,9 +135,11 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
               Download Invoice
             </Button>
 
-            <Button asChild size="sm" className="bg-[#2D5F3F] hover:bg-[#234A32] text-white">
-              <Link href={`/account/orders/${orderId}/review`}>Write Review</Link>
-            </Button>
+            {order.status === 'delivered' && (
+              <Button asChild size="sm" className="bg-[#2D5F3F] hover:bg-[#234A32] text-white">
+                <Link href={`/account/orders/${orderId}/review`}>Write Review</Link>
+              </Button>
+            )}
           </div>
         </div>
 

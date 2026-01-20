@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { Star, Loader2 } from "lucide-react"
+import { Star, Loader2, CheckCircle } from "lucide-react"
 import { ordersService, OrderItem } from "@/lib/services/ordersService"
 import { reviewService } from "@/lib/services/reviewService"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -26,6 +26,8 @@ export default function OrderReviewContent({ orderId }: OrderReviewContentProps)
   const [submitting, setSubmitting] = useState(false)
   const [hovered, setHovered] = useState<Record<string, number>>({})
 
+  const [existingReviews, setExistingReviews] = useState<Record<string, any>>({})
+
   useEffect(() => {
     const fetchOrder = async () => {
       try {
@@ -37,6 +39,21 @@ export default function OrderReviewContent({ orderId }: OrderReviewContentProps)
           (order.items || []).map((item) => [item.id || item.product_id || item.productId, { title: "", rating: 0, comment: "" }])
         )
         setReviews(initialReviews)
+
+        // Fetch existing reviews to prevent duplicates
+        try {
+             const userReviews = await reviewService.getMyReviews();
+             const relevantReviews = userReviews.filter((r: any) => String(r.order_id) === String(orderId));
+             const reviewMap: Record<string, any> = {};
+             relevantReviews.forEach((r: any) => {
+                 reviewMap[String(r.product_id)] = r;
+                 // Also map by item ID if possible, but product_id is safer link
+             });
+             setExistingReviews(reviewMap);
+        } catch (err) {
+            console.error("Failed to fetch existing reviews", err);
+        }
+
       } catch (error) {
         console.error("Failed to fetch order for review:", error)
         toast({ title: "Error", description: "Failed to load order items.", variant: "destructive" })
@@ -54,56 +71,69 @@ export default function OrderReviewContent({ orderId }: OrderReviewContentProps)
   const setComment = (id: string, comment: string) =>
     setReviews((prev) => ({ ...prev, [id]: { ...prev[id], comment } }))
 
-  const handleSubmit = async () => {
-    // Basic validation
-    for (const item of items) {
-      const itemId = item.id || item.product_id || item.productId
-      if (!itemId) continue;
-      const r = reviews[itemId as string]
-      if (!r || !r.title.trim()) {
-        toast({ title: "Title required", description: `Please add a review title for ${item.productName}.`, variant: "destructive" })
-        return
-      }
-      if (r.rating === 0) {
-        toast({ title: "Rating required", description: `Please select a rating for ${item.productName}.`, variant: "destructive" })
-        return
-      }
-      if (r.comment.trim().length < 20) {
-        toast({ title: "Review too short", description: `Please write at least 20 characters for ${item.productName}.`, variant: "destructive" })
-        return
-      }
+  const [submittingItems, setSubmittingItems] = useState<Record<string, boolean>>({})
+
+  const handleSingleSubmit = async (item: OrderItem) => {
+    const itemId = item.id || item.product_id || item.productId
+    const itemIdStr = String(itemId)
+    const productId = item.product_id || item.productId || item.id
+    const productIdStr = String(productId)
+    
+    if (!itemId || !productId) return
+
+    const r = reviews[itemIdStr]
+    
+    // Validation for single item
+    if (!r || !r.title.trim()) {
+      toast({ title: "Title required", description: "Please add a review title.", variant: "destructive" })
+      return
     }
-    setSubmitting(true)
+    if (r.rating === 0) {
+      toast({ title: "Rating required", description: "Please select a rating.", variant: "destructive" })
+      return
+    }
+    if (r.comment.trim().length < 20) {
+      toast({ title: "Review too short", description: "Please write at least 20 characters.", variant: "destructive" })
+      return
+    }
+
+    setSubmittingItems(prev => ({ ...prev, [itemIdStr]: true }))
+    
     try {
-      // Submit each review
-      for (const item of items) {
-        const itemId = item.id || item.product_id || item.productId
-        if (!itemId) continue;
-        const r = reviews[itemId as string]
-        const productId = item.product_id || item.productId || item.id;
-        console.log('[Review Debug] Item:', { item, productId, itemId });
-        if (!productId) continue;
-        await reviewService.createReview({
-          product_id: productId as string | number, // Support both naming conventions
-          order_id: orderId,
-          rating: r.rating,
-          title: r.title,
-          comment: r.comment
-        })
+      const reviewData = {
+        product_id: productId,
+        order_id: orderId,
+        rating: r.rating,
+        title: r.title,
+        comment: r.comment
       }
-      toast({ title: "Reviews submitted", description: "Thanks for sharing your feedback!" })
-      router.push('/account/orders')
+      
+      const response = await reviewService.createReview(reviewData)
+      
+      toast({ title: "Review submitted", description: "Thanks for sharing your feedback!" })
+      
+      // Update local state to show read-only view immediately
+      setExistingReviews(prev => ({
+        ...prev,
+        [productIdStr]: {
+            ...reviewData,
+            created_at: new Date().toISOString()
+        }
+      }))
+      
     } catch (error: any) {
-      console.error("Failed to submit reviews:", error)
+      console.error("Failed to submit review:", error)
       toast({ 
         title: "Submission failed", 
-        description: error.response?.data?.message || "There was an error submitting your reviews.", 
+        description: error.response?.data?.message || "There was an error submitting your review.", 
         variant: "destructive" 
       })
     } finally {
-      setSubmitting(false)
+      setSubmittingItems(prev => ({ ...prev, [itemIdStr]: false }))
     }
   }
+
+
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
@@ -122,6 +152,11 @@ export default function OrderReviewContent({ orderId }: OrderReviewContentProps)
         {items.map((item, index) => {
           const itemId = item.id || item.product_id || item.productId
           const itemIdStr = String(itemId)
+          // Key for existing reviews is product_id, which we map from item
+          const productIdStr = String(item.product_id || item.productId || item.id)
+          const existingReview = existingReviews[productIdStr];
+          const isSubmitting = submittingItems[itemIdStr] || false
+
           return (
           <Card key={`${itemIdStr}-${index}`} className="border-2 border-[#E8DCC8] py-6">
             <CardHeader>
@@ -131,6 +166,28 @@ export default function OrderReviewContent({ orderId }: OrderReviewContentProps)
               <div className="flex items-start gap-4">
                 <img src={item.image_url || item.image || "/placeholder.svg"} alt={item.productName} className="w-20 h-20 object-cover rounded-lg" />
                 <div className="flex-1 space-y-4">
+                 
+                 {existingReview ? (
+                    // Read-only view for existing review
+                    <div className="space-y-4">
+                        <div className="p-4 bg-green-50 rounded-lg border border-green-100">
+                            <div className="flex items-center gap-2 mb-2">
+                                <CheckCircle className="h-5 w-5 text-green-600" />
+                                <h4 className="font-semibold text-green-800">Review Submitted</h4>
+                            </div>
+                            <div className="flex items-center gap-1 mb-2">
+                                {[1,2,3,4,5].map(s => (
+                                    <Star key={s} className={`h-4 w-4 ${s <= existingReview.rating ? "fill-[#FF7E00] text-[#FF7E00]" : "text-gray-300"}`} />
+                                ))}
+                            </div>
+                            <h5 className="font-medium text-[#6B4423]">{existingReview.title}</h5>
+                            <p className="text-[#8B6F47] mt-1 text-sm">{existingReview.comment}</p>
+                            <p className="text-xs text-muted-foreground mt-2">Submitted on {new Date(existingReview.created_at || Date.now()).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                 ) : (
+                    // Edit Form
+                    <>
                   <div className="space-y-2">
                     <Label className="text-[#6B4423]">Your Rating</Label>
                     <div className="flex items-center gap-2">
@@ -179,6 +236,24 @@ export default function OrderReviewContent({ orderId }: OrderReviewContentProps)
                     />
                     <p className="text-xs text-[#8B6F47]">Minimum 20 characters ({reviews[itemIdStr]?.comment?.length || 0}/20)</p>
                   </div>
+
+                  <div className="flex justify-end pt-2">
+                    <Button 
+                        onClick={() => handleSingleSubmit(item)} 
+                        disabled={isSubmitting} 
+                        className="bg-[#2D5F3F] hover:bg-[#234A32] text-white"
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Submitting...
+                            </>
+                        ) : "Submit Review"}
+                    </Button>
+                  </div>
+                  </>
+                 )}
+
                 </div>
               </div>
             </CardContent>
@@ -187,11 +262,7 @@ export default function OrderReviewContent({ orderId }: OrderReviewContentProps)
       </div>
       )}
 
-      <div className="flex justify-end mt-6">
-        <Button onClick={handleSubmit} disabled={submitting} className="bg-[#2D5F3F] hover:bg-[#234A32] text-white">
-          {submitting ? "Submitting..." : "Submit Reviews"}
-        </Button>
-      </div>
+
     </div>
   )
 }

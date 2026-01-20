@@ -25,7 +25,6 @@ import { ProductCard } from "@/components/product-card"
 import { useCartStore } from "@/lib/cart-store"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { ProductReviewForm } from "@/components/product-review-form"
 import type { Review } from "@/lib/products-data"
 
 /**
@@ -84,7 +83,6 @@ export function ProductDetailClient({ product, relatedProducts, reviews }: Produ
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [isWishlisted, setIsWishlisted] = useState(false)
-  const [showReviewForm, setShowReviewForm] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
 
   // Cart store for add to cart functionality
@@ -468,13 +466,7 @@ export function ProductDetailClient({ product, relatedProducts, reviews }: Produ
                           </div>
                           <p className="text-sm text-[#8B6F47]">Based on {product.reviewCount} reviews</p>
                         </div>
-                        <Button
-                          onClick={() => setShowReviewForm(!showReviewForm)}
-                          className="w-full h-12 text-base font-semibold bg-[#FF7E00] hover:bg-[#E67300] text-white cursor-pointer"
-                        >
-                          <Edit3 className="mr-2 h-5 w-5" />
-                          {showReviewForm ? "Cancel" : "Write a Review"}
-                        </Button>
+
                       </div>
 
                       {/* Reviews List */}
@@ -526,15 +518,7 @@ export function ProductDetailClient({ product, relatedProducts, reviews }: Produ
                   </CardContent>
                 </Card>
 
-                {showReviewForm && (
-                  <ProductReviewForm
-                    productId={product.id}
-                    onReviewSubmit={() => {
-                      setShowReviewForm(false)
-                      toast.success("Review submitted successfully!")
-                    }}
-                  />
-                )}
+
               </div>
             </TabsContent>
           </Tabs>

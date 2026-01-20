@@ -53,7 +53,7 @@ class ProductModel {
   /**
    * Find all products with pagination and filters
    */
-  static async findAll({ page = 1, limit = 20, category, search, minPrice, maxPrice, sort, inStock, featured, fields }) {
+  static async findAll({ page = 1, limit = 20, category, search, minPrice, maxPrice, sort, inStock, isActive, featured, fields }) {
     const offset = (page - 1) * limit;
     const params = [];
 
@@ -143,6 +143,13 @@ class ProductModel {
       sql += ` AND p.in_stock = 1`;
     }
 
+    if (isActive === 'true') {
+      sql += ` AND p.is_active = 1`;
+    } else if (isActive === 'false') {
+      sql += ` AND p.is_active = 0`;
+    }
+    // If isActive is undefined/null (or anything else), we don't filter, showing all (Admin behavior)
+
     if (featured === 'true') {
       sql += ` AND p.is_featured = 1`;
     }
@@ -154,6 +161,7 @@ class ProductModel {
     else if (sort === 'name_desc') sql += ` ORDER BY p.name DESC`;
     else if (sort === 'newest') sql += ` ORDER BY p.created_at DESC`;
     else if (sort === 'popular') sql += ` ORDER BY p.review_count DESC`;
+    else if (sort === 'featured') sql += ` ORDER BY p.is_featured DESC, p.created_at DESC`;
     else sql += ` ORDER BY p.created_at DESC`; // Default sort
 
     // Pagination
@@ -217,6 +225,11 @@ class ProductModel {
     if (minPrice) { countSql += ` AND p.price >= ?`; countParams.push(minPrice); }
     if (maxPrice) { countSql += ` AND p.price <= ?`; countParams.push(maxPrice); }
     if (inStock === 'true') countSql += ` AND p.in_stock = 1`;
+    if (isActive === 'true') {
+        countSql += ` AND p.is_active = 1`;
+    } else if (isActive === 'false') {
+        countSql += ` AND p.is_active = 0`;
+    }
     if (featured === 'true') countSql += ` AND p.is_featured = 1`;
 
     const [countResult] = await db.query(countSql, countParams);

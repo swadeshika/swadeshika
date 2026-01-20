@@ -193,15 +193,17 @@ export function AccountOverview() {
 											>
 												<Link href={`/account/orders/${order.id}`}>View</Link>
 											</Button>
-											<Button
-												size="sm"
-												asChild
-												className="bg-[#2D5F3F] hover:bg-[#234A32] text-white whitespace-nowrap text-sm px-3 py-1"
-											>
-												<Link href={`/account/orders/${order.id}/review`}>
-													Write Review
-												</Link>
-											</Button>
+											{order.status === "Delivered" && (
+												<Button
+													size="sm"
+													asChild
+													className="bg-[#2D5F3F] hover:bg-[#234A32] text-white whitespace-nowrap text-sm px-3 py-1"
+												>
+													<Link href={`/account/orders/${order.id}/review`}>
+														Write Review
+													</Link>
+												</Button>
+											)}
 										</div>
 									</div>
 								</div>

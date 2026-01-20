@@ -27,7 +27,7 @@ class ProductService {
              * - Now admin panel can show correct stock status
              */
             // Admin view fields (do not request non-existent columns)
-            selectedFields = ['name', 'sku', 'stock_quantity', 'in_stock', 'price', 'category_id', 'is_featured'];
+            selectedFields = ['name', 'sku', 'stock_quantity', 'in_stock', 'price', 'category_id', 'is_featured', 'is_active'];
         }
 
         // 2. Handle 'fields' query param (overrides or appends to view)
@@ -39,8 +39,23 @@ class ProductService {
 
         // If no view and no fields, selectedFields remains empty [] -> Model will select *
 
-        // 3. Call Model
-        return await ProductModel.findAll({ ...filters, fields: selectedFields.length ? selectedFields.join(',') : null });
+        // 3. Determine 'is_active' filter logic
+        // If view is 'admin', we want ALL products (active & inactive).
+        // If view is NOT 'admin' (storefront), we typically ONLY want active products.
+        // However, if the query explicitly specifies 'isActive' (e.g. string 'true' or 'false'), we respect that.
+        // Otherwise, default to true (Active only) for non-admin views.
+        
+        let activeFilter = filters.isActive;
+        if (view !== 'admin' && activeFilter === undefined) {
+             activeFilter = 'true';
+        }
+
+        // 4. Call Model
+        return await ProductModel.findAll({ 
+            ...filters, 
+            isActive: activeFilter, 
+            fields: selectedFields.length ? selectedFields.join(',') : null 
+        });
     }
 
     static async getProductById(id) {

@@ -234,7 +234,6 @@ export function AdminCategoriesList() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[50px]"></TableHead>
                   <TableHead className="text-[#6B4423]">Name</TableHead>
                   <TableHead className="text-[#6B4423]">Slug</TableHead>
                   <TableHead className="text-[#6B4423]">Parent</TableHead>
@@ -256,11 +255,6 @@ export function AdminCategoriesList() {
                 ) : (
                   filtered.map((category) => (
                     <TableRow key={category.id}>
-                      <TableCell>
-                        <Button variant="ghost" size="icon" className="cursor-move group">
-                          <GripVertical className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground transition-colors" />
-                        </Button>
-                      </TableCell>
                       <TableCell className="font-medium">{category.name}</TableCell>
                       <TableCell>{category.slug}</TableCell>
                       <TableCell>

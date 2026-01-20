@@ -317,6 +317,7 @@ export function AdminCouponsList() {
           <Input
             id="expiry"
             type="date"
+            min={new Date().toISOString().split('T')[0]} // Disable past dates
             value={form.expiryDate}
             onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
           />

@@ -144,9 +144,9 @@ const sections = [
       <div className="space-y-4">
         <p>If you have any questions or concerns about this Privacy Policy or our data practices, please contact us:</p>
         <ul className="space-y-2 list-disc pl-5">
-          <li><strong>Email:</strong> privacy@swadeshika.com</li>
-          <li><strong>Phone:</strong> +91 XXXXXXXXXX</li>
-          <li><strong>Address:</strong> [Your Company Address]</li>
+          <li><strong>Email:</strong> official.swadeshika@gmail.com</li>
+          <li><strong>Phone:</strong> +91 7300039429, +91 8150976411</li>
+          <li><strong>Address:</strong> 98, 99 Swavalamban Kendra, Karni Nagar, Kudi - Madhuban Main Link Road, Near Kisan Gas Godam, Jodhpur</li>
         </ul>
         <p className="text-sm text-gray-600">Last Updated: November 1, 2025</p>
       </div>

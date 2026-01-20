@@ -99,10 +99,12 @@ export function ShopFilters({
              {/* Inline Content for Mobile */}
              <div className="flex items-center justify-between">
                 <h2 className="font-semibold text-lg text-[#6B4423]">Filters</h2>
-                <Button variant="ghost" size="sm" onClick={handleClearAll} className="hover:bg-[#2D5F3F] cursor-pointer">
-                  <X className="h-4 w-4 mr-1" />
-                  Clear All
-                </Button>
+                {anySelected && (
+                  <Button variant="ghost" size="sm" onClick={handleClearAll} className="hover:bg-[#2D5F3F] cursor-pointer">
+                    <X className="h-4 w-4 mr-1" />
+                    Clear All
+                  </Button>
+                )}
               </div>
               <Separator />
               {renderFilters()}
@@ -114,10 +116,12 @@ export function ShopFilters({
       <div className="hidden lg:block space-y-6 sticky top-24 rounded-2xl border-2 border-[#E8DCC8] bg-white p-5">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-lg text-[#6B4423]">Filters</h2>
-            <Button variant="ghost" size="sm" onClick={handleClearAll} className="hover:bg-[#2D5F3F] cursor-pointer">
-              <X className="h-4 w-4 mr-1" />
-              Clear All
-            </Button>
+            {anySelected && (
+              <Button variant="ghost" size="sm" onClick={handleClearAll} className="hover:bg-[#2D5F3F] cursor-pointer">
+                <X className="h-4 w-4 mr-1" />
+                Clear All
+              </Button>
+            )}
           </div>
           <Separator />
           {renderFilters()}

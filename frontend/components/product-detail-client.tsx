@@ -58,6 +58,7 @@ interface Product {
   features: string[]
   specifications: Record<string, string>
   inStock: boolean
+  stockQuantity?: number // Added stockQuantity
   rating: number
   reviewCount: number
 }
@@ -90,10 +91,23 @@ export function ProductDetailClient({ product, relatedProducts, reviews }: Produ
 
   /**
    * Handle quantity changes with validation
-   * Ensures quantity never goes below 1
+   * Ensures quantity never goes below 1 and doesn't exceed stock
    */
   const handleQuantityChange = (delta: number) => {
-    setQuantity((prev) => Math.max(1, prev + delta))
+    setQuantity((prev) => {
+      const newValue = prev + delta
+      
+      // Minimum quantity check
+      if (newValue < 1) return 1
+
+      // Maximum quantity check (stock availability)
+      if (product.stockQuantity !== undefined && newValue > product.stockQuantity) {
+        toast.warning(`Only ${product.stockQuantity} items available in stock`)
+        return prev
+      }
+
+      return newValue
+    })
   }
 
   /**
@@ -265,7 +279,7 @@ export function ProductDetailClient({ product, relatedProducts, reviews }: Produ
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
                   <span className="font-semibold text-lg text-[#6B4423]">Quantity:</span>
-                  <div className="flex items-center border-2 border-[#E8DCC8] rounded-xl overflow-hidden">
+                    <div className="flex items-center border-2 border-[#E8DCC8] rounded-xl overflow-hidden">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -280,7 +294,8 @@ export function ProductDetailClient({ product, relatedProducts, reviews }: Produ
                       variant="ghost"
                       size="icon"
                       onClick={() => handleQuantityChange(1)}
-                      className="h-12 w-12 rounded-none hover:bg-[#2D5F3F]/10 cursor-pointer"
+                      disabled={product.stockQuantity !== undefined && quantity >= product.stockQuantity}
+                      className="h-12 w-12 rounded-none hover:bg-[#2D5F3F]/10 cursor-pointer disabled:opacity-50"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>

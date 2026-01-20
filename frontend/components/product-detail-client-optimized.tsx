@@ -77,6 +77,7 @@ interface Product {
   features: string[]
   specifications: Record<string, string>
   inStock: boolean
+  stockQuantity?: number
   rating: number
   reviewCount: number
   variants?: ProductVariant[]
@@ -238,6 +239,7 @@ export function ProductDetailClientOptimized({
 
   // Cart store for add to cart functionality
   const addItem = useCartStore((state) => state.addItem)
+  const cartItems = useCartStore((state) => state.items)
 
   // Touch gestures for mobile image gallery
   const { onTouchStart, onTouchMove, onTouchEnd } = useTouchGestures(
@@ -257,13 +259,47 @@ export function ProductDetailClientOptimized({
    * Handle quantity changes with validation
    */
   const handleQuantityChange = useCallback((delta: number) => {
-    setQuantity(prev => Math.max(1, prev + delta))
-  }, [])
+    setQuantity(prev => {
+      const newValue = prev + delta
+      if (newValue < 1) return 1
+      
+      const maxStock = selectedVariant ? selectedVariant.quantity : (product.stockQuantity || 0)
+      
+      // Check limits including what's potentially in cart? 
+      // User requested "+" disable when limit reached usually refers to local selection, but let's stick to local limit for selector
+      // and total limit for "Add to Cart" to avoid confusion (e.g. if I have 20 in cart, and stock is 30, should I be able to select 11? No.)
+      // But strictly following "Add to Cart" validation first. 
+      // Actually, if I have 20 in cart, I SHOULD NOT be able to select 11.
+      // But let's first fix the "Add to Cart" allowing overshoot.
+      
+      if (maxStock > 0 && newValue > maxStock) {
+        toast.warning(`Only ${maxStock} items available in stock`)
+        return prev
+      }
+      return newValue
+    })
+  }, [selectedVariant, product.stockQuantity])
 
   /**
    * Add product to cart with selected variant and quantity
    */
   const handleAddToCart = useCallback(async () => {
+    const maxStock = selectedVariant ? selectedVariant.quantity : (product.stockQuantity || 0)
+    
+    // Check if adding this quantity would exceed stock
+    // Find existing item in cart
+    const existingCartItem = cartItems.find(item => 
+      item.productId === product.id && 
+      item.variantId === (selectedVariant?.id || null)
+    )
+    
+    const currentCartQty = existingCartItem ? existingCartItem.quantity : 0
+    
+    if (currentCartQty + quantity > maxStock) {
+      toast.warning(`Cannot add ${quantity} more. You already have ${currentCartQty} in cart. Max available: ${maxStock}`)
+      return
+    }
+
     setLoading(true)
     const start = Date.now()
     try {
@@ -301,7 +337,7 @@ export function ProductDetailClientOptimized({
       }
       setLoading(false)
     }
-  }, [selectedVariant, product, addItem, quantity])
+  }, [selectedVariant, product, addItem, quantity, cartItems])
 
   // Wishlist store
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore()
@@ -353,9 +389,14 @@ export function ProductDetailClientOptimized({
   // Check if current variant is in stock
   const isVariantInStock = selectedVariant ? selectedVariant.quantity > 0 : product.inStock
 
-  if (error) {
-    return <ProductError error={error} retry={() => setError(null)} />
-  }
+  // Check stock availability including cart
+  const maxStock = selectedVariant ? selectedVariant.quantity : (product.stockQuantity || 0)
+  const existingCartItem = cartItems.find(item => 
+    item.productId === product.id && 
+    item.variantId === (selectedVariant?.id || null)
+  )
+  const currentCartQty = existingCartItem ? existingCartItem.quantity : 0
+  const isStockLimitReached = currentCartQty + quantity > maxStock;
 
   return (
     // prevent accidental horizontal overflow on small screens while keeping inner scrollable areas
@@ -507,13 +548,15 @@ export function ProductDetailClientOptimized({
                             "px-4 py-2 rounded-lg border-2 font-medium transition-all cursor-pointer",
                             selectedVariant?.id === variant.id
                               ? "border-[#2D5F3F] bg-[#2D5F3F] text-white"
-                              : "border-[#E8DCC8] hover:border-[#2D5F3F]/50 bg-white"
+                              : "border-[#E8DCC8] hover:border-[#2D5F3F]/50 bg-white",
+                             // Disabled styles matching the user request
+                             "disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed disabled:opacity-70"
                           )}
                           disabled={!variant.isActive || variant.quantity === 0}
                         >
                           {variant.name}
                           {variant.quantity === 0 && (
-                            <span className="text-xs text-red-500 ml-1">(Out of Stock)</span>
+                            <span className="text-xs ml-1">(Out of Stock)</span>
                           )}
                         </button>
                       ))}
@@ -542,7 +585,8 @@ export function ProductDetailClientOptimized({
                       variant="ghost"
                       size="icon"
                       onClick={() => handleQuantityChange(1)}
-                      className="h-12 w-12 rounded-none hover:bg-[#2D5F3F]/10 cursor-pointer hover:bg-accent hover:text-white"
+                      className="h-12 w-12 rounded-none hover:bg-[#2D5F3F]/10 cursor-pointer hover:bg-accent hover:text-white disabled:opacity-50"
+                      disabled={quantity >= maxStock}
                       aria-label="Increase quantity"
                     >
                       <Plus className="h-4 w-4" />
@@ -572,8 +616,8 @@ export function ProductDetailClientOptimized({
               <div className="flex gap-4">
                 <Button
                   size="lg"
-                  className="flex-1 h-14 text-base font-semibold group bg-[#2D5F3F] hover:bg-[#234A32] text-white cursor-pointer"
-                  disabled={!isVariantInStock || loading}
+                  className="flex-1 h-14 text-base font-semibold group bg-[#2D5F3F] hover:bg-[#234A32] text-white cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-400 disabled:opacity-70"
+                  disabled={!isVariantInStock || loading || isStockLimitReached}
                   onClick={handleAddToCart}
                 >
                   {loading ? (
@@ -581,7 +625,7 @@ export function ProductDetailClientOptimized({
                   ) : (
                     <ShoppingCart className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
                   )}
-                  {loading ? "Adding..." : "Add to Cart"}
+                  {loading ? "Adding..." : isStockLimitReached ? "Limit Reached" : "Add to Cart"}
                 </Button>
                 <Button
                   size="lg"

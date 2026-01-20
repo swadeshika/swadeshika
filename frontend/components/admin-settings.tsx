@@ -132,6 +132,31 @@ export function AdminSettings() {
   }
 
   const handleSave = async () => {
+    // Validation
+    if (!settings.storeAddress.trim()) {
+      toast({ 
+        title: "Validation Error", 
+        description: "Store address cannot be empty.", 
+        variant: "destructive" 
+      })
+      return
+    }
+
+    // Basic phone validation: allows +, space, -, (, ) and requires at least 10 characters
+    // Phone validation: MUST start with +91 and followed by exactly 10 digits
+    const phoneRegex = /^\+91\d{10}$/
+    // Remove spaces/dashes before checking (though UI enforces clean input now)
+    const cleanPhone = settings.storePhone.replace(/\s+/g, '')
+    
+    if (!cleanPhone || !phoneRegex.test(cleanPhone)) {
+      toast({ 
+        title: "Validation Error", 
+        description: "Please enter a valid phone number (10 digits).", 
+        variant: "destructive" 
+      })
+      return
+    }
+
     try {
       // Map camelCase to snake_case
       const payload = {
@@ -209,13 +234,23 @@ export function AdminSettings() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="store-phone">Support Phone</Label>
-              <Input
-                id="store-phone"
-                value={settings.storePhone}
-                onChange={(e) => setSettings({ ...settings, storePhone: e.target.value })}
-                placeholder="+91 98765 43210"
-                className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]"
-              />
+              <div className="flex items-center gap-2">
+                <div className="flex h-10 w-12 items-center justify-center rounded-md border-2 border-[#E8DCC8] bg-muted text-sm font-medium text-[#6B4423]">
+                  +91
+                </div>
+                <Input
+                  id="store-phone"
+                  value={settings.storePhone.replace(/^\+91\s?/, "")}
+                  maxLength={10}
+                  onChange={(e) => {
+                    // Only allow digits
+                    const val = e.target.value.replace(/\D/g, '')
+                    setSettings({ ...settings, storePhone: `+91${val}` })
+                  }}
+                  placeholder="9876543210"
+                  className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="store-address">Store Address</Label>
@@ -566,13 +601,13 @@ export function AdminSettings() {
                 }}
                 className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
             </div>
-            <div className="flex items-center justify-between">
+            {/* <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-[#6B4423]">Allow Backorders</p>
                 <p className="text-sm text-[#8B6F47]">Permit purchase when stock is zero</p>
               </div>
               <Switch checked={settings.allowBackorders} onCheckedChange={(v) => setSettings({ ...settings, allowBackorders: v })} />
-            </div>
+            </div> */}
           </CardContent>
         </Card>
       </div>

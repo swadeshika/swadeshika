@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   Search,
   User,
@@ -102,17 +102,29 @@ export function SiteHeader() {
     fetchCategories();
   }, []);
 
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const q = searchParams.get('q') || ""
+    setSearchValue(q)
+    setMobileSearchValue(q)
+  }, [searchParams])
+
   const handleSearch = (e: React.FormEvent, isMobile = false) => {
     e.preventDefault()
     const query = isMobile ? mobileSearchValue.trim() : searchValue.trim()
     if (query) {
       router.push(`/shop?q=${encodeURIComponent(query)}`)
       if (isMobile) {
-        setMobileSearchValue("")
-        setIsSearchOpen(false)
-      } else {
-        setSearchValue("")
+        // Option A: Close search bar but keep value
+        setIsSearchOpen(false) 
+        // Option B: Keep it open? Standard behavior is usually to close mobile search overlay after submit
+        // But user asked about "input clear ho jata h".
+        // If I close it, they won't see it anyway until they reopen.
+        // But simply NOT clearing it means next time they open, it's there.
+        // Desktop search is always visible so it MUST not be clear.
       }
+      // Removed setSearchValue("") to keep the input filled
     }
   }
 

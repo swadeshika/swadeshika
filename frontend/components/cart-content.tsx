@@ -85,8 +85,8 @@ export function CartContent() {
     fetchSettings()
   }, [])
 
-  const shippingThreshold = settings?.free_shipping_threshold ?? 500
-  const flatRate = settings?.flat_rate ?? 50
+  const shippingThreshold = Number(settings?.free_shipping_threshold ?? 500)
+  const flatRate = Number(settings?.flat_rate ?? 50)
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const shipping = subtotal >= shippingThreshold ? 0 : flatRate

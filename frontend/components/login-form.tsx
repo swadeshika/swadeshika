@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -30,7 +30,28 @@ import { useToast } from "@/hooks/use-toast"
  */
 export function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
+  
+  // Show session expired message if redirected
+  useEffect(() => {
+    if (searchParams.get("sessionExpired") === "true") {
+      // Small delay to ensure toast shows after render
+      setTimeout(() => {
+        toast({
+            title: "Session Expired",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive"
+        })
+      }, 100)
+      
+      
+      // Clean up the URL helper without triggering a navigation/refresh
+      // This ensures the Toast remains visible
+      const newUrl = window.location.pathname
+      window.history.replaceState({}, '', newUrl)
+    }
+  }, [searchParams, toast])
   const login = useAuthStore((state) => state.login)
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState("")

@@ -203,7 +203,7 @@ async function handleLogout() {
     });
 
     // Redirect immediately
-    window.location.href = '/login';
+    window.location.href = '/login?sessionExpired=true';
 }
 
 /**

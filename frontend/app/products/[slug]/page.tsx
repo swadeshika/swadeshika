@@ -93,6 +93,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
       metaDescription: apiProduct.meta_description,
       comparePrice: apiProduct.compare_price,
       inStock: apiProduct.in_stock,
+      stockQuantity: apiProduct.stock_quantity,
       reviewCount: apiProduct.review_count,
       weightUnit: apiProduct.weight_unit || 'kg',
       category: (apiProduct as any).category_name || apiProduct.category_id?.toString() || 'Uncategorized',

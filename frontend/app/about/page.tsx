@@ -19,21 +19,12 @@ export default function AboutPage() {
           <section className="mt-8 rounded-2xl overflow-hidden border-2 border-[#E8DCC8] bg-white">
             <div className="grid lg:grid-cols-2">
               <div className="p-8 lg:p-10 flex flex-col justify-center">
-                <h2 className="text-3xl font-serif font-bold text-[#6B4423]">Rooted in Tradition. Crafted with Care.</h2>
-                <p className="mt-3 text-[#8B6F47]">We partner directly with farmers and artisan producers across India to bring you pure, honest ingredients—no shortcuts, no compromises.</p>
-                <div className="mt-6 grid grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-3xl font-bold text-[#2D5F3F]">150+</p>
-                    <p className="text-xs text-[#8B6F47]">Farmer partners</p>
-                  </div>
-                  <div>
-                    <p className="text-3xl font-bold text-[#2D5F3F]">1M+</p>
-                    <p className="text-xs text-[#8B6F47]">Orders delivered</p>
-                  </div>
-                  <div>
-                    <p className="text-3xl font-bold text-[#2D5F3F]">4.8★</p>
-                    <p className="text-xs text-[#8B6F47]">Avg. product rating</p>
-                  </div>
+                <h2 className="text-3xl font-serif font-bold text-[#6B4423]">The SwadeshiKa Mission</h2>
+                <div className="mt-3 text-[#8B6F47] space-y-4">
+                  <p>
+                    <strong>*SwadeshiKa's*</strong> mission is to ensure that every product born from the soil and toil of our villages becomes not just a brand, but a household essential and a part of every plate.
+                  </p>
+                  <p className="font-medium italic">"Made in Village - Made for Nation"</p>
                 </div>
               </div>
               <div className="relative">
@@ -42,98 +33,132 @@ export default function AboutPage() {
             </div>
           </section>
 
-          {/* Mission & Vision */}
-          <section className="mt-8 grid lg:grid-cols-2 gap-6">
-            <div className="rounded-2xl border-2 border-[#E8DCC8] bg-white p-6">
-              <h3 className="text-xl font-semibold text-[#6B4423]">Our Mission</h3>
-              <p className="mt-2 text-[#8B6F47]">To make traditional Indian foods accessible to every home while ensuring fair value to the hands that produce them.</p>
-            </div>
-            <div className="rounded-2xl border-2 border-[#E8DCC8] bg-white p-6">
-              <h3 className="text-xl font-semibold text-[#6B4423]">Our Vision</h3>
-              <p className="mt-2 text-[#8B6F47]">A world where purity, taste and sustainability go hand-in-hand—reviving culinary heritage for future generations.</p>
-            </div>
-          </section>
-
-          {/* Founders */}
-          <section className="mt-8 rounded-2xl border-2 border-[#E8DCC8] bg-white p-6">
-            <h3 className="text-xl font-semibold text-[#6B4423] mb-4">Founders</h3>
-            <div className="grid sm:grid-cols-2 gap-6">
-              <div className="flex gap-4">
-                <img src="/founder-1.jpg" alt="Founder" className="h-20 w-20 rounded-xl object-cover bg-[#F5F1E8]" />
-                <div>
-                  <p className="font-semibold text-[#6B4423]">Aarav Sharma</p>
-                  <p className="text-sm text-[#8B6F47]">Co-founder & CEO</p>
-                  <p className="text-sm text-[#6B4423] mt-2">Food enthusiast on a mission to bring transparent, farm-origin foods to Indian homes.</p>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <img src="/founder-2.jpg" alt="Founder" className="h-20 w-20 rounded-xl object-cover bg-[#F5F1E8]" />
-                <div>
-                  <p className="font-semibold text-[#6B4423]">Mira Iyer</p>
-                  <p className="text-sm text-[#8B6F47]">Co-founder & Head of Sourcing</p>
-                  <p className="text-sm text-[#6B4423] mt-2">Works closely with farmer communities to ensure purity, fair practices and consistency.</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Values Grid */}
+          {/* Mission Pillars */}
           <section className="mt-8">
-            <div className="rounded-2xl border-2 border-[#E8DCC8] bg-white p-6">
-              <h3 className="text-xl font-semibold text-[#6B4423] mb-4">Our Values</h3>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {[
-                  { t: "Purity First", d: "No additives. No shortcuts. Just honest ingredients." },
-                  { t: "Fair to Farmers", d: "Direct partnerships and fair pricing for producers." },
-                  { t: "Sustainable", d: "Thoughtful sourcing and eco-friendly packaging." },
-                  { t: "Customer-First", d: "Quality you can trust, service you can depend on." },
-                ].map((v, i) => (
-                  <div key={i} className="rounded-xl border-2 border-[#E8DCC8] p-4">
-                    <p className="font-medium text-[#6B4423]">{v.t}</p>
-                    <p className="text-sm text-[#8B6F47] mt-1">{v.d}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Story Timeline */}
-          <section className="mt-8 rounded-2xl border-2 border-[#E8DCC8] bg-white p-6">
-            <h3 className="text-xl font-semibold text-[#6B4423] mb-4">Our Journey</h3>
-            <div className="space-y-5">
-              {[
-                { y: "2019", e: "Started as a small kitchen initiative" },
-                { y: "2020", e: "Partnered with first 20 farmer groups" },
-                { y: "2022", e: "Launched nationwide delivery" },
-                { y: "2024", e: "Crossed 1 million orders and expanded product lines" },
-              ].map((s, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="h-2 w-2 mt-2 rounded-full bg-[#2D5F3F]" />
-                  <p className="text-sm text-[#6B4423]"><span className="font-semibold text-[#2D5F3F] mr-2">{s.y}</span>{s.e}</p>
+             <div className="mb-6">
+                <h3 className="text-2xl font-serif font-bold text-[#6B4423]">Our Mission Pillars:</h3>
+             </div>
+             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="rounded-2xl border-2 border-[#E8DCC8] bg-white p-6">
+                  <h4 className="text-lg font-bold text-[#2D5F3F] mb-2">1. Rural Development & Self-Reliance</h4>
+                  <ul className="list-disc pl-5 text-[#8B6F47] text-sm space-y-1">
+                    <li>Providing fair markets and value for food & household products made in villages.</li>
+                    <li>Empowering rural youth, farmers, and women towards employment and self-reliance.</li>
+                  </ul>
                 </div>
-              ))}
+                 <div className="rounded-2xl border-2 border-[#E8DCC8] bg-white p-6">
+                  <h4 className="text-lg font-bold text-[#2D5F3F] mb-2">2. Quality & Purity</h4>
+                  <ul className="list-disc pl-5 text-[#8B6F47] text-sm space-y-1">
+                    <li>Delivering products to consumers without adulteration and with complete tradition.</li>
+                    <li>Adopting modern packaging and quality standards while maintaining authentic taste.</li>
+                  </ul>
+                </div>
+                 <div className="rounded-2xl border-2 border-[#E8DCC8] bg-white p-6">
+                  <h4 className="text-lg font-bold text-[#2D5F3F] mb-2">3. Promoting Swadeshi</h4>
+                  <ul className="list-disc pl-5 text-[#8B6F47] text-sm space-y-1">
+                    <li>Assuring every customer that SwadeshiKa products are "Made in Village - Made for Nation".</li>
+                    <li>Giving identity and independence to indigenous and local products.</li>
+                  </ul>
+                </div>
+                 <div className="rounded-2xl border-2 border-[#E8DCC8] bg-white p-6">
+                  <h4 className="text-lg font-bold text-[#2D5F3F] mb-2">4. Customer Trust & Satisfaction</h4>
+                  <ul className="list-disc pl-5 text-[#8B6F47] text-sm space-y-1">
+                    <li>Delivering natural, health-promoting, and trustworthy items to every home.</li>
+                    <li>Assuring customers that "What comes from the village is the purest."</li>
+                  </ul>
+                </div>
+                 <div className="rounded-2xl border-2 border-[#E8DCC8] bg-white p-6 md:col-span-2 lg:col-span-1">
+                  <h4 className="text-lg font-bold text-[#2D5F3F] mb-2">5. Local to Global</h4>
+                  <ul className="list-disc pl-5 text-[#8B6F47] text-sm space-y-1">
+                    <li>Starting from villages, but aiming for national and international markets.</li>
+                    <li>Taking India's traditional treasures to the world and strengthening "Brand India".</li>
+                  </ul>
+                </div>
+             </div>
+          </section>
+
+          {/* Inspiration / Founders */}
+          <section className="mt-12 rounded-2xl border-2 border-[#E8DCC8] bg-[#F9F5F0] overflow-hidden">
+            <div className="p-8 lg:p-10">
+               <h3 className="text-2xl font-serif font-bold text-[#6B4423] mb-6 text-center">Our Inspiration – The Story of SwadeshiKa</h3>
+               
+               <p className="text-[#8B6F47] text-center max-w-3xl mx-auto mb-10">
+                 Inspired by the <strong>Swadeshi Swavalamban Bharat Abhiyan</strong> and <strong>Swavalamban Kendra Jodhpur</strong>, SwadeshiKa was founded by two empowered women – <strong>Priyanka Rajpurohit</strong> and <strong>Seema Bishnoi</strong>.
+                 Their shared vision was to bring India's tradition, taste, art, and swadeshi products to every home with purity, self-reliance, and pride.
+               </p>
+
+               <div className="grid md:grid-cols-2 gap-10">
+                 <div className="flex flex-col gap-4 bg-white p-6 rounded-xl border border-[#E8DCC8]">
+                    <div className="flex items-center gap-4 mb-2">
+                       <img src="/images/team/priyanka.jpeg" alt="Priyanka Rajpurohit" className="h-20 w-20 rounded-full object-cover border-2 border-[#2D5F3F]" /> 
+                       <h4 className="text-xl font-bold text-[#2D5F3F]">Priyanka Rajpurohit</h4>
+                    </div>
+                    <p className="text-[#6B4423] text-sm leading-relaxed">
+                      Priyanka's dream was that the hard work of our villages should not be limited to industries but should reach every Indian family directly and transparently. SwadeshiKa was started so that people adopt not just a product, but a lifestyle and culture.
+                    </p>
+                 </div>
+
+                 <div className="flex flex-col gap-4 bg-white p-6 rounded-xl border border-[#E8DCC8]">
+                    <div className="flex items-center gap-4 mb-2">
+                       <img src="/images/team/seema.jpeg" alt="Seema Bishnoi" className="h-20 w-20 rounded-full object-cover border-2 border-[#2D5F3F]" /> 
+                       <h4 className="text-xl font-bold text-[#2D5F3F]">Seema Bishnoi</h4>
+                    </div>
+                    <p className="text-[#6B4423] text-sm leading-relaxed">
+                      With 15 years of experience abroad, Seema realized the deep connection people have with their country's products and culture. She felt the need to strengthen our roots. "Wherever we are, our indigenous strength is our true natural wealth."
+                    </p>
+                 </div>
+               </div>
+
+               <div className="mt-8 text-center max-w-4xl mx-auto space-y-4">
+                 <p className="text-[#6B4423] italic font-medium">
+                   SwadeshiKa is not just a product; it is a platform for employment, independence, and rural self-reliance.
+                 </p>
+                 <p className="text-[#8B6F47]">
+                   It gives women, artisans, and rural producers the opportunity to connect their skills and products to the market. Every store and every sale becomes a symbol of economic freedom and self-respect.
+                 </p>
+                 <h4 className="text-xl font-bold text-[#2D5F3F] mt-4">"I am Swadeshi, I am SwadeshiKa."</h4>
+               </div>
             </div>
           </section>
 
-          {/* Impact Stats CTA */}
-          <section className="mt-8 rounded-2xl border-2 border-[#E8DCC8] bg-white p-6">
-            <div className="grid md:grid-cols-2 gap-6 items-center">
+          {/* Restoration of Tradition */}
+          <section className="mt-12 mb-8">
+            <div className="grid lg:grid-cols-2 gap-10 items-center">
               <div>
-                <h3 className="text-xl font-semibold text-[#6B4423]">Impact that matters</h3>
-                <p className="text-[#8B6F47] mt-2">Every purchase supports sustainable livelihoods and preserves time-honored food traditions.</p>
+                <h3 className="text-3xl font-serif font-bold text-[#6B4423] mb-6">SwadeshiKa – Restoring Tradition</h3>
+                <div className="space-y-4 text-[#6B4423]">
+                  <p>
+                    SwadeshiKa's objective is not merely to sell products, but to revive the Indian tradition and culture that has gifted us health, balance, and self-reliance for centuries.
+                  </p>
+                  <p>
+                    We believe that <strong>Desi Cow Ghee, Buttermilk, Wood-Pressed Oils, Stone-Ground Flour, and Hand-Pounded Spices</strong> are not just food, but a lifestyle and part of our Ayurvedic wisdom.
+                  </p>
+                  <p>
+                    In a time when chemicals and adulteration have weakened our diet and health, SwadeshiKa pledges to restore these ancient methods and return purity and trust to every home.
+                  </p>
+                  <div className="bg-[#E8F5E9] p-4 rounded-lg border-l-4 border-[#2D5F3F] mt-4">
+                    <p className="italic text-[#2D5F3F]">
+                      "From Ancient Tradition to Modern Health – That is the SwadeshiKa Way."
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold text-[#2D5F3F]">95%</p>
-                  <p className="text-xs text-[#8B6F47]">Repeat customers</p>
+              <div className="space-y-6">
+                <div className="rounded-2xl bg-[#F9F5F0] p-6 border border-[#E8DCC8]">
+                   <h4 className="font-bold text-[#2D5F3F] mb-2">Our Belief</h4>
+                   <p className="text-[#8B6F47] text-sm">
+                     We believe that the path of Swadeshi is the path to a Self-Reliant India. With this spirit, SwadeshiKa provides not only pure food but also encourages women's empowerment and rural employment.
+                   </p>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-[#2D5F3F]">500+</p>
-                  <p className="text-xs text-[#8B6F47]">Artisan products</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-[#2D5F3F]">20+</p>
-                  <p className="text-xs text-[#8B6F47]">States sourced</p>
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="bg-white p-4 rounded-xl text-center border border-[#E8DCC8] shadow-sm">
+                      <span className="block text-2xl font-bold text-[#2D5F3F]">100%</span>
+                      <span className="text-xs text-[#8B6F47]">Natural & Chemical-Free</span>
+                   </div>
+                   <div className="bg-white p-4 rounded-xl text-center border border-[#E8DCC8] shadow-sm">
+                      <span className="block text-2xl font-bold text-[#2D5F3F]">Pure</span>
+                      <span className="text-xs text-[#8B6F47]">Hand-Pounded Spices</span>
+                   </div>
                 </div>
               </div>
             </div>

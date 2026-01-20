@@ -82,13 +82,16 @@ export function ProductCard({
   const [displayPrice, setDisplayPrice] = useState(price)
   const [displayComparePrice, setDisplayComparePrice] = useState(comparePrice)
 
-  // Initialize with first variant if available
+  // Initialize with first IN-STOCK variant if available, otherwise first variant
   useEffect(() => {
     if (variants && variants.length > 0 && !selectedVariant) {
-      const firstVariant = variants[0]
-      setSelectedVariant(firstVariant)
-      setDisplayPrice(firstVariant.price)
-      setDisplayComparePrice(firstVariant.compare_price)
+      // Try to find first in-stock variant
+      const firstInStock = variants.find(v => (v.stock_quantity ?? 0) > 0)
+      const variantToSelect = firstInStock || variants[0]
+      
+      setSelectedVariant(variantToSelect)
+      setDisplayPrice(variantToSelect.price)
+      setDisplayComparePrice(variantToSelect.compare_price)
     }
   }, [variants])
 
@@ -104,6 +107,7 @@ export function ProductCard({
 
   // Access cart store's addItem function for adding products to cart
   const addItem = useCartStore((state) => state.addItem)
+  const cartItems = useCartStore((state) => state.items)
   const router = useRouter()
 
   // Access wishlist store
@@ -115,7 +119,25 @@ export function ProductCard({
   const [isWishlistLoading, setIsWishlistLoading] = useState(false)
 
   const inWishlist = isInWishlist(id)
-  const isOutOfStock = inStock === false || (stockQuantity !== undefined && stockQuantity <= 0)
+  
+  // Calculate stock status dynamically based on selection
+  const isOutOfStock = hasVariants && selectedVariant 
+    ? (selectedVariant.stock_quantity !== undefined && selectedVariant.stock_quantity <= 0)
+    : (inStock === false || (stockQuantity !== undefined && stockQuantity <= 0))
+
+  // NEW: Check stock against cart quantity for button disable state
+  const maxStockForButton = hasVariants && selectedVariant 
+    ? (selectedVariant.stock_quantity ?? 0)
+    : (stockQuantity ?? 0)
+
+  const existingCartItemForButton = cartItems.find(item => 
+    item.productId === id && 
+    item.variantId === (selectedVariant?.id || null)
+  )
+  const currentCartQtyForButton = existingCartItemForButton ? existingCartItemForButton.quantity : 0
+  
+  // Disable if adding 1 more would exceed limit
+  const isStockLimitReached = !isOutOfStock && (currentCartQtyForButton + 1 > maxStockForButton)
 
   /**
    * Handle add to cart click
@@ -130,6 +152,16 @@ export function ProductCard({
       toast({
         title: "Please select a variant",
         description: "Choose a size/variant before adding to cart",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Double check just in case, though button should be disabled
+    if (isStockLimitReached) {
+       toast({
+        title: "Stock Limit Reached",
+        description: `You already have ${currentCartQtyForButton} in cart. Max available: ${maxStockForButton}`,
         variant: "destructive"
       })
       return
@@ -318,11 +350,19 @@ export function ProductCard({
             value={selectedVariant?.variant_name || ''}
             onChange={(e) => handleVariantChange(e.target.value)}
           >
-            {variants.map((variant) => (
-              <option key={variant.id || variant.variant_name} value={variant.variant_name}>
-                {variant.variant_name}
+            {variants.map((variant) => {
+              const isVariantOutOfStock = variant.stock_quantity !== undefined && variant.stock_quantity <= 0;
+              return (
+              <option 
+                key={variant.id || variant.variant_name} 
+                value={variant.variant_name} 
+                className={isVariantOutOfStock ? "text-gray-400 bg-gray-50" : ""}
+                disabled={isVariantOutOfStock}
+              >
+                {variant.variant_name} {isVariantOutOfStock ? "(Out of Stock)" : ""}
               </option>
-            ))}
+              )
+            })}
           </select>
         ) : sizes && sizes.length > 0 ? (
           <select className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
@@ -340,13 +380,15 @@ export function ProductCard({
             className={cn(
               "bg-green-700 hover:bg-green-800 text-white font-medium rounded-lg h-11 cursor-pointer",
               isListView ? "w-auto px-6" : "w-full",
-              isOutOfStock && "bg-gray-400 hover:bg-gray-400 cursor-not-allowed opacity-70"
+              (isOutOfStock || isStockLimitReached) && "bg-gray-400 hover:bg-gray-400 cursor-not-allowed opacity-70"
             )}
-            onClick={isOutOfStock ? (e) => e.preventDefault() : handleAddToCart}
-            disabled={isLoading || isOutOfStock}
+            onClick={(isOutOfStock || isStockLimitReached) ? (e) => e.preventDefault() : handleAddToCart}
+            disabled={isLoading || isOutOfStock || isStockLimitReached}
           >
             {isOutOfStock ? (
                "OUT OF STOCK"
+            ) : isStockLimitReached ? (
+               "LIMIT REACHED"
             ) : isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...

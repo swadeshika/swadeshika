@@ -3,6 +3,8 @@ import { SiteFooter } from "@/components/site-footer"
 import { CheckoutForm } from "@/components/checkout-form"
 import { ShopHeader } from "@/components/shop-header"
 
+export const dynamic = "force-dynamic";
+
 export default function CheckoutPage() {
   return (
     <div className="flex min-h-screen flex-col">

@@ -137,7 +137,9 @@ function ShopContent() {
 export default function ShopPage() {
   return (
     <ClientOnly>
-      <ShopContent />
+      <Suspense fallback={<div>Loading shop...</div>}>
+         <ShopContent />
+      </Suspense>
     </ClientOnly>
   )
 }

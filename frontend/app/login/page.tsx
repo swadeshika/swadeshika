@@ -15,6 +15,7 @@
  * UX: Clean, focused design to minimize distractions during login
  */
 
+import { Suspense } from "react"
 import Link from "next/link"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
@@ -46,7 +47,9 @@ export default function LoginPage() {
                 <p className="text-[#8B6F47] mt-1">Use your email and password to continue</p>
               </div>
 
-              <LoginForm />
+              <Suspense fallback={<div>Loading form...</div>}>
+                <LoginForm />
+              </Suspense>
 
               <p className="text-center text-sm text-[#8B6F47] mt-6">
                 Don't have an account?{" "}

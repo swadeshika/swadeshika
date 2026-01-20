@@ -2,8 +2,8 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useState, useEffect, Suspense } from "react"
+import { useRouter } from "next/navigation"
 import {
   Search,
   User,
@@ -17,7 +17,6 @@ import {
   LogOut,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { CartButton } from "@/components/cart-button"
 import { AnnouncementBar } from "@/components/announcement-bar"
@@ -29,6 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { DesktopSearch, MobileSearch } from "./site-search"
 
 // Navigation data
 const mainNav = [
@@ -56,8 +56,6 @@ const utilityNav = [
 
 export function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [searchValue, setSearchValue] = useState("")
-  const [mobileSearchValue, setMobileSearchValue] = useState("")
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const router = useRouter()
   const { user, isAuthenticated, logout } = useAuthStore()
@@ -77,13 +75,12 @@ export function SiteHeader() {
         const categories = await productService.getAllCategories();
         
         // Map backend categories to submenu items
-        // Filter out empty or invalid categories if needed
         const categorySubmenu = categories
-            .filter(c => c.is_active !== false) // Assuming is_active exists, or just show all
-            .slice(0, 10) // Limit to top 10 to clear UI
+            .filter(c => c.is_active !== false)
+            .slice(0, 10)
             .map(c => ({
                 name: c.name,
-                href: `/shop/${c.slug || c.id}` // Fallback to ID if slug missing
+                href: `/shop/${c.slug || c.id}`
             }));
 
         if (categorySubmenu.length > 0) {
@@ -101,35 +98,6 @@ export function SiteHeader() {
 
     fetchCategories();
   }, []);
-
-  const searchParams = useSearchParams()
-
-  useEffect(() => {
-    const q = searchParams.get('q') || ""
-    setSearchValue(q)
-    setMobileSearchValue(q)
-  }, [searchParams])
-
-  const handleSearch = (e: React.FormEvent, isMobile = false) => {
-    e.preventDefault()
-    const query = isMobile ? mobileSearchValue.trim() : searchValue.trim()
-    if (query) {
-      router.push(`/shop?q=${encodeURIComponent(query)}`)
-      if (isMobile) {
-        // Option A: Close search bar but keep value
-        setIsSearchOpen(false) 
-        // Option B: Keep it open? Standard behavior is usually to close mobile search overlay after submit
-        // But user asked about "input clear ho jata h".
-        // If I close it, they won't see it anyway until they reopen.
-        // But simply NOT clearing it means next time they open, it's there.
-        // Desktop search is always visible so it MUST not be clear.
-      }
-      // Removed setSearchValue("") to keep the input filled
-    }
-  }
-
-  // Use navItems instead of mainNav in render
-
 
   return (
     <>
@@ -201,18 +169,9 @@ export function SiteHeader() {
               </button>
 
               {/* Desktop Search */}
-              <div className="hidden lg:block relative w-64">
-                <form onSubmit={handleSearch}>
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    type="text"
-                    placeholder="Search products..."
-                    className="pl-10 pr-4 py-2 w-full rounded-full border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
-                    value={searchValue}
-                    onChange={(e) => setSearchValue(e.target.value)}
-                  />
-                </form>
-              </div>
+              <Suspense fallback={<div className="hidden lg:block relative w-64 h-10 bg-gray-100 rounded-full animate-pulse" />}>
+                <DesktopSearch />
+              </Suspense>
 
               {/* User Dropdown */}
               <div className="hidden lg:block">
@@ -314,29 +273,9 @@ export function SiteHeader() {
 
           {/* Mobile Search */}
           {isSearchOpen && (
-            <div className="lg:hidden py-3">
-              <form onSubmit={(e) => handleSearch(e, true)} className="flex">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    type="text"
-                    placeholder="Search products..."
-                    className="pl-10 pr-4 py-2 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
-                    value={mobileSearchValue}
-                    onChange={(e) => setMobileSearchValue(e.target.value)}
-                    autoFocus
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  variant="ghost"
-                  className="ml-2 text-primary hover:bg-primary hover:text-white"
-                  onClick={(e) => handleSearch(e, true)}
-                >
-                  Search
-                </Button>
-              </form>
-            </div>
+            <Suspense fallback={<div className="lg:hidden h-12 bg-gray-100 animate-pulse my-2 rounded-lg" />}>
+              <MobileSearch onSearchSubmit={() => setIsSearchOpen(false)} />
+            </Suspense> 
           )}
         </div>
 

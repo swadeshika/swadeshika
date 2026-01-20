@@ -33,7 +33,9 @@ export interface Product {
     specifications?: Record<string, string>;
     tags?: string[];
     variants?: ProductVariant[];
+    related_products?: number[];
 }
+
 
 export interface ProductVariant {
     id: number | string;
@@ -66,6 +68,7 @@ export interface ProductQueryParams {
     sort?: string;
     view?: 'list' | 'admin' | 'full';
     fields?: string;
+    ids?: string | number[]; // comma separated or array
 }
 
 export interface PaginatedResponse<T> {

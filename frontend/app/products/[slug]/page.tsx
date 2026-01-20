@@ -111,25 +111,44 @@ export default async function ProductPage({ params }: { params: { slug: string }
       rating: Number(apiProduct.average_rating) || 0
     }
     
-    // Fetch related products (using same category)
-    if (apiProduct.category_id) {
-       const relatedData = await productService.getAllProducts({ 
+    // Fetch related products
+    // Priority: Manual Related Products > Same Category
+    let relatedData;
+    
+    if (apiProduct.related_products && apiProduct.related_products.length > 0) {
+       // Fetch specific related products
+       relatedData = await productService.getAllProducts({
+         ids: apiProduct.related_products,
+         limit: 4 // Limit to 4 just in case
+       });
+       // Filter out self just in case (though unlikely to be in list unless user added self)
+       related = relatedData.products
+    } else if (apiProduct.category_id) {
+       // Fallback to Category based
+       relatedData = await productService.getAllProducts({ 
          category_id: apiProduct.category_id, 
          limit: 4 
-       })
-       
+       });
        related = relatedData.products
-        .filter(p => p.id !== apiProduct.id)
-        .slice(0, 4)
-        .map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          price: p.price,
-          comparePrice: p.compare_price,
-          image: p.primary_image || p.image || '/placeholder.jpg',
-          badge: p.is_featured ? 'Featured' : undefined,
-          category: p.category_name || 'Uncategorized'
-        }))
+        .filter(p => !apiProduct || p.id !== apiProduct.id)
+    }
+
+    if (relatedData) {
+        related = related
+            .slice(0, 4)
+            .map((p: any) => ({
+              id: p.id,
+              name: p.name,
+              price: p.price,
+              comparePrice: p.compare_price,
+              image: p.primary_image || p.image || '/placeholder.jpg',
+              badge: p.is_featured ? 'Featured' : undefined,
+              category: p.category_name || 'Uncategorized',
+              rating: p.average_rating || 0,
+              reviews: p.review_count || 0,
+              inStock: p.in_stock === undefined ? true : !!p.in_stock,
+              stockQuantity: p.stock_quantity || 0,
+            }))
     }
     
   } catch (error) {

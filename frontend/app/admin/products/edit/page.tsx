@@ -36,7 +36,7 @@ export default async function AdminEditProductPage({
     metaTitle: product.meta_title || "",
     metaDescription: product.meta_description || "",
     publish: product.is_active !== undefined ? !!product.is_active : true,
-    related: "", // related logic not fully implemented yet
+    related: product.related_products ? product.related_products.map(String) : [],
     weight: product.weight ? String(product.weight) : "",
     weightUnit: product.weight_unit || ""
     // dims...

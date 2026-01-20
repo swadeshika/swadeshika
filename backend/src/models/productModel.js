@@ -53,7 +53,7 @@ class ProductModel {
   /**
    * Find all products with pagination and filters
    */
-  static async findAll({ page = 1, limit = 20, category, search, minPrice, maxPrice, sort, inStock, isActive, featured, fields }) {
+  static async findAll({ page = 1, limit = 20, category, search, minPrice, maxPrice, sort, inStock, isActive, featured, fields, ids }) {
     const offset = (page - 1) * limit;
     const params = [];
 
@@ -77,6 +77,7 @@ class ProductModel {
       'id', 'name', 'slug', 'description', 'short_description', 'sku',
       'price', 'compare_price', 'cost_price', 'weight', 'weight_unit',
       'stock_quantity', 'in_stock', 'is_active', 'is_featured', 'review_count', 'average_rating', 'status',
+      'related_products',
       'created_at', 'updated_at'
     ];
 
@@ -137,6 +138,16 @@ class ProductModel {
     if (maxPrice) {
       sql += ` AND p.price <= ?`;
       params.push(maxPrice);
+    }
+
+    if (ids) {
+      // ids can be "1,2,3" or [1,2,3]
+      const idList = Array.isArray(ids) ? ids : String(ids).split(',').map(id => id.trim());
+      if (idList.length > 0) {
+        const placeholders = idList.map(() => '?').join(',');
+        sql += ` AND p.id IN (${placeholders})`;
+        params.push(...idList);
+      }
     }
 
     if (inStock === 'true') {
@@ -298,7 +309,8 @@ class ProductModel {
       variants,
       features: features.map(f => f.feature_text),
       specifications: specs.reduce((acc, s) => ({ ...acc, [s.spec_key]: s.spec_value }), {}),
-      tags: tags.map(t => t.tag)
+      tags: tags.map(t => t.tag),
+      related_products: product.related_products || []
     };
   }
 
@@ -312,8 +324,8 @@ class ProductModel {
 
       // 1. Insert Product
       const [res] = await conn.query(
-        `INSERT INTO products (name, slug, description, short_description, category_id, sku, price, compare_price, cost_price, weight, weight_unit, stock_quantity, in_stock, is_active, is_featured, meta_title, meta_description) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO products (name, slug, description, short_description, category_id, sku, price, compare_price, cost_price, weight, weight_unit, stock_quantity, in_stock, is_active, is_featured, meta_title, meta_description, related_products) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           data.name, data.slug, data.description, data.short_description, data.category_id, data.sku,
           data.price, data.compare_price, data.cost_price, data.weight, data.weight_unit || 'kg',
@@ -321,7 +333,8 @@ class ProductModel {
           // in_stock and is_active: allow frontend to control publish/status; default true
           (data.in_stock === undefined ? true : !!data.in_stock),
           (data.is_active === undefined ? true : !!data.is_active),
-          data.is_featured || false, data.meta_title, data.meta_description
+          data.is_featured || false, data.meta_title, data.meta_description,
+          JSON.stringify(data.related_products || [])
         ]
       );
       const productId = res.insertId;
@@ -420,7 +433,7 @@ class ProductModel {
       await conn.query(
         `UPDATE products SET 
          name=?, slug=?, description=?, short_description=?, category_id=?, sku=?, price=?, compare_price=?, 
-         weight=?, weight_unit=?, stock_quantity=?, in_stock = COALESCE(?, in_stock), is_active = COALESCE(?, is_active), is_featured=?, meta_title=?, meta_description=?, updated_at=NOW()
+         weight=?, weight_unit=?, stock_quantity=?, in_stock = COALESCE(?, in_stock), is_active = COALESCE(?, is_active), is_featured=?, meta_title=?, meta_description=?, related_products = COALESCE(?, related_products), updated_at=NOW()
          WHERE id=?`,
         [
           data.name, data.slug, data.description, data.short_description, data.category_id, data.sku,
@@ -429,7 +442,12 @@ class ProductModel {
           // Pass NULL to COALESCE when the frontend did not specify these fields so existing values are preserved
           (data.in_stock === undefined ? null : (data.in_stock ? 1 : 0)),
           (data.is_active === undefined ? null : (data.is_active ? 1 : 0)),
-          data.is_featured, data.meta_title, data.meta_description, id
+          data.is_featured, data.meta_title, data.meta_description, 
+          // Use JSON_SET or just full replace. Since we pass full array, full replace is fine. 
+          // But SQL needs valid JSON string.
+          (data.related_products ? JSON.stringify(data.related_products) : null), // Use COALESCE in query or handle here?
+          // Let's modify query to UPDATE ... related_products = COALESCE(?, related_products)
+          id
         ]
       );
 

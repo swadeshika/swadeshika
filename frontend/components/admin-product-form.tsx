@@ -43,6 +43,7 @@ import { FeaturesEditor } from "@/components/admin/features-editor"
 import { SpecsEditor, SpecRow } from "@/components/admin/specs-editor"
 import { ImageUploader } from "@/components/admin/image-uploader"
 import { ImageGalleryUploader } from "@/components/admin/image-gallery-uploader"
+import { MultiSelect } from "@/components/ui/multi-select"
 
 type Mode = "create" | "edit"
 
@@ -72,7 +73,7 @@ interface AdminProductFormProps {
     metaTitle: string
     metaDescription: string
     publish: boolean
-    related: string
+    related: string[]
     weightUnit: string
   }>
   mode?: Mode
@@ -108,7 +109,7 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
     metaTitle: initial?.metaTitle || "",
     metaDescription: initial?.metaDescription || "",
     publish: initial?.publish ?? true,
-    related: initial?.related || "",
+    related: initial?.related || [],
     weightUnit: initial?.weightUnit || "kg",
   })
 
@@ -118,17 +119,30 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
   const [primaryImage, setPrimaryImage] = useState<{ file: File | null; url: string | null }>({ file: null, url: initialPrimaryImageUrl })
   const [galleryImages, setGalleryImages] = useState<{ files: File[]; urls: string[] }>({ files: [], urls: initialGalleryUrls })
   const [categories, setCategories] = useState<Category[]>([])
+  const [allProducts, setAllProducts] = useState<{ label: string; value: string }[]>([])
 
   useEffect(() => {
+    // Fetch categories
     categoryService.getAllCategories()
       .then((data) => setCategories(data))
       .catch((err) => {
         console.error("Failed to fetch categories:", err)
         toast({ title: "Error", description: "Failed to load categories", variant: "destructive" })
       })
-  }, [])
 
-  const update = (key: keyof typeof form, value: string | boolean) => setForm((f) => ({ ...f, [key]: value }))
+    // Fetch all products for Related Products selector
+    productService.getAllProducts({ limit: 1000, fields: 'id,name' })
+      .then((data) => {
+        // Filter out current product if in edit mode
+        const options = data.products
+          .filter(p => !productId || p.id !== productId)
+          .map(p => ({ label: p.name, value: String(p.id) }))
+        setAllProducts(options)
+      })
+      .catch(err => console.error("Failed to fetch products for selector", err))
+  }, [productId])
+
+  const update = (key: keyof typeof form, value: any) => setForm((f) => ({ ...f, [key]: value }))
 
   const slugify = (s: string) =>
     s
@@ -201,6 +215,7 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
             is_active: typeof form.publish === 'boolean' ? form.publish : (form.status === 'active'),
             meta_title: form.metaTitle,
             meta_description: form.metaDescription,
+            related_products: form.related.map(id => parseInt(id)),
             tags: form.tags.split(',').map(t => t.trim()).filter(t => t.length > 0),
             features: features.filter(f => f.trim().length > 0),
             specifications: specs.reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {}),
@@ -466,8 +481,15 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
               <CardTitle className="text-[#6B4423]">Related Products</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Label htmlFor="related">Related product IDs (comma separated)</Label>
-              <Input id="related" value={form.related} onChange={(e) => update("related", e.target.value)} placeholder="12, 15, 27" className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
+              <Label htmlFor="related">Select Related Products</Label>
+              <MultiSelect
+                options={allProducts}
+                selected={form.related}
+                onChange={(selected) => update("related", selected)}
+                placeholder="Search products..."
+                className="border-2 border-[#E8DCC8]"
+              />
+              <p className="text-xs text-[#8B6F47]">Selected products will appear in the "To match with" section.</p>
             </CardContent>
           </Card>
         </div>

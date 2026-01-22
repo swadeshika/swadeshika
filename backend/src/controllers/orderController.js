@@ -213,7 +213,7 @@ exports.createOrder = async (req, res, next) => {
             guest_email: email || null,
             guest_phone: phone || null,
             address_id: addressId, // Link finalized address ID
-            billing_address_id: billingAddressId,
+            billing_address_id: billingAddressId || null,
             subtotal,
             discount_amount: discountAmount,
             coupon_code: couponCode || null, // Create this field in DB if not saving
@@ -221,12 +221,12 @@ exports.createOrder = async (req, res, next) => {
             tax_amount: taxAmount,
             total_amount: totalAmount,
             payment_method: paymentMethod,
-            notes,
+            notes: notes || null, // FIX: Ensure null instead of undefined
             // Pass full address snapshot details
             shipping_full_name: shippingAddress.fullName || shippingAddress.full_name,
             shipping_phone: shippingAddress.phone,
             shipping_address_line1: shippingAddress.addressLine1 || shippingAddress.address_line1,
-            shipping_address_line2: shippingAddress.addressLine2 || shippingAddress.address_line2,
+            shipping_address_line2: shippingAddress.addressLine2 || shippingAddress.address_line2 || null,
             shipping_city: shippingAddress.city,
             shipping_state: shippingAddress.state,
             shipping_postal_code: shippingAddress.postalCode || shippingAddress.postal_code,
@@ -767,21 +767,23 @@ exports.downloadInvoice = async (req, res, next) => {
         const customerTop = 150;
         
         // Billing Address (Left)
-        doc.fontSize(11).font('Helvetica-Bold').fillColor(darkText).text('Billing By:', 50, customerTop);
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(darkText).text('Billing To:', 50, customerTop);
         doc.fontSize(10).font('Helvetica').fillColor(lightText);
-        if (order.billingAddress) {
+        
+        // Check if separate billing address exists and is different from shipping
+        if (order.billingAddress && order.billing_address_id !== order.address_id) {
+            // Separate billing address
             doc.text(order.billingAddress.full_name, 50, customerTop + 15);
             doc.text(order.billingAddress.address_line1, 50, customerTop + 30);
             if (order.billingAddress.address_line2) doc.text(order.billingAddress.address_line2, 50, customerTop + 45);
             doc.text(`${order.billingAddress.city}, ${order.billingAddress.state} - ${order.billingAddress.postal_code}`, 50, customerTop + (order.billingAddress.address_line2 ? 60 : 45));
             doc.text(order.billingAddress.phone, 50, customerTop + (order.billingAddress.address_line2 ? 75 : 60));
         } else if (order.address) {
-             // Fallback to address
-            doc.text(order.address.full_name, 50, customerTop + 15);
-            doc.text(order.address.address_line1, 50, customerTop + 30);
-            doc.text(`${order.address.city}, ${order.address.state}`, 50, customerTop + 45);
+            // Same as shipping address
+            doc.text('(Same as Shipping Address)', 50, customerTop + 15);
         } else {
-             doc.text(order.guest_email || 'Guest User', 50, customerTop + 15);
+            // Fallback for guest orders
+            doc.text(order.guest_email || 'Guest User', 50, customerTop + 15);
         }
 
         // Shipping Address (Right)

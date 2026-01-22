@@ -121,8 +121,28 @@ class ProductModel {
   `;
 
     if (category) {
-      sql += ` AND c.slug = ?`;
-      params.push(category);
+      // Fetch the category and all its subcategories recursively
+      const [categoryRows] = await db.query(
+        `WITH RECURSIVE CategoryTree AS (
+          SELECT id, slug, parent_id FROM categories WHERE slug = ?
+          UNION ALL
+          SELECT c.id, c.slug, c.parent_id 
+          FROM categories c
+          INNER JOIN CategoryTree ct ON c.parent_id = ct.id
+        )
+        SELECT id FROM CategoryTree`,
+        [category]
+      );
+      
+      if (categoryRows.length > 0) {
+        const categoryIds = categoryRows.map(row => row.id);
+        const placeholders = categoryIds.map(() => '?').join(',');
+        sql += ` AND p.category_id IN (${placeholders})`;
+        params.push(...categoryIds);
+      } else {
+        // Category not found, return no results
+        sql += ` AND 1=0`;
+      }
     }
 
     if (search) {
@@ -527,19 +547,33 @@ class ProductModel {
     const conn = await db.getConnection();
     try {
       await conn.beginTransaction();
+  
+      // Check if product has been ordered
+      const [orderItems] = await conn.query(
+        `SELECT COUNT(*) as count FROM order_items WHERE product_id = ?`, 
+        [id]
+      );
+      const hasOrders = orderItems[0].count > 0;
 
-      // Clean up related data (referential integrity)
-      await conn.query(`DELETE FROM product_images WHERE product_id = ?`, [id]);
-      await conn.query(`DELETE FROM product_features WHERE product_id = ?`, [id]);
-      await conn.query(`DELETE FROM product_variants WHERE product_id = ?`, [id]);
-      
-      // Keep reviews but set product_id to NULL for history
-      await conn.query(`UPDATE reviews SET product_id = NULL WHERE product_id = ?`, [id]);
-      
-      // Note: order_items are NOT deleted - must preserve order history
-      
-      // Finally delete the product
-      await conn.query(`DELETE FROM products WHERE id = ?`, [id]);
+      if (hasOrders) {
+        // SOFT DELETE: Product has orders, cannot hard delete
+        // Set is_active = FALSE to hide from storefront
+        await conn.query(`UPDATE products SET is_active = FALSE WHERE id = ?`, [id]);
+        console.log(`✓ Product ${id} soft-deleted (marked as inactive) due to existing orders`);
+      } else {
+        // HARD DELETE: No orders, safe to fully remove
+        // Clean up related data (referential integrity)
+        await conn.query(`DELETE FROM product_images WHERE product_id = ?`, [id]);
+        await conn.query(`DELETE FROM product_features WHERE product_id = ?`, [id]);
+        await conn.query(`DELETE FROM product_variants WHERE product_id = ?`, [id]);
+        
+        // Keep reviews but set product_id to NULL for history
+        await conn.query(`UPDATE reviews SET product_id = NULL WHERE product_id = ?`, [id]);
+        
+        // Finally delete the product
+        await conn.query(`DELETE FROM products WHERE id = ?`, [id]);
+        console.log(`✓ Product ${id} hard-deleted (no order history)`);
+      }
 
       await conn.commit();
       return true;

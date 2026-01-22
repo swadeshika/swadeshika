@@ -31,19 +31,19 @@ import {
 import { DesktopSearch, MobileSearch } from "./site-search"
 
 // Navigation data
-const mainNav = [
+type NavItem = {
+  name: string
+  href: string
+  submenu?: { name: string; href: string }[]
+}
+
+const mainNav: NavItem[] = [
   { name: "Home", href: "/" },
   { name: "Shop", href: "/shop" },
   {
     name: "Categories",
     href: "#",
-    submenu: [
-      { name: "Ghee & Butter", href: "/shop/ghee" },
-      { name: "Spices & Masalas", href: "/shop/spices" },
-      { name: "Dry Fruits & Nuts", href: "/shop/dry-fruits" },
-      { name: "Cold-Pressed Oils", href: "/shop/oils" },
-      { name: "Flours & Grains", href: "/shop/flours" },
-    ],
+    submenu: [], // Will be populated dynamically from API
   },
   { name: "About Us", href: "/about" },
   { name: "Contact", href: "/contact" },

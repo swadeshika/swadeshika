@@ -46,7 +46,59 @@ export function AdminDashboard() {
     fetchData()
   }, [])
 
-  if (loading) return <div className="p-8 text-center text-[#8B6F47]">Loading dashboard...</div>
+  if (loading) {
+    return (
+      <div className="space-y-6 font-sans">
+        <div>
+          <h1 className="font-serif text-2xl md:text-3xl font-bold mb-2 text-[#6B4423]">Dashboard</h1>
+          <p className="text-[#8B6F47] text-sm md:text-base">Welcome back! Here's what's happening with your store.</p>
+        </div>
+
+        {/* Stats Skeleton */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="rounded-2xl border-2 border-[#E8DCC8]">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="h-10 w-10 rounded-full bg-gray-200 animate-pulse" />
+                </div>
+                <div className="h-8 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
+                <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Low Stock Skeleton */}
+        <Card className="rounded-2xl py-4 border-2 border-[#E8DCC8]">
+          <CardHeader>
+            <div className="h-6 bg-gray-200 rounded w-40 animate-pulse"></div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-16 bg-gray-200 rounded-xl animate-pulse"></div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Orders & Products Skeleton */}
+        <div className="grid lg:grid-cols-2 gap-6">
+          {[...Array(2)].map((_, i) => (
+            <Card key={i} className="rounded-2xl py-4 border-2 border-[#E8DCC8]">
+              <CardHeader>
+                <div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[...Array(3)].map((_, j) => (
+                  <div key={j} className="h-20 bg-gray-200 rounded-xl animate-pulse"></div>
+                ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
   if (!data) return <div className="p-8 text-center text-red-500">Failed to load data</div>
 
   return (

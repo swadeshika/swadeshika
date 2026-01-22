@@ -136,19 +136,34 @@ export function AdminReports() {
 
       {/* KPI Cards */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {data.kpis.map((kpi: any) => (
-          <Card key={kpi.title} className="rounded-2xl border-2 border-[#E8DCC8]">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2D5F3F]/10 text-[#2D5F3F]">
-                  <kpi.icon className="h-5 w-5" />
+        {loading ? (
+          // Skeleton loaders for KPIs
+          [...Array(4)].map((_, i) => (
+            <Card key={i} className="rounded-2xl border-2 border-[#E8DCC8]">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 animate-pulse" />
                 </div>
-              </div>
-              <p className="text-2xl font-bold text-[#6B4423]">{kpi.value}</p>
-              <p className="text-sm text-[#8B6F47]">{kpi.title}</p>
-            </CardContent>
-          </Card>
-        ))}
+                <div className="h-8 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
+                <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          data.kpis.map((kpi: any) => (
+            <Card key={kpi.title} className="rounded-2xl border-2 border-[#E8DCC8]">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2D5F3F]/10 text-[#2D5F3F]">
+                    <kpi.icon className="h-5 w-5" />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-[#6B4423]">{kpi.value}</p>
+                <p className="text-sm text-[#8B6F47]">{kpi.title}</p>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
 
       {/* Orders by Status and Payment Methods */}

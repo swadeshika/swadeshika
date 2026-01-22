@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { couponService, Coupon } from "@/lib/couponService"
 
@@ -188,9 +188,36 @@ export function AdminCouponsList() {
       setIsCREATEOpen(false)
       reloadCoupons()
     } catch (error: any) {
+      // Parse validation errors from API
+      let errorMessage = "Failed to create coupon";
+      
+      // FIRST: Check if error.errors array exists (preferred)
+      if (error.errors && Array.isArray(error.errors) && error.errors.length > 0) {
+        errorMessage = error.errors.map((e: any) => `• ${e.message}`).join('\n');
+      } 
+      // FALLBACK: Try to parse JSON array from error.message string
+      else if (error.message) {
+        try {
+          // Check if message contains a JSON array (look for [{...}])
+          const jsonMatch = error.message.match(/\[\s*\{[\s\S]*\}\s*\]/);
+          if (jsonMatch) {
+            const errors = JSON.parse(jsonMatch[0]);
+            if (Array.isArray(errors) && errors.length > 0) {
+              errorMessage = errors.map((e: any) => `• ${e.message}`).join('\n');
+            }
+          } else {
+            // No JSON found, use the plain message
+            errorMessage = error.message;
+          }
+        } catch (parseError) {
+          // If parsing fails, use original message
+          errorMessage = error.message;
+        }
+      }
+
       toast({
-        title: "Error",
-        description: error.message || "Failed to create coupon",
+        title: "Validation Error",
+        description: <div className="whitespace-pre-line">{errorMessage}</div>,
         variant: "destructive"
       })
     }
@@ -206,9 +233,36 @@ export function AdminCouponsList() {
       setIsEDITOpen(false)
       reloadCoupons()
     } catch (error: any) {
+      // Parse validation errors from API
+      let errorMessage = "Failed to update coupon";
+      
+      // FIRST: Check if error.errors array exists (preferred)
+      if (error.errors && Array.isArray(error.errors) && error.errors.length > 0) {
+        errorMessage = error.errors.map((e: any) => `• ${e.message}`).join('\n');
+      } 
+      // FALLBACK: Try to parse JSON array from error.message string
+      else if (error.message) {
+        try {
+          // Check if message contains a JSON array (look for [{...}])
+          const jsonMatch = error.message.match(/\[\s*\{[\s\S]*\}\s*\]/);
+          if (jsonMatch) {
+            const errors = JSON.parse(jsonMatch[0]);
+            if (Array.isArray(errors) && errors.length > 0) {
+              errorMessage = errors.map((e: any) => `• ${e.message}`).join('\n');
+            }
+          } else {
+            // No JSON found, use the plain message
+            errorMessage = error.message;
+          }
+        } catch (parseError) {
+          // If parsing fails, use original message
+          errorMessage = error.message;
+        }
+      }
+
       toast({
-        title: "Error",
-        description: error.message || "Failed to update coupon",
+        title: "Validation Error",
+        description: <div className="whitespace-pre-line">{errorMessage}</div>,
         variant: "destructive"
       })
     }

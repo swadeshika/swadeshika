@@ -83,17 +83,13 @@ export default function OrderReviewContent({ orderId }: OrderReviewContentProps)
 
     const r = reviews[itemIdStr]
     
-    // Validation for single item
-    if (!r || !r.title.trim()) {
-      toast({ title: "Title required", description: "Please add a review title.", variant: "destructive" })
-      return
-    }
+    // Validation for single item (simplified)
     if (r.rating === 0) {
       toast({ title: "Rating required", description: "Please select a rating.", variant: "destructive" })
       return
     }
-    if (r.comment.trim().length < 20) {
-      toast({ title: "Review too short", description: "Please write at least 20 characters.", variant: "destructive" })
+    if (!r.comment.trim()) {
+      toast({ title: "Review required", description: "Please write something about your experience.", variant: "destructive" })
       return
     }
 
@@ -213,12 +209,12 @@ export default function OrderReviewContent({ orderId }: OrderReviewContentProps)
                     </div>
                   </div>
  
-                  {/* Review Title */}
+                  {/* Review Title - Optional */}
                   <div className="space-y-2">
-                    <Label htmlFor={`title-${itemIdStr}`} className="text-[#6B4423]">Review Title</Label>
+                    <Label htmlFor={`title-${itemIdStr}`} className="text-[#6B4423]">Review Title <span className="text-xs text-[#8B6F47]">(Optional)</span></Label>
                     <Input
                       id={`title-${itemIdStr}`}
-                      placeholder="Summarize your experience (e.g., Excellent quality ghee)"
+                      placeholder="e.g., Great product! (optional)"
                       value={reviews[itemIdStr]?.title || ""}
                       onChange={(e) => setTitle(itemIdStr, e.target.value)}
                       className="border-2 border-[#E8DCC8] focus:border-[#2D5F3F] h-12"
@@ -229,12 +225,11 @@ export default function OrderReviewContent({ orderId }: OrderReviewContentProps)
                     <Label htmlFor={`comment-${itemIdStr}`} className="text-[#6B4423]">Your Review</Label>
                     <Textarea
                       id={`comment-${itemIdStr}`}
-                      placeholder="Share your experience with this product..."
+                      placeholder="Share your experience (e.g., 'Good product', 'Excellent quality', etc.)"
                       value={reviews[itemIdStr]?.comment || ""}
                       onChange={(e) => setComment(itemIdStr, e.target.value)}
                       className="border-2 border-[#E8DCC8] focus:border-[#2D5F3F] min-h-28"
                     />
-                    <p className="text-xs text-[#8B6F47]">Minimum 20 characters ({reviews[itemIdStr]?.comment?.length || 0}/20)</p>
                   </div>
 
                   <div className="flex justify-end pt-2">

@@ -26,6 +26,7 @@ export function AddressesList() {
   const { toast } = useToast()
   const [items, setItems] = useState<Address[]>([])
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Address | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -108,7 +109,11 @@ export function AddressesList() {
       return
     }
 
+    // Prevent double submission
+    if (submitting) return
+
     try {
+      setSubmitting(true)
       if (editing) {
         await addressService.updateAddress(editing.id, {
           ...form,
@@ -131,6 +136,8 @@ export function AddressesList() {
     } catch (error: any) {
       console.error("Operation failed:", error)
       toast({ title: "Error", description: error.message || "Operation failed", variant: "destructive" })
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -315,8 +322,19 @@ export function AddressesList() {
             <Button variant="outline" className="bg-transparent border-2 border-[#E8DCC8] hover:bg-accent" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button className="bg-[#2D5F3F] hover:bg-[#234A32] text-white" onClick={handleSubmit}>
-              {editing ? "Save Changes" : "Add Address"}
+            <Button 
+              className="bg-[#2D5F3F] hover:bg-[#234A32] text-white" 
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {editing ? "Saving..." : "Adding..."}
+                </>
+              ) : (
+                editing ? "Save Changes" : "Add Address"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

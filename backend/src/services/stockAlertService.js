@@ -89,7 +89,7 @@ async function checkAllProductsStock() {
       `SELECT id, name, stock_quantity, 
               COALESCE(low_stock_threshold, ?) as threshold
        FROM products 
-       WHERE stock_quantity <= COALESCE(low_stock_threshold, ?) 
+       WHERE stock_quantity <= IF(low_stock_threshold IS NULL, ?, low_stock_threshold)
        AND stock_quantity > 0
        AND in_stock = 1`,
       [globalThreshold, globalThreshold]

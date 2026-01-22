@@ -39,7 +39,42 @@ export function SignupForm() {
     e.preventDefault()
     setIsLoading(true)
 
-    // Basic Validation
+    // Validation: Email format
+    const emailRegex = /^[a-zA-Z0-9][a-zA-Z0-9._+-]*@[a-zA-Z0-9][a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(formData.email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address (e.g., name@example.com)",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
+
+    // Validation: Phone number (10 digits, optionally with +91)
+    const phoneRegex = /^(\+91)?[6-9]\d{9}$/;
+    if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Please enter a valid 10-digit Indian mobile number",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
+
+    // Validation: Password strength
+    if (formData.password.length < 6) {
+      toast({
+        title: "Weak Password",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
+
+    // Validation: Password match
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: "Passwords do not match",
@@ -198,11 +233,11 @@ export function SignupForm() {
             <Checkbox id="terms" required />
             <Label htmlFor="terms" className="text-sm cursor-pointer leading-relaxed">
               I agree to the{" "}
-              <Link href="/terms" className="text-primary hover:underline">
+              <Link href="/policies/terms" className="text-primary hover:underline">
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="/privacy" className="text-primary hover:underline">
+              <Link href="/policies/privacy" className="text-primary hover:underline">
                 Privacy Policy
               </Link>
             </Label>

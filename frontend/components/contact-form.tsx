@@ -79,39 +79,11 @@ export function ContactForm() {
       return
     }
 
-    // 2. Email Validation (Strict)
-    // Basic format check
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    
-    // Check 1: Regex match
+    // 2. Email Validation (Same as signup form)
+    const emailRegex = /^[a-zA-Z0-9][a-zA-Z0-9._+-]*@[a-zA-Z0-9][a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(trimmedEmail)) {
-      toast({ title: "Invalid Email", description: "Please enter a valid email address.", variant: "destructive" })
+      toast({ title: "Invalid Email", description: "Please enter a valid email address (e.g., name@example.com)", variant: "destructive" })
       return
-    }
-    
-    // Check 2: No double @ (Explicit check, though regex handles it, this catches edge cases regex might miss in some engines)
-    if (trimmedEmail.split('@').length !== 2) {
-      toast({ title: "Invalid Email", description: "Email must contain exactly one '@' symbol.", variant: "destructive" })
-      return
-    }
-
-    // Check 3: No consecutive dots or starting/ending dots
-    if (trimmedEmail.includes('..') || trimmedEmail.startsWith('.') || trimmedEmail.endsWith('.')) {
-       toast({ title: "Invalid Email", description: "Email cannot contain consecutive dots or start/end with a dot.", variant: "destructive" })
-       return
-    }
-
-    // Check 4: Domain part validity (at least one dot after @)
-    const domainPart = trimmedEmail.split('@')[1];
-    if (domainPart.indexOf('.') === -1) {
-       toast({ title: "Invalid Email", description: "Email domain must contain a valid extension (e.g., .com).", variant: "destructive" })
-       return
-    }
-
-    // Check 5: Forbidden special chars often used in attacks or typos
-    if (/[#&,;]/.test(trimmedEmail)) {
-       toast({ title: "Invalid Email", description: "Email contains invalid characters.", variant: "destructive" })
-       return
     }
 
     // 3. Phone Validation (10 digits only, numeric)

@@ -146,7 +146,7 @@ class AddressModel {
     }
 
     /**
-     * Set default address for a user (Scoped by Phone Number)
+     * Set default address for a user
      * @param {string} userId - User ID
      * @param {string} addressId - Address ID to set as default
      */
@@ -155,17 +155,19 @@ class AddressModel {
         try {
             await connection.beginTransaction();
 
-            // 1. Get the phone number of the target address
-            const [rows] = await connection.query('SELECT phone FROM addresses WHERE id = ?', [addressId]);
+            // 1. Verify the address exists and belongs to this user
+            const [rows] = await connection.query(
+                'SELECT id FROM addresses WHERE id = ? AND user_id = ?', 
+                [addressId, userId]
+            );
             if (rows.length === 0) {
-                throw new Error('Address not found');
+                throw new Error('Address not found or does not belong to this user');
             }
-            const phone = rows[0].phone;
 
-            // 2. Unset default for all OTHER addresses with the SAME phone number for this user
+            // 2. Unset default for ALL other addresses for this user
             await connection.query(
-                'UPDATE addresses SET is_default = FALSE WHERE user_id = ? AND phone = ?',
-                [userId, phone]
+                'UPDATE addresses SET is_default = FALSE WHERE user_id = ?',
+                [userId]
             );
 
             // 3. Set the target address as default

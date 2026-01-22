@@ -197,9 +197,17 @@ const createCouponValidation = [
             }
 
             // Optional: Warn if creating already-expired coupon
+            // Compare dates only, not times (to allow today's date)
             const now = new Date();
-            if (validUntil < now) {
-                throw new Error('Valid until date is in the past. Coupon will be immediately expired.');
+            const expiryDateOnly = new Date(validUntil);
+            const todayDateOnly = new Date(now);
+            
+            // Set both to midnight for date-only comparison
+            expiryDateOnly.setHours(0, 0, 0, 0);
+            todayDateOnly.setHours(0, 0, 0, 0);
+            
+            if (expiryDateOnly < todayDateOnly) {
+                throw new Error('Valid until date cannot be in the past. Please select today or a future date.');
             }
 
             return true;

@@ -36,8 +36,7 @@ export function AnnouncementBar() {
 
         {/* Main announcement message with bold emphasis on key text */}
         <p className="text-center">
-          <span className="font-bold">Diwali Dhamaka!</span> Biggest Sale of the Year 🪔 - Limited Stock | Up to 25% OFF
-          + Free Ghee Sample
+          <span className="font-bold">Limited Time Offer!</span> Shop Pure & Organic Products 🌿 | Free Shipping on Orders Above ₹999
         </p>
 
         {/* Close button - positioned absolutely in top right */}

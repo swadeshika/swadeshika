@@ -193,7 +193,7 @@ class DashboardModel {
                 COALESCE(p.low_stock_threshold, ?) as threshold,
                 (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = TRUE LIMIT 1) as image
             FROM products p
-            WHERE p.stock_quantity <= COALESCE(p.low_stock_threshold, ?)
+            WHERE p.stock_quantity <= IF(p.low_stock_threshold IS NULL, ?, p.low_stock_threshold)
             AND p.is_active = TRUE
             LIMIT 5
         `;

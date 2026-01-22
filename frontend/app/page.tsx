@@ -14,14 +14,20 @@ import { productService, Product } from "@/lib/services/productService"
  * Homepage Component for Swadeshika E-commerce Platform
  */
 
-const quickLinks = [
-  { name: "Festival Specials", icon: "🪔", href: "/shop/festival" },
-  { name: "Membership Deals", icon: "🎁", href: "/membership" },
-  { name: "New Launches", icon: "✨", href: "/shop/new" },
-  { name: "Under ₹499", icon: "💰", href: "/shop/under-499" },
-  { name: "Under ₹999", icon: "🛍️", href: "/shop/under-999" },
-  { name: "All Products", icon: "📦", href: "/shop" },
-]
+// Helper function to get icon based on category name
+function getIconForCategory(name: string): string {
+  const lowerName = name.toLowerCase()
+  if (lowerName.includes('ghee') || lowerName.includes('butter')) return '🧈'
+  if (lowerName.includes('spice') || lowerName.includes('masala')) return '🌶️'
+  if (lowerName.includes('dry fruit') || lowerName.includes('nut')) return '🥜'
+  if (lowerName.includes('oil')) return '🥥'
+  if (lowerName.includes('flour') || lowerName.includes('grain')) return '🌾'
+  if (lowerName.includes('honey')) return '🍯'
+  if (lowerName.includes('pickle')) return '🥒'
+  return '🏪' // Default icon
+}
+
+// Quick links will be populated dynamically from categories
 
 import { reviewService, Review } from "@/lib/services/reviewService"
 
@@ -53,6 +59,32 @@ export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [reviews, setReviews] = useState<Review[]>([])
+  const [quickLinks, setQuickLinks] = useState<Array<{name: string; icon: string; href: string}>>([])
+
+  // Fetch categories for quick links
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const categories = await productService.getAllCategories()
+        const activeCategories = categories.filter(c => c.is_active !== false).slice(0, 5)
+        
+        const links = activeCategories.map(cat => ({
+          name: cat.name,
+          icon: getIconForCategory(cat.name),
+          href: `/shop/${cat.slug || cat.id}`
+        }))
+        
+        // Always add "All Products" at the end
+        links.push({ name: "All Products", icon: "📦", href: "/shop" })
+        setQuickLinks(links)
+      } catch (error) {
+        console.error("Failed to fetch categories:", error)
+        // Fallback to shop link only
+        setQuickLinks([{ name: "All Products", icon: "📦", href: "/shop" }])
+      }
+    }
+    fetchCategories()
+  }, [])
 
   useEffect(() => {
     const fetchReviews = async () => {

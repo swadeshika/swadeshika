@@ -250,6 +250,7 @@ export function AdminCouponsList() {
             onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
             className="font-mono uppercase"
           />
+          <p className="text-xs text-muted-foreground">3-50 characters required.</p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="type">Discount Type</Label>

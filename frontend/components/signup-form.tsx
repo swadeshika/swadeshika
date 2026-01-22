@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import { useAuthStore } from "@/lib/auth-store"
 import { useToast } from "@/hooks/use-toast"
@@ -17,6 +18,8 @@ export function SignupForm() {
   const { toast } = useToast()
   const register = useAuthStore((state) => state.register)
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   // Form State
   const [formData, setFormData] = useState({
@@ -136,14 +139,29 @@ export function SignupForm() {
 
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input 
-              id="password" 
-              type="password" 
-              placeholder="Create a password" 
-              value={formData.password}
-              onChange={handleChange}
-              required 
-            />
+            <div className="relative">
+              <Input 
+                id="password" 
+                type={showPassword ? "text" : "password"} 
+                placeholder="Create a password" 
+                value={formData.password}
+                onChange={handleChange}
+                required 
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none cursor-pointer"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4 cursor-pointer" />
+                ) : (
+                  <Eye className="h-4 w-4 cursor-pointer" />
+                )}
+                <span className="sr-only">Toggle password visibility</span>
+              </button>
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
               Must be at least 8 characters and include upper, lower, number and special character.
             </p>
@@ -151,14 +169,29 @@ export function SignupForm() {
 
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input 
-              id="confirmPassword" 
-              type="password" 
-              placeholder="Confirm your password" 
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required 
-            />
+            <div className="relative">
+              <Input 
+                id="confirmPassword" 
+                type={showConfirmPassword ? "text" : "password"} 
+                placeholder="Confirm your password" 
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required 
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none cursor-pointer"
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-4 w-4 cursor-pointer" />
+                ) : (
+                  <Eye className="h-4 w-4 cursor-pointer" />
+                )}
+                <span className="sr-only">Toggle password visibility</span>
+              </button>
+            </div>
           </div>
 
           <div className="flex items-start space-x-2">

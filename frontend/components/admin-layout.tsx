@@ -61,7 +61,7 @@ const navigation = [
   { name: "Reviews", href: "/admin/reviews", icon: Ghost },
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Contacts", href: "/admin/contacts", icon: Users },
-  { name: "Newsletter", href: "/admin/newsletter", icon: Mail },
+  // { name: "Newsletter", href: "/admin/newsletter", icon: Mail }, // Commented out - Newsletter feature disabled
   { name: "Categories", href: "/admin/categories", icon: Tag },
   {
     name: "Blog",

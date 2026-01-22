@@ -310,7 +310,7 @@ class ProductModel {
       features: features.map(f => f.feature_text),
       specifications: specs.reduce((acc, s) => ({ ...acc, [s.spec_key]: s.spec_value }), {}),
       tags: tags.map(t => t.tag),
-      related_products: product.related_products || []
+      related_products: (typeof product.related_products === 'string' ? JSON.parse(product.related_products) : product.related_products) || []
     };
   }
 

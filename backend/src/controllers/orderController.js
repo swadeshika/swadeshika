@@ -174,8 +174,8 @@ exports.createOrder = async (req, res, next) => {
         const settings = await AdminSettingsService.getSettings();
 
 
-        const shippingThreshold = settings ? Number(settings.free_shipping_threshold) : 500;
-        const flatRate = settings ? Number(settings.flat_rate) : 50;
+        const shippingThreshold = (settings && settings.free_shipping_threshold != null) ? Number(settings.free_shipping_threshold) : 500;
+        const flatRate = (settings && settings.flat_rate != null) ? Number(settings.flat_rate) : 50;
 
         console.log(`DEBUG: Subtotal: ${subtotal}, Threshold: ${shippingThreshold}, FlatRate: ${flatRate}`);
 

@@ -196,6 +196,26 @@ class CouponService {
              await CouponModel.recordUsage(couponId, userId, orderId, discountAmount);
         }
     }
+
+    /**
+     * Get available coupons for public display
+     * @returns {Promise<Array>}
+     */
+    static async getAvailableCoupons() {
+        const allCoupons = await CouponModel.findAll();
+        const now = new Date();
+        
+        return allCoupons.filter(coupon => {
+            if (!coupon.is_active) return false;
+            
+            if (coupon.valid_from && new Date(coupon.valid_from) > now) return false;
+            if (coupon.valid_until && new Date(coupon.valid_until) < now) return false;
+            
+            if (coupon.usage_limit && coupon.used_count >= coupon.usage_limit) return false;
+            
+            return true;
+        });
+    }
 }
 
 module.exports = CouponService;

@@ -33,6 +33,13 @@ const couponValidator = require('../validators/couponValidator');
  */
 router.post('/validate', authenticate, couponValidator.validate, CouponController.validateCoupon);
 
+/**
+ * @route GET /available
+ * @desc Get available coupons for users
+ * @access Public
+ */
+router.get('/available', CouponController.getAvailableCoupons);
+
 // Admin routes
 router.use(authenticate, authorize('admin'));
 

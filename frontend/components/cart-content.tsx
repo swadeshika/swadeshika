@@ -17,7 +17,20 @@ export function CartContent() {
   const [couponCode, setCouponCode] = useState("")
   const [isValidating, setIsValidating] = useState(false)
   const [couponError, setCouponError] = useState<string | null>(null)
+  const [availableCoupons, setAvailableCoupons] = useState<any[]>([]) // Using any to avoid type import issues for now, or import Coupon
   const { toast } = useToast()
+
+  useEffect(() => {
+    const fetchCoupons = async () => {
+      try {
+        const coupons = await couponService.getAvailableCoupons()
+        setAvailableCoupons(coupons)
+      } catch (error) {
+        console.error("Failed to fetch coupons", error)
+      }
+    }
+    fetchCoupons()
+  }, [])
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return
@@ -258,7 +271,7 @@ export function CartContent() {
                 </div>
               )}
               
-              {/* Error Message Display */}
+            {/* Error Message Display */}
               {couponError && !appliedCoupon && (
                 <div className="text-sm text-red-600 mt-1 flex items-start gap-1">
                   <span className="text-red-600">⚠</span>
@@ -266,6 +279,35 @@ export function CartContent() {
                 </div>
               )}
             </div>
+
+            {/* Available Coupons List */}
+            {!appliedCoupon && availableCoupons.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-bold text-[#6B4423] mb-2">Available Coupons</p>
+                <div className="space-y-2">
+                  {availableCoupons.map((c) => (
+                    <div key={c.id} className="p-3 border border-dashed border-[#2D5F3F] bg-[#F5F1E8]/50 rounded-lg">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="font-bold text-[#2D5F3F]">{c.code}</span>
+                        <Button 
+                          variant="link" 
+                          className="h-auto p-0 text-sm text-[#6B4423] hover:text-[#2D5F3F]"
+                          onClick={() => {
+                            setCouponCode(c.code)
+                            // Optional: Automatically apply it too
+                            // handleApplyCoupon() - requires couponCode state update first or passing arg
+                            // Let's just fill it for now or we can create a wrapper to call API directly
+                          }}
+                        >
+                          Use Code
+                        </Button>
+                      </div>
+                      <p className="text-xs text-[#8B6F47]">{c.description || `Get ${c.discount_type === 'percentage' ? `${c.discount_value}%` : `₹${c.discount_value}`} off`}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

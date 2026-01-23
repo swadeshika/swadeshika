@@ -95,6 +95,21 @@ class CouponController {
             next(error);
         }
     }
+
+    /**
+     * Get available coupons
+     * @param {Object} req 
+     * @param {Object} res 
+     * @param {Function} next 
+     */
+    static async getAvailableCoupons(req, res, next) {
+        try {
+            const coupons = await CouponService.getAvailableCoupons();
+            res.json({ success: true, data: coupons });
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = CouponController;

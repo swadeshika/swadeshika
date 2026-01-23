@@ -28,7 +28,7 @@ export default function AboutPage() {
                 </div>
               </div>
               <div className="relative">
-                <img src="/about-hero.jpg" alt="Swadeshika farms and kitchens" className="w-full h-full object-cover min-h-[260px]" />
+                <img src="/images/about/swadeshika.jpeg" alt="Swadeshika farms and kitchens" className="w-full h-full object-cover min-h-[260px]" />
               </div>
             </div>
           </section>

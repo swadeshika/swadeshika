@@ -39,10 +39,13 @@ export default function AdminCustomerDetail({ customerId }: { customerId: string
     async function fetchData() {
       try {
         setLoading(true)
-        const [customerData, ordersData] = await Promise.all([
+        const [customerRes, ordersData] = await Promise.all([
           customersService.getById(customerId),
           ordersService.getAllOrders({ customer: customerId, limit: 5 })
         ])
+        
+        // Handle potential wrapper object from service
+        const customerData = (customerRes as any).data || customerRes
         setCustomer(customerData)
         setRecentOrders(ordersData.orders)
 
@@ -66,8 +69,9 @@ export default function AdminCustomerDetail({ customerId }: { customerId: string
       await customersService.update(customerId, formData);
       setEditing(false);
       // Refresh data
-      const updated = await customersService.getById(customerId);
-      setCustomer(updated);
+      const updatedRes = await customersService.getById(customerId);
+      const updatedData = (updatedRes as any).data || updatedRes;
+      setCustomer(updatedData);
     } catch (error) {
       console.error("Failed to update", error);
     }
@@ -77,8 +81,9 @@ export default function AdminCustomerDetail({ customerId }: { customerId: string
     if (!confirm("Are you sure you want to deactivate this customer?")) return;
     try {
       await customersService.delete(customerId);
-      const updated = await customersService.getById(customerId);
-      setCustomer(updated);
+      const updatedRes = await customersService.getById(customerId);
+      const updatedData = (updatedRes as any).data || updatedRes;
+      setCustomer(updatedData);
     } catch (error) {
       console.error("Failed to delete", error);
     }
@@ -186,7 +191,7 @@ export default function AdminCustomerDetail({ customerId }: { customerId: string
                         <div className="rounded-full bg-[#F5F1E8] p-2 border border-[#E8DCC8]"><User className="h-4 w-4 text-[#6B4423]" /></div>
                         <div>
                           <p className="font-medium text-[#6B4423]">Order #{o.orderNumber}</p>
-                          <p className="text-xs text-[#8B6F47]">{new Date(o.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
+                          <p className="text-xs text-[#8B6F47]">{new Date(o.createdAt || new Date()).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -226,10 +231,7 @@ export default function AdminCustomerDetail({ customerId }: { customerId: string
                 <span className="text-[#8B6F47]">Total Spent</span>
                 <span className="font-medium">₹{(customer.totalSpent || 0).toLocaleString("en-IN")}</span>
               </div>
-              <Button asChild className="w-full">
-                {/* Note: In real app, we filter orders list by customer ID */}
-                <Link href={`/admin/orders?customer=${customer.id}`}>View Orders</Link>
-              </Button>
+
             </CardContent>
           </Card>
         </div>

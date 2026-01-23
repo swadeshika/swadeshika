@@ -22,6 +22,26 @@ import { addressService, Address } from "@/lib/services/addressService"
 import { settingsService, AppSettings } from "@/lib/services/settingsService"
 import { useEffect } from "react"
 
+// Indian States Data
+const INDIAN_STATES = [
+  "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", 
+  "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Goa", 
+  "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", "Karnataka", 
+  "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", 
+  "Mizoram", "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan", "Sikkim", 
+  "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
+];
+
+// Validation Patterns
+const PATTERNS = {
+  NAME: /^[a-zA-Z\s.-]+$/,
+  PHONE: /^\d{10}$/,
+  PINCODE: /^\d{6}$/,
+  // Address: allow numbers, letters, standard symbols. Reject only-symbol strings.
+  // We check detailed logic in handler, simplest regex for "not empty" here is broad.
+  ONLY_SYMBOLS: /^[^a-zA-Z0-9]+$/ 
+};
+
 export function CheckoutForm() {
   const router = useRouter()
   const { toast } = useToast()
@@ -41,8 +61,18 @@ export function CheckoutForm() {
   const [addresses, setAddresses] = useState<Address[]>([])
   const [settings, setSettings] = useState<AppSettings | null>(null)
 
+  // Address Form State (using default values or local state to control inputs perfectly)
+  const [shippingState, setShippingState] = useState("")
+  const [billingState, setBillingState] = useState("")
+
   // Derived state
   const defaultAddress = addresses.find(a => a.isDefault) || addresses[0]
+
+  // Initialize states when data loads
+  useEffect(() => {
+    if (defaultAddress?.state) setShippingState(defaultAddress.state)
+  }, [defaultAddress])
+
 
   // Calculate Totals
   const subtotal = getTotalPrice()
@@ -65,8 +95,6 @@ export function CheckoutForm() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Only fetch addresses if user is logged in
-        // This prevents 401 errors and login redirects for guest checkout
         const fetchedAddresses = user 
           ? await addressService.getAddresses().catch(() => [])
           : [];
@@ -84,12 +112,82 @@ export function CheckoutForm() {
     fetchData();
   }, [user])
 
+  // --- Real-time Validation Handler ---
+  const validateField = (name: string, value: string) => {
+    let error = "";
+    const cleanValue = value.trim();
+
+    if (!cleanValue) return; // Don't validate empty while typing, let required handle submit
+
+    switch (name) {
+      case 'fullName':
+      case 'billingName':
+      case 'city':
+      case 'billingCity':
+        if (!PATTERNS.NAME.test(cleanValue)) {
+            error = "Only letters, spaces, and dots allowed.";
+        } else if (/[@$#%^&*()_+={}\[\]|\\:;"<>\/?~`]/.test(cleanValue)) { // Double check for allowed symbols overlap
+            error = "Special characters are not allowed.";
+        }
+        break;
+      
+      case 'phone':
+        // Only allow numbers input, done via onInput, ensuring length here
+        if (cleanValue.length > 0 && cleanValue.length !== 10) {
+            error = "Phone number must be exactly 10 digits.";
+        }
+        break;
+
+      case 'pincode':
+      case 'billingPincode':
+        if (cleanValue.length > 0 && !PATTERNS.PINCODE.test(cleanValue)) {
+           error = "Pincode must be exactly 6 digits.";
+        }
+        break;
+
+      case 'address1':
+      case 'billingAddress1':
+      case 'address2':
+      case 'billingAddress2':
+        // Anti-Spam: Block strings that are entirely symbols
+        if (cleanValue.length > 0 && PATTERNS.ONLY_SYMBOLS.test(cleanValue)) {
+            error = "Address cannot contain only symbols.";
+        } else if (cleanValue.length < 3 && cleanValue.length > 0) {
+            error = "Address is too short.";
+        }
+        break;
+    }
+
+    setValidationErrors(prev => {
+        const next = { ...prev };
+        if (error) next[name] = error;
+        else delete next[name];
+        return next;
+    });
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, value } = e.target;
+      
+      // Auto-clear error logic handled inside validateField mostly, 
+      // but we need to trigger it.
+      validateField(name, value);
+  };
+
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setPlacing(true)
 
     const formData = new FormData(e.currentTarget)
 
+    // Manual State Injection (since Select might not submit natively if uncontrolled properly)
+    // We bind Select value to a hidden input or just merge it here.
+    // Easiest: Let's assume we capture state in the Select logic, or just get it from the state variables if controlled.
+    // Actually, name="state" on Select works if we use native select or shadcn select with name.
+    // Shadcn Select doesn't always support 'name' prop passing to form data easily without a hidden input.
+    // Let's grab it explicitly.
+    
     // Construct Address Objects
     const shippingAddress = {
       fullName: formData.get("fullName"),
@@ -97,7 +195,7 @@ export function CheckoutForm() {
       addressLine1: formData.get("address1"),
       addressLine2: formData.get("address2"),
       city: formData.get("city"),
-      state: formData.get("state"),
+      state: shippingState, // Use state variable
       postalCode: formData.get("pincode"),
       country: "India"
     }
@@ -108,17 +206,46 @@ export function CheckoutForm() {
       addressLine1: formData.get("billingAddress1"),
       addressLine2: formData.get("billingAddress2"),
       city: formData.get("billingCity"),
-      state: formData.get("billingState"),
+      state: billingState, // Use state variable
       postalCode: formData.get("billingPincode"),
       country: "India"
     }
+
+    // Final Validation Check before submitting
+    const errors: Record<string, string> = {};
+    if (!shippingState) errors.state = "Please select a state.";
+    if (!sameAsBilling && !billingState) errors.billingState = "Please select a billing state.";
+    
+    // Re-run field validations to catch empty required fields spoofing
+    // (Native 'required' handles most, but let's be safe)
+    if(Object.keys(validationErrors).length > 0) {
+        toast({
+            title: "Please fix form errors",
+            description: "Some fields satisfy requirements.",
+            variant: "destructive"
+        });
+        setPlacing(false);
+        return;
+    }
+
+    if (Object.keys(errors).length > 0) {
+        setValidationErrors(prev => ({ ...prev, ...errors }));
+        toast({
+            title: "Missing Information",
+            description: "Please select your state.",
+            variant: "destructive"
+        });
+        setPlacing(false);
+        return;
+    }
+
 
     const orderData = {
       items: cartItems.map(item => ({
         productId: item.productId,
         productName: item.name,
         variantId: item.variantId,
-        variantName: item.variantName || null, // Explicitly send variant name
+        variantName: item.variantName || null,
         quantity: item.quantity,
         price: Number(item.price),
         image: item.image
@@ -137,9 +264,10 @@ export function CheckoutForm() {
     }
 
     try {
+      console.log("Submitting order...", orderData);
       const response = await ordersService.createOrder(orderData as any);
+      console.log("Order created response:", response);
       
-      // Clear cart after successful order
       const { clearCart } = useCartStore.getState();
       await clearCart();
       
@@ -147,28 +275,31 @@ export function CheckoutForm() {
         title: "Order Placed Successfully",
         description: "Thank you for your purchase!",
       })
-      // response is the data payload from ordersService
-      // which returns res.data.
-      // And backend returns { success: true, message:..., data: { orderId ... } }
-      // Wait, ordersService code:
-      // const res = await api.post...
-      // return res.data;
-      // Backend returns: { success: true, data: { orderId ... } }
-      // So response.data.orderId
-
-      router.push(`/order-confirmation/${response.data.orderId}`)
+      
+      if (response && response.data && response.data.orderId) {
+          console.log("Redirecting to confirmation:", `/order-confirmation/${response.data.orderId}`);
+          router.push(`/order-confirmation/${response.data.orderId}`)
+      } else {
+          console.error("Missing orderId in response:", response);
+          toast({
+              title: "Order Placed but Redirection Failed",
+              description: "Please check your orders in account section.",
+              variant: "destructive"
+          });
+      }
     } catch (error: any) {
       console.error("Order creation failed", error);
 
-      // Parse validation errors if present (from error.errors array)
       if (error.errors && Array.isArray(error.errors)) {
         const errors: Record<string, string> = {};
-        
-        // Field name mapping (backend -> frontend)
         const fieldMapping: Record<string, string> = {
           'addressLine1': 'address1',
           'addressLine2': 'address2',
-          'postalCode': 'pincode'
+          'postalCode': 'pincode',
+          'state': 'state',
+          'city': 'city',
+          'fullName': 'fullName',
+          'phone': 'phone'
         };
         
         error.errors.forEach((err: any) => {
@@ -178,19 +309,17 @@ export function CheckoutForm() {
         });
         setValidationErrors(errors);
         
-        // Show user-friendly message
         toast({
           title: "Please check your form",
           description: "Some fields need your attention. Please review and correct them.",
           variant: "destructive"
         });
         
-        // Scroll to first error field
         const firstBackendField = error.errors[0]?.field?.split('.').pop();
         const firstErrorField = fieldMapping[firstBackendField] || firstBackendField;
         if (firstErrorField) {
           setTimeout(() => {
-            const element = document.querySelector(`[name="${firstErrorField}"]`);
+            const element = document.querySelector(`[name="${firstErrorField}"]`) || document.getElementById(firstErrorField); // Try ID too for Select
             element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             (element as HTMLInputElement)?.focus();
           }, 100);
@@ -202,20 +331,15 @@ export function CheckoutForm() {
 
       const errorMessage = error.response?.data?.message || error.message || "Something went wrong. Please try again.";
 
-      // Check for Stale/Unavailable Items Error
       const match = errorMessage.match(/IDs: ([0-9, ]+)/);
       if (match && match[1]) {
            const badIds = match[1].split(',').map((id: string) => Number(id.trim()));
            
            if (badIds.length > 0) {
               const { items, removeItem } = useCartStore.getState();
-              
-              // Find items where productId matches the bad IDs
               badIds.forEach((badId: number) => {
                   const itemToRemove = items.find(item => item.productId === badId);
-                  if (itemToRemove) {
-                      removeItem(itemToRemove.id); 
-                  }
+                  if (itemToRemove) removeItem(itemToRemove.id); 
               });
 
               toast({
@@ -282,13 +406,7 @@ export function CheckoutForm() {
                     required
                     defaultValue={user?.email || ""}
                     className={validationErrors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
-                    onChange={() => {
-                       if (validationErrors.email) {
-                         const newErrors = {...validationErrors};
-                         delete newErrors.email;
-                         setValidationErrors(newErrors);
-                       }
-                    }}
+                    onChange={handleInputChange}
                   />
                   {validationErrors.email && (
                     <p className="text-sm text-red-600 flex items-start gap-1">
@@ -313,13 +431,7 @@ export function CheckoutForm() {
                     onInput={(e) => {
                       const input = e.target as HTMLInputElement;
                       input.value = input.value.replace(/[^0-9]/g, '').slice(0, 10);
-                    }}
-                    onChange={() => {
-                       if (validationErrors.phone) {
-                         const newErrors = {...validationErrors};
-                         delete newErrors.phone;
-                         setValidationErrors(newErrors);
-                       }
+                      validateField('phone', input.value);
                     }}
                   />
                   </div>
@@ -349,13 +461,7 @@ export function CheckoutForm() {
                   required
                   defaultValue={defaultAddress?.name || user?.name || ""}
                   className={validationErrors.fullName ? "border-red-500 focus-visible:ring-red-500" : ""}
-                  onChange={() => {
-                     if (validationErrors.fullName) {
-                       const newErrors = {...validationErrors};
-                       delete newErrors.fullName;
-                       setValidationErrors(newErrors);
-                     }
-                  }}
+                  onChange={handleInputChange}
                 />
                 {validationErrors.fullName && (
                   <p className="text-sm text-red-600 flex items-start gap-1">
@@ -374,11 +480,7 @@ export function CheckoutForm() {
                   required
                   defaultValue={defaultAddress?.addressLine1 || ""}
                   className={validationErrors.address1 ? "border-red-500 focus-visible:ring-red-500" : ""}
-                  onChange={() => {
-                    const newErrors = {...validationErrors};
-                    delete newErrors.address1;
-                    setValidationErrors(newErrors);
-                  }}
+                  onChange={handleInputChange}
                 />
                 {validationErrors.address1 && (
                   <p className="text-sm text-red-600 flex items-start gap-1">
@@ -395,6 +497,7 @@ export function CheckoutForm() {
                   name="address2"
                   placeholder="Apartment, suite, etc. (optional)"
                   defaultValue={defaultAddress?.addressLine2 || ""}
+                  onChange={handleInputChange}
                 />
               </div>
 
@@ -408,13 +511,7 @@ export function CheckoutForm() {
                     required
                     defaultValue={defaultAddress?.city || ""}
                     className={validationErrors.city ? "border-red-500 focus-visible:ring-red-500" : ""}
-                    onChange={() => {
-                       if (validationErrors.city) {
-                         const newErrors = {...validationErrors};
-                         delete newErrors.city;
-                         setValidationErrors(newErrors);
-                       }
-                    }}
+                    onChange={handleInputChange}
                   />
                   {validationErrors.city && (
                     <p className="text-sm text-red-600 flex items-start gap-1">
@@ -425,21 +522,30 @@ export function CheckoutForm() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="state">State *</Label>
-                  <Input
-                    id="state"
-                    name="state"
-                    placeholder="Maharashtra"
-                    required
-                    defaultValue={defaultAddress?.state || ""}
-                    className={validationErrors.state ? "border-red-500 focus-visible:ring-red-500" : ""}
-                    onChange={() => {
-                       if (validationErrors.state) {
-                         const newErrors = {...validationErrors};
-                         delete newErrors.state;
-                         setValidationErrors(newErrors);
-                       }
-                    }}
-                  />
+                    <div className="relative">
+                      <select
+                        id="state"
+                        name="state"
+                        className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${validationErrors.state ? "border-red-500" : ""}`}
+                        value={shippingState}
+                        onChange={(e) => {
+                            setShippingState(e.target.value);
+                            if (e.target.value) {
+                                setValidationErrors(prev => {
+                                    const next = { ...prev };
+                                    delete next.state;
+                                    return next;
+                                });
+                            }
+                        }}
+                        required
+                      >
+                        <option value="" disabled>Select State</option>
+                        {INDIAN_STATES.map((st) => (
+                           <option key={st} value={st}>{st}</option>
+                        ))}
+                      </select>
+                    </div>
                   {validationErrors.state && (
                     <p className="text-sm text-red-600 flex items-start gap-1">
                       <span>⚠</span>
@@ -452,14 +558,15 @@ export function CheckoutForm() {
                   <Input
                     id="pincode"
                     name="pincode"
-                    placeholder="400001 (6 digits)"
+                    placeholder="400001"
                     required
+                    maxLength={6}
                     defaultValue={defaultAddress?.postalCode || ""}
                     className={validationErrors.pincode ? "border-red-500 focus-visible:ring-red-500" : ""}
-                    onChange={() => {
-                      const newErrors = {...validationErrors};
-                      delete newErrors.pincode;
-                      setValidationErrors(newErrors);
+                    onInput={(e) => {
+                       const input = e.target as HTMLInputElement;
+                       input.value = input.value.replace(/[^0-9]/g, '').slice(0, 6);
+                       validateField('pincode', input.value);
                     }}
                   />
                   {validationErrors.pincode && (
@@ -494,31 +601,49 @@ export function CheckoutForm() {
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="billingName">Full Name *</Label>
-                    <Input id="billingName" name="billingName" placeholder="John Doe" required />
+                    <Input id="billingName" name="billingName" placeholder="John Doe" required onChange={handleInputChange} />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="billingAddress1">Address Line 1 *</Label>
-                    <Input id="billingAddress1" name="billingAddress1" placeholder="Street address" required />
+                    <Input id="billingAddress1" name="billingAddress1" placeholder="Street address" required onChange={handleInputChange} />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="billingAddress2">Address Line 2</Label>
-                    <Input id="billingAddress2" name="billingAddress2" placeholder="Apartment, suite, etc. (optional)" />
+                    <Input id="billingAddress2" name="billingAddress2" placeholder="Apartment, suite, etc. (optional)" onChange={handleInputChange} />
                   </div>
 
                   <div className="grid sm:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="billingCity">City *</Label>
-                      <Input id="billingCity" name="billingCity" placeholder="Mumbai" required />
+                      <Input id="billingCity" name="billingCity" placeholder="Mumbai" required onChange={handleInputChange} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="billingState">State *</Label>
-                      <Input id="billingState" name="billingState" placeholder="Maharashtra" required />
+                      <select
+                        id="billingState"
+                        name="billingState"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={billingState}
+                        onChange={(e) => setBillingState(e.target.value)}
+                        required
+                      >
+                         <option value="" disabled>Select State</option>
+                         {INDIAN_STATES.map((st) => (
+                           <option key={st} value={st}>{st}</option>
+                         ))}
+                      </select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="billingPincode">PIN Code *</Label>
-                      <Input id="billingPincode" name="billingPincode" placeholder="400001" required />
+                      <Input id="billingPincode" name="billingPincode" placeholder="400001" required maxLength={6} 
+                        onInput={(e) => {
+                             const input = e.target as HTMLInputElement;
+                             input.value = input.value.replace(/[^0-9]/g, '').slice(0, 6);
+                             validateField('billingPincode', input.value)
+                        }} 
+                       />
                     </div>
                   </div>
                 </>

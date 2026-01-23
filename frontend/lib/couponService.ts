@@ -49,6 +49,12 @@ export const couponService = {
           await api.delete(`/coupons/${id}`);
      },
 
+     // User: Get available active coupons
+     async getAvailableCoupons(): Promise<Coupon[]> {
+          const response = await api.get<Coupon[]>('/coupons/available');
+          return response.data.data;
+     },
+
      // User: Validate coupon
      async validateCoupon(code: string, orderTotal: number, cartItems: any[] = []): Promise<{
           isValid: boolean;

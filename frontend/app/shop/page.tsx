@@ -70,10 +70,15 @@ function ShopContent() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [categories, setCategories] = useState<any[]>([])
 
-  // Update search query when URL changes
+  // Update search query and categories when URL changes
   useEffect(() => {
     const query = searchParams?.get('q') || ""
     setSearchQuery(query)
+
+    const categoryParam = searchParams?.get('category')
+    if (categoryParam) {
+      setSelectedCategories([categoryParam])
+    }
   }, [searchParams])
 
   // Fetch categories

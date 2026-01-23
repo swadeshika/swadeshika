@@ -50,6 +50,7 @@ type Mode = "create" | "edit"
 import { productService } from "@/lib/services/productService"
 import { categoryService, Category } from "@/lib/services/categoryService"
 import { useEffect } from "react"
+import { flattenCategoryTree } from "@/lib/category-utils"
 
 // ... imports
 
@@ -507,9 +508,12 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((c) => (
+                    {flattenCategoryTree(categories).map((c) => (
                       <SelectItem key={c.id} value={String(c.id)}>
-                        {c.name}
+                        {/* Add indentation using non-breaking spaces based on level */}
+                        <span style={{ paddingLeft: `${(c.level || 0) * 20}px` }}>
+                          {(c.level || 0) > 0 ? '└ ' : ''}{c.name}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>

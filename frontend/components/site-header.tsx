@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect, Suspense } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import {
   Search,
   User,
@@ -17,7 +17,7 @@ import {
   LogOut,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { CartButton } from "@/components/cart-button"
 import { AnnouncementBar } from "@/components/announcement-bar"
 import { useAuthStore } from "@/lib/auth-store"
@@ -29,12 +29,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { DesktopSearch, MobileSearch } from "./site-search"
+// ... imports
+import { buildCategoryTree } from "@/lib/category-utils"
 
-// Navigation data
+// ... existing types
 type NavItem = {
   name: string
   href: string
-  submenu?: { name: string; href: string }[]
+  // Changed submenu to support nesting
+  submenu?: { 
+      name: string; 
+      href: string;
+      children?: { name: string; href: string }[] 
+  }[]
 }
 
 const mainNav: NavItem[] = [
@@ -43,7 +50,7 @@ const mainNav: NavItem[] = [
   {
     name: "Categories",
     href: "#",
-    submenu: [], // Will be populated dynamically from API
+    submenu: [], 
   },
   { name: "About Us", href: "/about" },
   { name: "Contact", href: "/contact" },
@@ -58,6 +65,7 @@ export function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
   const { user, isAuthenticated, logout } = useAuthStore()
 
   const handleLogout = async () => {
@@ -74,13 +82,20 @@ export function SiteHeader() {
         const { productService } = await import("@/lib/services/productService");
         const categories = await productService.getAllCategories();
         
-        // Map backend categories to submenu items
-        const categorySubmenu = categories
+        // Use tree builder to create nested structure
+        const categoryTree = buildCategoryTree(categories || []);
+        
+        // Map tree to submenu items
+        const categorySubmenu = categoryTree
             .filter(c => c.is_active !== false)
-            .slice(0, 10)
+            .slice(0, 8) // Limit top-level items
             .map(c => ({
                 name: c.name,
-                href: `/shop/${c.slug || c.id}`
+                href: `/shop?category=${c.slug}`,
+                children: c.children?.map(sub => ({
+                   name: sub.name,
+                   href: `/shop?category=${sub.slug}`
+                }))
             }));
 
         if (categorySubmenu.length > 0) {
@@ -123,37 +138,74 @@ export function SiteHeader() {
               </Link>
 
               {/* Desktop Navigation */}
-              <nav className="hidden lg:flex ml-4 sm:ml-6 lg:ml-10 space-x-6">
-                {navItems.map((item) => (
+              <nav className="hidden lg:flex ml-4 sm:ml-6 lg:ml-10 space-x-2">
+                {navItems.map((item) => {
+                  const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href))
+                  
+                  return (
                   <div key={item.name} className="relative group">
                     <Link
                       href={item.href}
-                      className="flex items-center px-1 py-2 text-sm font-medium text-gray-700 hover:text-primary transition-colors cursor-pointer"
+                      className={`
+                        flex items-center px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 cursor-pointer
+                        ${isActive 
+                           ? "bg-[#2D5F3F] text-white shadow-md shadow-[#2D5F3F]/20" 
+                           : "text-gray-700 hover:bg-[#F4EFE6] hover:text-[#2D5F3F]"
+                        }
+                      `}
                     >
                       {item.name}
                       {item.submenu && (
-                        <ChevronDown className="ml-1 h-4 w-4 text-gray-400 group-hover:text-primary" />
+                        <ChevronDown className={`ml-1.5 h-4 w-4 transition-transform duration-200 ${isActive ? "text-white/80" : "text-gray-400 group-hover:text-[#2D5F3F]"} group-hover:rotate-180`} />
                       )}
                     </Link>
 
-                    {/* Submenu */}
-                    {item.submenu && (
-                      <div className="absolute left-0 mt-1 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-                        <div className="py-1">
-                          {item.submenu.map((subItem) => (
-                            <Link
-                              key={subItem.name}
-                              href={subItem.href}
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary cursor-pointer"
-                            >
-                              {subItem.name}
-                            </Link>
-                          ))}
+                    {/* Submenu - Premium Design */}
+                    {item.submenu && item.submenu.length > 0 && (
+                      <div className="absolute left-0 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-out z-20">
+                        {/* Removed overflow-hidden to allow nested menu to fly out */}
+                        <div className="w-72 rounded-2xl shadow-xl bg-white border border-[#E8DCC8]/50 ring-1 ring-black/5">
+                            <div className="p-2 bg-gradient-to-b from-white to-[#FDFBF7] rounded-2xl">
+                                {item.submenu.map((subItem) => (
+                                    <div key={subItem.name} className="relative group/sub">
+                                        <Link
+                                            href={subItem.href}
+                                            className="flex items-center justify-between px-4 py-3 text-[15px] font-medium text-[#5C4033] rounded-xl hover:bg-[#F4EFE6] hover:text-[#2D5F3F] transition-colors duration-200"
+                                        >
+                                            <span className="truncate">{subItem.name}</span>
+                                            {subItem.children && subItem.children.length > 0 && (
+                                                <ChevronDown className="h-4 w-4 text-[#8B6F47] -rotate-90 group-hover/sub:text-[#2D5F3F] transition-transform" />
+                                            )}
+                                        </Link>
+                                        
+                                        {/* Nested Submenu (Level 2) - Flyout */}
+                                        {subItem.children && subItem.children.length > 0 && (
+                                            /* Added pseudo-element 'before' as a bridge for hover */
+                                            <div className="absolute left-full top-0 ml-2 w-64 opacity-0 invisible group-hover/sub:opacity-100 group-hover/sub:visible transition-all duration-200 z-30 before:absolute before:content-[''] before:-left-2 before:top-0 before:h-full before:w-4">
+                                                <div className="rounded-2xl shadow-xl bg-white border border-[#E8DCC8]/50 overflow-hidden ring-1 ring-black/5">
+                                                    <div className="p-2 bg-white">
+                                                        {subItem.children.map(child => (
+                                                            <Link
+                                                                key={child.name}
+                                                                href={child.href}
+                                                                className="block px-4 py-2.5 text-sm font-medium text-[#6B5A4E] rounded-lg hover:bg-[#F4EFE6] hover:text-[#2D5F3F] transition-colors duration-200"
+                                                            >
+                                                                {child.name}
+                                                            </Link>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                       </div>
                     )}
                   </div>
-                ))}
+                  )
+                })}
               </nav>
             </div>
 
@@ -282,6 +334,7 @@ export function SiteHeader() {
         {/* Mobile Menu */}
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetContent side="left" className="w-full max-w-xs sm:max-w-md p-0">
+            <SheetTitle className="sr-only">Mobile Menu</SheetTitle>
             <div className="h-full overflow-y-auto">
               <div className="flex items-center justify-between p-4 border-b">
                 <Link
@@ -318,14 +371,31 @@ export function SiteHeader() {
                       {item.submenu && (
                         <div className="pl-4 py-2 space-y-2">
                           {item.submenu.map((subItem) => (
-                            <Link
-                              key={subItem.name}
-                              href={subItem.href}
-                              className="block py-2 text-sm text-gray-600 hover:text-primary cursor-pointer"
-                              onClick={() => setMobileMenuOpen(false)}
-                            >
-                              {subItem.name}
-                            </Link>
+                            <div key={subItem.name}>
+                                <Link
+                                key={subItem.name}
+                                href={subItem.href}
+                                className="block py-2 text-sm text-gray-600 hover:text-primary cursor-pointer"
+                                onClick={() => setMobileMenuOpen(false)}
+                                >
+                                {subItem.name}
+                                </Link>
+                                {/* Mobile sub-submenu */}
+                                {subItem.children && (
+                                   <div className="pl-4 border-l border-gray-200">
+                                       {subItem.children.map(child => (
+                                           <Link
+                                              key={child.name}
+                                              href={child.href}
+                                              className="block py-1 text-sm text-gray-500 hover:text-primary cursor-pointer"
+                                              onClick={() => setMobileMenuOpen(false)}
+                                           >
+                                              {child.name}
+                                           </Link>
+                                       ))}
+                                   </div>
+                                )}
+                            </div>
                           ))}
                         </div>
                       )}

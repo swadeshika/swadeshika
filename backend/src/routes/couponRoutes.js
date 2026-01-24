@@ -31,7 +31,7 @@ const couponValidator = require('../validators/couponValidator');
  * @desc Validate a coupon code
  * @access Private (User)
  */
-router.post('/validate', authenticate, couponValidator.validate, CouponController.validateCoupon);
+router.post('/validate', couponValidator.validate, CouponController.validateCoupon);
 
 /**
  * @route GET /available

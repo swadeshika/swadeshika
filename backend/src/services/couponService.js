@@ -205,7 +205,7 @@ class CouponService {
         const allCoupons = await CouponModel.findAll();
         const now = new Date();
         
-        return allCoupons.filter(coupon => {
+        const activeCoupons = allCoupons.filter(coupon => {
             if (!coupon.is_active) return false;
             
             if (coupon.valid_from && new Date(coupon.valid_from) > now) return false;
@@ -215,6 +215,39 @@ class CouponService {
             
             return true;
         });
+
+        // Enrich with product/category names
+        const enrichedCoupons = await Promise.all(activeCoupons.map(async (coupon) => {
+            const enriched = { ...coupon };
+            
+            if (coupon.product_ids && coupon.product_ids.length > 0) {
+                // Fetch product names
+                try {
+                    const ProductModel = require('../models/productModel');
+                    const products = await ProductModel.findByIds(coupon.product_ids);
+                    enriched.validProducts = products.map(p => p.name);
+                } catch (e) {
+                    console.error("Error fetching product names for coupon", e);
+                    enriched.validProducts = [];
+                }
+            }
+
+            if (coupon.category_ids && coupon.category_ids.length > 0) {
+                 // Fetch category names
+                 try {
+                     const CategoryModel = require('../models/categoryModel');
+                     const categories = await CategoryModel.findByIds(coupon.category_ids);
+                     enriched.validCategories = categories.map(c => c.name);
+                 } catch (e) {
+                     console.error("Error fetching category names for coupon", e);
+                     enriched.validCategories = [];
+                 }
+            }
+            
+            return enriched;
+        }));
+
+        return enrichedCoupons;
     }
 }
 

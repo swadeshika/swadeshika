@@ -10,12 +10,12 @@ export const metadata = {
 
 export default async function BlogPage() {
   const [postsData, categoriesData] = await Promise.all([
-    blogService.getAllPosts(),
+    blogService.getAllPosts({ status: 'published', limit: 100 }), // increased limit for now, ideally pagination UI should be added
     blogService.getActiveCategories()
   ])
 
-  // Filter only published posts for public view
-  const publishedPosts = postsData.filter(post => post.status === 'published')
+  // Posts are already filtered by backend
+  const publishedPosts = postsData;
 
   return (
     <div className="flex min-h-screen flex-col w-full overflow-x-hidden">

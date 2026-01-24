@@ -93,6 +93,24 @@ class CategoryModel {
     }
 
     /**
+     * Find multiple categories by IDs
+     * @param {Array|string} ids 
+     * @returns {Promise<Array>}
+     */
+    static async findByIds(ids) {
+        if (!ids || ids.length === 0) return [];
+        
+        const idList = Array.isArray(ids) ? ids : String(ids).split(',').map(s => s.trim());
+        if (idList.length === 0) return [];
+
+        const placeholders = idList.map(() => '?').join(',');
+        const sql = `SELECT id, name, slug FROM categories WHERE id IN (${placeholders})`;
+        
+        const [rows] = await db.query(sql, idList);
+        return rows;
+    }
+
+    /**
      * Create new category
      * 
      * @param {Object} data - Category data

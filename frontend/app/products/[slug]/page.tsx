@@ -80,6 +80,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
   let product
   let related: any[] = []
   let reviews: any[] = []
+  let applicableCoupons: any[] = []
   
   try {
     const apiProduct = await productService.getProduct(params.slug)
@@ -151,6 +152,34 @@ export default async function ProductPage({ params }: { params: { slug: string }
             }))
     }
     
+    // Fetch available coupons
+    try {
+      const { couponService } = await import("@/lib/couponService");
+      const allCoupons = await couponService.getAvailableCoupons();
+      
+      // Filter coupons relevant to this product
+      applicableCoupons = allCoupons.filter((coupon: any) => {
+        // 1. Coupon specific to this product
+        if (coupon.product_ids && coupon.product_ids.length > 0) {
+          return coupon.product_ids.includes(apiProduct.id);
+        }
+        
+        // 2. Coupon specific to this category
+        if (coupon.category_ids && coupon.category_ids.length > 0) {
+          return coupon.category_ids.includes(apiProduct.category_id);
+        }
+        
+        // 3. Global coupons (no specific restrictions)
+        // If NO product_ids AND NO category_ids are set, it's a global coupon
+        const hasProductRestriction = coupon.product_ids && coupon.product_ids.length > 0;
+        const hasCategoryRestriction = coupon.category_ids && coupon.category_ids.length > 0;
+        
+        return !hasProductRestriction && !hasCategoryRestriction;
+      });
+    } catch (e) {
+      console.warn("Failed to fetch coupons for product page", e);
+    }
+    
   } catch (error) {
     notFound()
   }
@@ -191,7 +220,8 @@ export default async function ProductPage({ params }: { params: { slug: string }
           <ProductDetailClientOptimized 
             product={product} 
             relatedProducts={related} 
-            reviews={reviews} 
+            reviews={reviews}
+            availableCoupons={applicableCoupons}
           />
         </Suspense>
       </main>

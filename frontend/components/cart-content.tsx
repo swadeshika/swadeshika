@@ -302,7 +302,19 @@ export function CartContent() {
                           Use Code
                         </Button>
                       </div>
-                      <p className="text-xs text-[#8B6F47]">{c.description || `Get ${c.discount_type === 'percentage' ? `${c.discount_value}%` : `₹${c.discount_value}`} off`}</p>
+                      <p className="text-xs text-[#8B6F47] mb-1">{c.description || `Get ${c.discount_type === 'percentage' ? `${c.discount_value}%` : `₹${c.discount_value}`} off`}</p>
+                      
+                      {/* Show applicability */}
+                      {(c.validProducts?.length > 0 || c.validCategories?.length > 0) && (
+                          <div className="text-[10px] text-[#2D5F3F] bg-[#2D5F3F]/5 p-1.5 rounded mt-1">
+                              {c.validProducts?.length > 0 && (
+                                  <p><strong>Valid on:</strong> {c.validProducts.join(", ")}</p>
+                              )}
+                              {c.validCategories?.length > 0 && (
+                                  <p><strong>Valid on categories:</strong> {c.validCategories.join(", ")}</p>
+                              )}
+                          </div>
+                      )}
                     </div>
                   ))}
                 </div>

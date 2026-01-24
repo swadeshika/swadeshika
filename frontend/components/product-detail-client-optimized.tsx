@@ -103,6 +103,7 @@ interface ProductDetailClientProps {
   product: Product
   relatedProducts: RelatedProduct[]
   reviews: Review[]
+  availableCoupons?: any[]
 }
 
 /**
@@ -218,12 +219,50 @@ const useTouchGestures = (onSwipeLeft: () => void, onSwipeRight: () => void) => 
 }
 
 /**
+ * Coupon Card Component with Copy Logic
+ */
+const CouponCard = ({ coupon }: { coupon: any }) => {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(coupon.code)
+    setCopied(true)
+    toast.success("Code copied to clipboard!")
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="flex items-start justify-between bg-white p-3 rounded-lg border border-[#E8DCC8] border-dashed">
+      <div>
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-[#2D5F3F]">{coupon.code}</span>
+          <span className="text-xs text-[#8B6F47] px-2 py-0.5 bg-[#F5F1E8] rounded-full">
+            {coupon.discount_type === 'percentage' ? `${coupon.discount_value}% OFF` : `₹${coupon.discount_value} OFF`}
+          </span>
+        </div>
+        <p className="text-xs text-gray-500 mt-1">{coupon.description || 'Apply code at checkout'}</p>
+      </div>
+      <button 
+        onClick={handleCopy}
+        className={cn(
+          "text-xs font-medium cursor-pointer transition-all",
+          copied ? "text-green-600 font-bold" : "text-[#2D5F3F] hover:underline"
+        )}
+      >
+        {copied ? "Copied!" : "Copy"}
+      </button>
+    </div>
+  )
+}
+
+/**
  * Main Product Detail Client Component
  */
 export function ProductDetailClientOptimized({ 
   product, 
   relatedProducts, 
-  reviews 
+  reviews,
+  availableCoupons
 }: ProductDetailClientProps) {
   // State management for interactive features
   const [selectedImage, setSelectedImage] = useState(0)
@@ -649,6 +688,21 @@ export function ProductDetailClientOptimized({
                   <Share2 className="h-5 w-5" />
                 </Button>
               </div>
+
+                {/* Available Coupons Display */}
+                {availableCoupons && availableCoupons.length > 0 && (
+                  <div className="mt-6 p-4 bg-[#F5F1E8] border border-[#2D5F3F]/20 rounded-xl space-y-3">
+                    <div className="flex items-center gap-2 text-[#2D5F3F] font-semibold">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-ticket-percent"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M9 9h.01"/><path d="m15 9-6 6"/><path d="M15 15h.01"/></svg>
+                      <span>Available Offers</span>
+                    </div>
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                      {availableCoupons.map((coupon: any) => (
+                        <CouponCard key={coupon.id} coupon={coupon} />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
               {/* Trust Badges */}
               <div className="grid grid-cols-3 gap-4 pt-6">

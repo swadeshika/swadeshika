@@ -89,7 +89,8 @@ class CouponController {
     static async validateCoupon(req, res, next) {
         try {
             const { code, orderTotal, cartItems } = req.body;
-            const result = await CouponService.validateCoupon(code, orderTotal, req.user.id, cartItems);
+            const userId = req.user ? req.user.id : null;
+            const result = await CouponService.validateCoupon(code, orderTotal, userId, cartItems);
             res.json({ success: true, data: result });
         } catch (error) {
             next(error);

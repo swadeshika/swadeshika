@@ -335,6 +335,25 @@ class ProductModel {
   }
 
   /**
+   * Find multiple products by IDs (minimal fields)
+   */
+  static async findByIds(ids) {
+    if (!ids || ids.length === 0) return [];
+    
+    // Ensure IDs are valid format
+    // If ids is "1,2,3" string split it, if array use as is.
+    const idList = Array.isArray(ids) ? ids : String(ids).split(',').map(s => s.trim());
+    
+    if (idList.length === 0) return [];
+
+    const placeholders = idList.map(() => '?').join(',');
+    const sql = `SELECT id, name, slug FROM products WHERE id IN (${placeholders})`;
+    
+    const [rows] = await db.query(sql, idList);
+    return rows;
+  }
+
+  /**
    * Create a new product with all related data (Transaction)
    */
   static async create(data) {

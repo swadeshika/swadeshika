@@ -575,12 +575,17 @@ export function AdminCouponsList() {
                     <Badge
                       variant="outline"
                       className={
-                        coupon.is_active
-                          ? "bg-green-50 text-green-700 border-green-200"
-                          : "bg-gray-50 text-gray-600 border-gray-200"
+                        coupon.valid_until && new Date(coupon.valid_until) < new Date()
+                          ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                          : coupon.is_active
+                            ? "bg-green-50 text-green-700 border-green-200"
+                            : "bg-gray-50 text-gray-600 border-gray-200"
                       }
                     >
-                      {coupon.is_active ? 'Active' : 'Inactive'}
+                      {coupon.valid_until && new Date(coupon.valid_until) < new Date()
+                        ? 'Expired'
+                        : coupon.is_active ? 'Active' : 'Inactive'
+                      }
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">

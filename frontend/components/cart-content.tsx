@@ -13,7 +13,7 @@ import { useState, useEffect } from "react"
 import { settingsService, AppSettings } from "@/lib/services/settingsService"
 
 export function CartContent() {
-  const { items, updateQuantity, removeItem, appliedCoupon, applyCoupon, removeCoupon } = useCartStore()
+  const { items, updateQuantity, removeItem, appliedCoupon, applyCoupon, removeCoupon, loadingItems } = useCartStore()
   const [couponCode, setCouponCode] = useState("")
   const [isValidating, setIsValidating] = useState(false)
   const [couponError, setCouponError] = useState<string | null>(null)
@@ -150,13 +150,18 @@ export function CartContent() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 border-2 border-[#E8DCC8] rounded-xl">
+                    <div className="flex items-center gap-2 border-2 border-[#E8DCC8] rounded-xl relative">
+                      {loadingItems.includes(item.id) && (
+                         <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center rounded-xl">
+                            <Loader2 className="h-4 w-4 animate-spin text-[#2D5F3F]" />
+                         </div>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 cursor-pointer"
                         onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        disabled={item.quantity <= 1}
+                        disabled={item.quantity <= 1 || loadingItems.includes(item.id)}
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
@@ -166,6 +171,7 @@ export function CartContent() {
                         size="icon"
                         className="h-8 w-8 cursor-pointer"
                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        disabled={loadingItems.includes(item.id)}
                       >
                         <Plus className="h-3 w-3" />
                       </Button>

@@ -31,6 +31,7 @@ export interface CartItem {
 
 interface CartStore {
   items: CartItem[]
+  loadingItems: number[] // Track IDs of items currently updating
   appliedCoupon: { code: string; discountAmount: number } | null
   addItem: (item: Omit<CartItem, "quantity" | "id"> & { id?: number }, quantity?: number) => Promise<void>
   removeItem: (id: number) => Promise<void>
@@ -48,6 +49,7 @@ export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
+      loadingItems: [],
       appliedCoupon: null,
 
       fetchCart: async () => {
@@ -240,19 +242,25 @@ export const useCartStore = create<CartStore>()(
 
         const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null
 
-        if (token) {
-          try {
+        // Set loading state for this item
+        set(state => ({ loadingItems: [...state.loadingItems, id] }))
+
+        try {
+          if (token) {
             await cartService.updateCartItem(id, quantity)
             set({ appliedCoupon: null }) // Clear coupon
             await get().fetchCart()
-          } catch (error) {
-            console.error("Update failed", error)
+          } else {
+            set({
+              items: get().items.map((i) => (i.id === id ? { ...i, quantity } : i)),
+              appliedCoupon: null, // Clear coupon
+            })
           }
-        } else {
-          set({
-            items: get().items.map((i) => (i.id === id ? { ...i, quantity } : i)),
-            appliedCoupon: null, // Clear coupon
-          })
+        } catch (error) {
+          console.error("Update failed", error)
+        } finally {
+          // Remove loading state
+          set(state => ({ loadingItems: state.loadingItems.filter(itemId => itemId !== id) }))
         }
       },
 
@@ -286,6 +294,10 @@ export const useCartStore = create<CartStore>()(
     }),
     {
       name: "cart-storage",
+      partialize: (state) => ({
+        items: state.items,
+        appliedCoupon: state.appliedCoupon
+      }), // Don't persist loadingItems
     },
   ),
 )

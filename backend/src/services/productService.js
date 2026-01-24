@@ -53,6 +53,8 @@ class ProductService {
         // 4. Call Model
         return await ProductModel.findAll({ 
             ...filters, 
+            minPrice: filters.min_price || filters.minPrice,
+            maxPrice: filters.max_price || filters.maxPrice,
             isActive: activeFilter, 
             fields: selectedFields.length ? selectedFields.join(',') : null 
         });

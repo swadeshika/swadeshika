@@ -185,8 +185,11 @@ export function ProductGrid({
 
         <div className="flex items-center gap-4">
           {/* Sort */}
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-48 border-2 border-[#E8DCC8] bg-white cursor-pointer">
+          <Select value={sortBy} onValueChange={(val) => {
+            setSortBy(val)
+            setCurrentPage(1)
+          }}>
+            <SelectTrigger className="w-48 border-2 border-[#E8DCC8] bg-white cursor-pointer z-20 relative">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>

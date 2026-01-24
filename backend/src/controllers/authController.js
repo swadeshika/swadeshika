@@ -99,17 +99,6 @@ const register = async (req, res, next) => {
     // Link any previous guest orders
     await OrderModel.claimGuestOrders(email, user.id).catch(err => console.error('Error linking orders:', err));
 
-    // Link any saved addresses from guest checkout
-    try {
-      const db = require('../config/db');
-      await db.query(
-        `UPDATE addresses SET user_id = ?, is_default = 1 WHERE email = ? AND (user_id IS NULL OR user_id = '') LIMIT 1`,
-        [user.id, email]
-      );
-    } catch (err) {
-      console.error('Error linking guest addresses:', err);
-    }
-
     // Save refresh token in cookie
     res.cookie('refreshToken', tokens.refresh.token, COOKIE_OPTIONS);
 

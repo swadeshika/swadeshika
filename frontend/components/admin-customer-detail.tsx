@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 
+import { Skeleton } from "@/components/ui/skeleton"
+
 export default function AdminCustomerDetail({ customerId }: { customerId: string }) {
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [recentOrders, setRecentOrders] = useState<Order[]>([])
@@ -89,8 +91,87 @@ export default function AdminCustomerDetail({ customerId }: { customerId: string
     }
   }
 
+  // ... previous imports
+
   if (loading) {
-    return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[#6B4423]" /></div>
+    return (
+      <div className="space-y-8">
+        {/* Breadcrumb Skeleton */}
+        <div className="flex gap-2">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-4" />
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-4" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+             <Skeleton className="h-10 w-64" />
+             <div className="flex gap-4">
+               <Skeleton className="h-4 w-40" />
+               <Skeleton className="h-4 w-32" />
+             </div>
+          </div>
+          <div className="flex items-center gap-3">
+             <Skeleton className="h-6 w-20 rounded-full" />
+             <Skeleton className="h-9 w-24" />
+             <Skeleton className="h-9 w-24" />
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-8">
+           {/* Left Column Skeleton */}
+           <div className="lg:col-span-2 space-y-8">
+             {/* Recent Orders Skeleton */}
+             <Card className="rounded-2xl border-2 border-[#E8DCC8] bg-white py-5">
+               <CardHeader>
+                 <Skeleton className="h-6 w-40 mb-2" />
+                 <Skeleton className="h-4 w-32" />
+               </CardHeader>
+               <CardContent className="space-y-4">
+                 {[1, 2, 3].map((i) => (
+                   <div key={i} className="flex justify-between items-center py-2">
+                      <div className="flex gap-3 items-center">
+                         <Skeleton className="h-10 w-10 rounded-full" />
+                         <div className="space-y-1">
+                            <Skeleton className="h-5 w-32" />
+                            <Skeleton className="h-3 w-24" />
+                         </div>
+                      </div>
+                      <div className="space-y-1 text-right">
+                         <Skeleton className="h-5 w-20 ml-auto" />
+                         <Skeleton className="h-3 w-16 ml-auto" />
+                      </div>
+                   </div>
+                 ))}
+                 <Skeleton className="h-9 w-32 mt-4" />
+               </CardContent>
+             </Card>
+           </div>
+
+           {/* Right Column Skeleton */}
+           <div className="space-y-8">
+             <Card className="rounded-2xl border-2 border-[#E8DCC8] bg-white py-5">
+               <CardHeader>
+                 <Skeleton className="h-6 w-40" />
+               </CardHeader>
+               <CardContent className="space-y-4">
+                 <div className="flex justify-between">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-5 w-10" />
+                 </div>
+                 <div className="flex justify-between">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-5 w-20" />
+                 </div>
+               </CardContent>
+             </Card>
+           </div>
+        </div>
+      </div>
+    )
   }
 
   if (!customer) {

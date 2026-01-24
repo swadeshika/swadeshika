@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { blogService, BlogPost, BlogCategory } from '@/lib/blogService'
 import { blogAuthorService, BlogAuthor } from '@/lib/blogAuthorService'
+import { uploadService } from '@/lib/services/uploadService'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -212,61 +213,20 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
         }
         reader.readAsDataURL(file)
 
-        // Upload to server
-        const formData = new FormData()
-        formData.append('image', file)
-
-        const token = localStorage.getItem('accessToken')
-        console.log('[IMAGE UPLOAD] Uploading to server...')
+        // Upload using centralized service
+        console.log('[IMAGE UPLOAD] Uploading to server via uploadService...')
+        const uploadedUrl = await uploadService.uploadImage(file)
         
-        const response = await fetch('http://127.0.0.1:5000/api/v1/upload/image', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formData
-        })
-
-        if (!response.ok) {
-          throw new Error('Image upload failed')
-        }
-
-        const data = await response.json()
-        console.log('[IMAGE UPLOAD] Upload successful, response:', data)
+        console.log('[IMAGE UPLOAD] Upload successful, URL:', uploadedUrl)
         
-        // Save only relative path (not full URL)
-        console.log('[IMAGE UPLOAD] Setting new image path:', data.data.url)
         setPost(prev => {
           const updated = {
             ...prev,
-            featured_image: data.data.url
+            featured_image: uploadedUrl
           }
           console.log('[IMAGE UPLOAD] Updated post state:', updated)
           return updated
         })
-        
-        // Delete old image if it exists and is a server URL (not base64)
-        // DISABLED: Only delete when explicitly removing, not on every upload
-        /*
-        if (oldImageUrl && oldImageUrl.startsWith('/uploads/')) {
-          try {
-            const filename = oldImageUrl.split('/').pop()
-            console.log('[IMAGE UPLOAD] Deleting old image:', filename)
-            await fetch('http://127.0.0.1:5000/api/v1/upload/image', {
-              method: 'DELETE',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ filename })
-            })
-            console.log('[IMAGE UPLOAD] Old image deleted successfully')
-          } catch (deleteError) {
-            console.error('[IMAGE UPLOAD] Failed to delete old image:', deleteError)
-            // Don't show error to user, just log it
-          }
-        }
-        */
         
         toast({ title: "Image uploaded successfully" })
       } catch (error) {

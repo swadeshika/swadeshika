@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 import { blogService, BlogPost } from "@/lib/blogService"
+import { BACKEND_ORIGIN } from "@/lib/services/uploadService"
 
 export function AdminBlogList() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -154,19 +155,19 @@ export function AdminBlogList() {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border bg-gray-100">
-                          <img
-                            src={post.featured_image?.startsWith('http') || post.featured_image?.startsWith('data:')
-                              ? post.featured_image 
-                              : post.featured_image 
-                                ? `http://127.0.0.1:5000${post.featured_image}`
-                                : 'https://placehold.co/600x400?text=No+Image'}
-                            alt={post.title}
-                            className="h-full w-full object-cover"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = 'https://placehold.co/600x400?text=No+Image';
-                            }}
-                          />
+                            <img
+                              src={post.featured_image?.startsWith('http') || post.featured_image?.startsWith('data:')
+                                ? post.featured_image 
+                                : post.featured_image 
+                                  ? `${BACKEND_ORIGIN}${post.featured_image.startsWith('/') ? '' : '/'}${post.featured_image}`
+                                  : 'https://placehold.co/600x400?text=No+Image'}
+                              alt={post.title}
+                              className="h-full w-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = 'https://placehold.co/600x400?text=No+Image';
+                              }}
+                            />
                         </div>
                         <span className="line-clamp-1">{post.title}</span>
                       </div>

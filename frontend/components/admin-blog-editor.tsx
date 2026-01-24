@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { blogService, BlogPost, BlogCategory } from '@/lib/blogService'
 import { blogAuthorService, BlogAuthor } from '@/lib/blogAuthorService'
-import { uploadService } from '@/lib/services/uploadService'
+import { uploadService, BACKEND_ORIGIN } from '@/lib/services/uploadService'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -229,11 +229,11 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
         })
         
         toast({ title: "Image uploaded successfully" })
-      } catch (error) {
+      } catch (error: any) {
         console.error('[IMAGE UPLOAD] Error occurred:', error)
         toast({ 
           title: "Image upload failed", 
-          description: "Please try again",
+          description: error.message || "Please try again",
           variant: "destructive" 
         })
         // Clear the failed image
@@ -415,11 +415,10 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
                       <img
                         src={post.featured_image.startsWith('http') || post.featured_image.startsWith('data:') 
                           ? post.featured_image 
-                          : `http://127.0.0.1:5000${post.featured_image}`}
+                          : `${BACKEND_ORIGIN}${post.featured_image.startsWith('/') ? '' : '/'}${post.featured_image}`}
                         alt="Featured"
                         className="object-cover w-full h-full rounded-md"
                         onError={(e) => {
-                          console.error('Image failed to load:', post.featured_image);
                           const target = e.target as HTMLImageElement;
                           target.src = 'https://placehold.co/600x400?text=Image+Error';
                         }}

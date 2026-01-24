@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Calendar, Clock, Search } from 'lucide-react'
 import { BlogPost, BlogCategory } from '@/lib/blogService'
 import { format } from 'date-fns'
+import { BACKEND_ORIGIN } from '@/lib/services/uploadService'
 
 interface BlogListingProps {
   initialPosts: BlogPost[]
@@ -20,21 +21,28 @@ export function BlogListing({ initialPosts, categories }: BlogListingProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
   
-  // Helper to validate image URLs
-  const isValidImageUrl = (url: string | null | undefined): boolean => {
-    if (!url || typeof url !== 'string') return false;
+  // Helper to validate and fix image URLs
+  const getValidImageUrl = (url: string | null | undefined): string | null => {
+    if (!url || typeof url !== 'string') return null;
     const trimmed = url.trim();
-    if (!trimmed) return false;
+    if (!trimmed) return null;
     
     // Allow data URIs
-    if (trimmed.startsWith('data:image')) return true;
+    if (trimmed.startsWith('data:image')) return trimmed;
 
-    try {
-      new URL(trimmed);
-      return true;
-    } catch {
-      return false;
+    // Fix localhost URLs in production (Mixed Content fix)
+    if (trimmed.includes('localhost:5000') || trimmed.includes('127.0.0.1:5000')) {
+       // Replace origin with current backend origin
+       return trimmed.replace(/http:\/\/localhost:5000|http:\/\/127.0.0.1:5000/g, BACKEND_ORIGIN);
     }
+
+    // Handle relative paths
+    if (trimmed.startsWith('/')) {
+        return `${BACKEND_ORIGIN}${trimmed}`;
+    }
+
+    // Return other absolute URLs as is
+    return trimmed;
   };
 
   // Helper to get read time (estimate)
@@ -146,17 +154,20 @@ export function BlogListing({ initialPosts, categories }: BlogListingProps) {
                    return (
                   <Card key={post.id} className="group flex h-full flex-col overflow-hidden rounded-xl border border-[#E8DCC8] bg-white transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-[#D4C8B8]">
                     <div className="relative h-56 w-full overflow-hidden bg-gray-100">
-                      {isValidImageUrl(post.featured_image) ? (
+                      {(() => {
+                        const imgUrl = getValidImageUrl(post.featured_image);
+                        return imgUrl ? (
                            <Image
-                            src={post.featured_image!}
+                            src={imgUrl}
                             alt={post.title}
                             fill
                             className="object-cover transition-transform duration-500 group-hover:scale-105"
                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                           />
-                      ) : (
+                        ) : (
                           <div className="flex items-center justify-center h-full text-gray-400">No Image</div>
-                      )}
+                        );
+                      })()}
                      
                       {post.category_name && (
                         <Badge className="absolute top-4 right-4 bg-[#6B4423]/90 hover:bg-[#5A3A1F] backdrop-blur-sm">
@@ -167,14 +178,17 @@ export function BlogListing({ initialPosts, categories }: BlogListingProps) {
                     <CardHeader className="flex-grow">
                       <div className="flex items-center space-x-2 mb-3">
                         <div className="relative h-8 w-8 overflow-hidden rounded-full bg-gray-200">
-                          {isValidImageUrl(post.author_image) ? (
+                          {(() => {
+                             const authorImgUrl = getValidImageUrl(post.author_image);
+                             return authorImgUrl ? (
                               <Image
-                                src={post.author_image!}
+                                src={authorImgUrl}
                                 alt={post.author_name || 'Author'}
                                 fill
                                 className="object-cover"
                               />
-                          ) : null}
+                             ) : null;
+                          })()}
                         </div>
                         <div className="text-sm font-medium text-[#6B4423]">{post.author_name || 'Unknown Author'}</div>
                       </div>

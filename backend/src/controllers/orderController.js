@@ -748,7 +748,7 @@ exports.downloadInvoice = async (req, res, next) => {
         // Logo / Brand Name (Top Left)
         doc.fillColor(primaryColor).fontSize(20).font('Helvetica-Bold').text('SWADESHIKA', 50, 50);
         doc.fontSize(10).font('Helvetica').text('Authentic Indian Products', 50, 75);
-        doc.fillColor(lightText).text('contact@swadeshika.com', 50, 90);
+        doc.fillColor(lightText).text('official.swadeshika@gmail.com', 50, 90);
 
         // Invoice Title & Details (Top Right)
         // Adjusted X to 300 and added width to ensure right alignment doesn't wrap prematurely
@@ -767,42 +767,50 @@ exports.downloadInvoice = async (req, res, next) => {
         const customerTop = 150;
         
         // Billing Address (Left)
-        doc.fontSize(11).font('Helvetica-Bold').fillColor(darkText).text('Billing To:', 50, customerTop);
+        let billingY = customerTop;
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(darkText).text('Billing To:', 50, billingY);
+        billingY += 15;
         doc.fontSize(10).font('Helvetica').fillColor(lightText);
         
         // Check if separate billing address exists and is different from shipping
         if (order.billingAddress && order.billing_address_id !== order.address_id) {
             // Separate billing address
-            doc.text(order.billingAddress.full_name, 50, customerTop + 15);
-            doc.text(order.billingAddress.address_line1, 50, customerTop + 30);
-            if (order.billingAddress.address_line2) doc.text(order.billingAddress.address_line2, 50, customerTop + 45);
-            doc.text(`${order.billingAddress.city}, ${order.billingAddress.state} - ${order.billingAddress.postal_code}`, 50, customerTop + (order.billingAddress.address_line2 ? 60 : 45));
-            doc.text(order.billingAddress.phone, 50, customerTop + (order.billingAddress.address_line2 ? 75 : 60));
+            doc.text(order.billingAddress.full_name, 50, billingY, { width: 250 });
+            doc.text(order.billingAddress.address_line1, 50, doc.y, { width: 250 });
+            if (order.billingAddress.address_line2) doc.text(order.billingAddress.address_line2, 50, doc.y, { width: 250 });
+            doc.text(`${order.billingAddress.city}, ${order.billingAddress.state} - ${order.billingAddress.postal_code}`, 50, doc.y, { width: 250 });
+            doc.text(order.billingAddress.phone, 50, doc.y, { width: 250 });
         } else if (order.address) {
             // Same as shipping address
-            doc.text('(Same as Shipping Address)', 50, customerTop + 15);
+            doc.text('(Same as Shipping Address)', 50, billingY, { width: 250 });
         } else {
             // Fallback for guest orders
-            doc.text(order.guest_email || 'Guest User', 50, customerTop + 15);
+            doc.text(order.guest_email || 'Guest User', 50, billingY, { width: 250 });
         }
+        
+        const billingEndY = doc.y;
 
         // Shipping Address (Right)
-        doc.fontSize(11).font('Helvetica-Bold').fillColor(darkText).text('Shipping To:', 350, customerTop);
+        let shippingY = customerTop;
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(darkText).text('Shipping To:', 350, shippingY);
+        shippingY += 15;
         doc.fontSize(10).font('Helvetica').fillColor(lightText);
+        
         if (order.address) {
-            doc.text(order.address.full_name, 350, customerTop + 15);
-            doc.text(order.address.address_line1, 350, customerTop + 30);
-            if(order.address.address_line2) doc.text(order.address.address_line2, 350, customerTop + 45);
-            doc.text(`${order.address.city}, ${order.address.state} - ${order.address.postal_code}`, 350, customerTop + (order.address.address_line2 ? 60 : 45));
-            doc.text(order.address.phone, 350, customerTop + (order.address.address_line2 ? 75 : 60));
+            doc.text(order.address.full_name, 350, shippingY, { width: 200 }); // Start explicitly
+            doc.text(order.address.address_line1, 350, doc.y, { width: 200 }); // Continue naturally
+            if(order.address.address_line2) doc.text(order.address.address_line2, 350, doc.y, { width: 200 });
+            doc.text(`${order.address.city}, ${order.address.state} - ${order.address.postal_code}`, 350, doc.y, { width: 200 });
+            doc.text(order.address.phone, 350, doc.y, { width: 200 });
         } else {
-            doc.text('Same as billing', 350, customerTop + 15);
+            doc.text('Same as billing', 350, shippingY, { width: 200 });
         }
 
-        generateHr(250);
+        const addressSectionBottom = Math.max(billingEndY, doc.y);
+        generateHr(addressSectionBottom + 20);
 
         // --- Items Table ---
-        const tableTop = 270;
+        const tableTop = addressSectionBottom + 40;
         const itemCodeX = 50;
         const descriptionX = 100;
         const quantityX = 340; // Shifted left

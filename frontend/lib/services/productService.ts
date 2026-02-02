@@ -137,6 +137,6 @@ export interface Category {
     slug: string;
     description?: string;
     image_url?: string;
-    parent_id?: number;
+    parent_id?: number | null;
     is_active?: boolean;
 }

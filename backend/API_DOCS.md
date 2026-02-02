@@ -1004,22 +1004,25 @@ GET /api/v1/categories
       "id": 1,
       "name": "Ghee",
       "slug": "ghee",
-      "parent": null,
-      "productCount": 12,
+      "parent_id": null,
+      "image_url": "/uploads/ghee-category.jpg",
+      "product_count": 12,
       "subcategories": []
     },
     {
       "id": 2,
       "name": "Spices",
       "slug": "spices",
-      "parent": null,
-      "productCount": 24,
+      "parent_id": null,
+      "image_url": "/uploads/spices-category.jpg",
+      "product_count": 24,
       "subcategories": [
         {
           "id": 3,
           "name": "Turmeric",
           "slug": "turmeric",
-          "productCount": 8
+          "image_url": null,
+          "product_count": 8
         }
       ]
     }
@@ -1037,8 +1040,9 @@ Auth: Required (Admin)
 ```json
 {
   "name": "Dry Fruits",
-  "parentId": null,
-  "description": "Premium dry fruits"
+  "parent_id": null,
+  "description": "Premium dry fruits",
+  "image_url": "data:image/jpeg;base64,/9j/4AAQSw..."
 }
 ```
 
@@ -1049,7 +1053,8 @@ Auth: Required (Admin)
   "message": "Category created successfully",
   "data": {
     "id": 5,
-    "slug": "dry-fruits"
+    "slug": "dry-fruits",
+    "image_url": "https://res.cloudinary.com/.../image.jpg"
   }
 }
 ```

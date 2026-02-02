@@ -1,5 +1,5 @@
 
-import { Category } from "@/lib/services/productService"
+import { Category } from "@/lib/services/categoryService"
 
 export interface CategoryTreeItem extends Category {
     children?: CategoryTreeItem[]

@@ -17,11 +17,11 @@ class CategoryModel {
     static async findAll({ includeSubcategories = false } = {}) {
         let sql = `
       SELECT 
-        c.id, c.name, c.slug, c.parent_id, c.description, c.display_order, c.is_active, c.created_at, c.updated_at,
+        c.id, c.name, c.slug, c.parent_id, c.description, c.image_url, c.display_order, c.is_active, c.created_at, c.updated_at,
         COUNT(p.id) as product_count
       FROM categories c
       LEFT JOIN products p ON p.category_id = c.id
-      GROUP BY c.id, c.name, c.slug, c.parent_id, c.description, c.display_order, c.is_active, c.created_at, c.updated_at
+      GROUP BY c.id, c.name, c.slug, c.parent_id, c.description, c.image_url, c.display_order, c.is_active, c.created_at, c.updated_at
       ORDER BY c.display_order ASC, c.name ASC
     `;
 
@@ -69,12 +69,12 @@ class CategoryModel {
     static async findById(id) {
         const sql = `
       SELECT 
-        c.id, c.name, c.slug, c.parent_id, c.description, c.display_order, c.is_active, c.created_at, c.updated_at,
+        c.id, c.name, c.slug, c.parent_id, c.description, c.image_url, c.display_order, c.is_active, c.created_at, c.updated_at,
         COUNT(p.id) as product_count
       FROM categories c
       LEFT JOIN products p ON p.category_id = c.id
       WHERE c.id = ?
-      GROUP BY c.id, c.name, c.slug, c.parent_id, c.description, c.display_order, c.is_active, c.created_at, c.updated_at
+      GROUP BY c.id, c.name, c.slug, c.parent_id, c.description, c.image_url, c.display_order, c.is_active, c.created_at, c.updated_at
     `;
         const [rows] = await db.query(sql, [id]);
         return rows[0];
@@ -87,7 +87,7 @@ class CategoryModel {
      * @returns {Promise<Object|undefined>} Category object or undefined
      */
     static async findBySlug(slug) {
-        const sql = `SELECT id, name, slug, parent_id, description, display_order, is_active, created_at, updated_at FROM categories WHERE slug = ?`;
+        const sql = `SELECT id, name, slug, parent_id, description, image_url, display_order, is_active, created_at, updated_at FROM categories WHERE slug = ?`;
         const [rows] = await db.query(sql, [slug]);
         return rows[0];
     }
@@ -104,7 +104,7 @@ class CategoryModel {
         if (idList.length === 0) return [];
 
         const placeholders = idList.map(() => '?').join(',');
-        const sql = `SELECT id, name, slug FROM categories WHERE id IN (${placeholders})`;
+        const sql = `SELECT id, name, slug, image_url FROM categories WHERE id IN (${placeholders})`;
         
         const [rows] = await db.query(sql, idList);
         return rows;
@@ -118,14 +118,15 @@ class CategoryModel {
      */
     static async create(data) {
         const sql = `
-      INSERT INTO categories (name, slug, parent_id, description, display_order, is_active)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO categories (name, slug, parent_id, description, image_url, display_order, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
         const [result] = await db.query(sql, [
             data.name,
             data.slug,
             data.parent_id || null,
             data.description || null,
+            data.image_url || null,
             data.display_order || 0,
             data.is_active !== undefined ? data.is_active : true
         ]);
@@ -142,7 +143,7 @@ class CategoryModel {
     static async update(id, data) {
         const sql = `
       UPDATE categories 
-      SET name = ?, slug = ?, parent_id = ?, description = ?, display_order = ?, is_active = ?, updated_at = NOW()
+      SET name = ?, slug = ?, parent_id = ?, description = ?, image_url = ?, display_order = ?, is_active = ?, updated_at = NOW()
       WHERE id = ?
     `;
         const [result] = await db.query(sql, [
@@ -150,10 +151,12 @@ class CategoryModel {
             data.slug,
             data.parent_id || null,
             data.description || null,
+            data.image_url || null,
             data.display_order || 0,
             data.is_active !== undefined ? data.is_active : true,
             id
         ]);
+
         return result.affectedRows > 0;
     }
 

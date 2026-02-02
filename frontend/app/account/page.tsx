@@ -21,6 +21,15 @@ import { AccountSidebar } from "@/components/account-sidebar"
 import { AccountOverview } from "@/components/account-overview"
 import { ShopHeader } from "@/components/shop-header"
 
+export const metadata = {
+  title: "My Account - Swadeshika",
+  description: "Manage your Swadeshika account, orders, and preferences.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
+
 export default function AccountPage() {
   return (
     <div className="flex min-h-screen flex-col">

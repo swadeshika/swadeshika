@@ -109,9 +109,9 @@ exports.createProduct = async (req, res, next) => {
             }
         }
 
-        // Convert any base64 images passed in the `images` array
+        // Convert any base64 images passed in the `images` array (Parallel Uploads)
         if (req.body && Array.isArray(req.body.images)) {
-            for (const img of req.body.images) {
+            const uploadPromises = req.body.images.map(async (img, idx) => {
                 const dataUrl = img && (img.image_url || img.url);
                 if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
                     try {
@@ -121,10 +121,11 @@ exports.createProduct = async (req, res, next) => {
                             else img.url = publicPath;
                         }
                     } catch (e) {
-                        console.warn('⚠️ Failed to save data URL image:', e.message || e);
+                        console.warn(`⚠️ Failed to save data URL image [index ${idx}]:`, e.message || e);
                     }
                 }
-            }
+            });
+            await Promise.all(uploadPromises);
         }
 
         // Auto-generate slug if not provided
@@ -190,9 +191,9 @@ exports.updateProduct = async (req, res, next) => {
             }
         }
 
-        // Convert any base64 images passed in the `images` array
+        // Convert any base64 images passed in the `images` array (Parallel Uploads)
         if (req.body && Array.isArray(req.body.images)) {
-            for (const img of req.body.images) {
+            const uploadPromises = req.body.images.map(async (img, idx) => {
                 const dataUrl = img && (img.image_url || img.url);
                 if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
                     try {
@@ -202,10 +203,11 @@ exports.updateProduct = async (req, res, next) => {
                             else img.url = publicPath;
                         }
                     } catch (e) {
-                        console.warn('⚠️ Failed to save data URL image (update):', e.message || e);
+                        console.warn(`⚠️ Failed to save data URL image (update) [index ${idx}]:`, e.message || e);
                     }
                 }
-            }
+            });
+            await Promise.all(uploadPromises);
         }
 
         await ProductService.updateProduct(id, req.body);

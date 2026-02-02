@@ -48,7 +48,7 @@ export function VariantsEditor({ value, onChange }: VariantsEditorProps) {
       {value.map((v, i) => (
         <div key={i} className="grid sm:grid-cols-6 gap-3 p-3 rounded-xl border-2 border-[#E8DCC8] bg-white">
           <div className="space-y-1">
-            <Label>Label</Label>
+            <Label>Label <span className="text-red-500 ml-1">*</span></Label>
             <Input value={v.name || ""} onChange={(e) => update(i, "name", e.target.value)} placeholder="e.g. 500g" className="border-2 border-[#E8DCC8]" />
           </div>
           <div className="space-y-1">
@@ -60,11 +60,11 @@ export function VariantsEditor({ value, onChange }: VariantsEditorProps) {
             <Input value={v.size || ""} onChange={(e) => update(i, "size", e.target.value)} placeholder="Small/Medium" className="border-2 border-[#E8DCC8]" />
           </div>
           <div className="space-y-1">
-            <Label>Selling Price (₹)</Label>
+            <Label>Selling Price (₹) <span className="text-red-500 ml-1">*</span></Label>
             <Input type="number" value={v.price || ""} onChange={(e) => update(i, "price", e.target.value)} className="border-2 border-[#E8DCC8]" />
           </div>
           <div className="space-y-1">
-            <Label>MRP (₹)</Label>
+            <Label>MRP (₹) <span className="text-red-500 ml-1">*</span></Label>
             <Input type="number" value={v.salePrice || ""} onChange={(e) => update(i, "salePrice", e.target.value)} className="border-2 border-[#E8DCC8]" />
           </div>
           <div className="space-y-1">

@@ -1,5 +1,34 @@
 const CategoryModel = require('../models/categoryModel');
 const { slugify } = require('../utils/stringUtils');
+const cloudinary = require('../config/cloudinary');
+const { v4: uuidv4 } = require('uuid');
+
+/**
+ * Helper to upload base64 images to Cloudinary
+ * @param {string} dataUrl 
+ */
+async function saveDataUrlImage(dataUrl) {
+    if (!dataUrl) return null;
+    
+    // If it's already a URL (e.g. from existing record), return it
+    if (dataUrl.startsWith('http')) return dataUrl;
+
+    // dataUrl format: data:<mime-type>;base64,<data>
+    const match = String(dataUrl).match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (!match) return null;
+
+    try {
+        const result = await cloudinary.uploader.upload(dataUrl, {
+            folder: 'swadeshika/categories',
+            allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+            public_id: `category-${Date.now()}-${uuidv4()}`
+        });
+        return result.secure_url;
+    } catch (error) {
+        console.error('Cloudinary upload error:', error);
+        return null; 
+    }
+}
 
 /**
  * categoryService.js
@@ -51,9 +80,15 @@ class CategoryService {
             throw new Error('Category with this name/slug already exists');
         }
 
+        let imageUrl = null;
+        if (data.image_url) {
+            imageUrl = await saveDataUrlImage(data.image_url);
+        }
+
         const categoryData = {
             ...data,
-            slug
+            slug,
+            image_url: imageUrl
         };
 
         const id = await CategoryModel.create(categoryData);
@@ -88,10 +123,25 @@ class CategoryService {
             }
         }
 
+        let imageUrl = category.image_url;
+        if (data.image_url !== undefined) {
+             // If null/empty string passed, it might mean remove? 
+             // Logic: If new data has image_url, try to upload. 
+             // If it's same as old, saveDataUrlImage returns it.
+             // If it is different base64, it uploads new.
+             if (data.image_url) {
+                imageUrl = await saveDataUrlImage(data.image_url);
+             } else {
+                 // explicit empty string/null could mean delete
+                 imageUrl = null;
+             }
+        }
+
         const updateData = {
             ...category,
             ...data,
-            slug: slug || category.slug
+            slug: slug || category.slug,
+            image_url: imageUrl
         };
 
         await CategoryModel.update(id, updateData);

@@ -59,7 +59,7 @@ export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [reviews, setReviews] = useState<Review[]>([])
-  const [quickLinks, setQuickLinks] = useState<Array<{name: string; icon: string; href: string}>>([])
+  const [quickLinks, setQuickLinks] = useState<Array<{name: string; icon: string; href: string; image?: string}>>([])
 
   // Fetch categories for quick links
   useEffect(() => {
@@ -71,16 +71,17 @@ export default function HomePage() {
         const links = activeCategories.map(cat => ({
           name: cat.name,
           icon: getIconForCategory(cat.name),
+          image: cat.image_url,
           href: `/shop/${cat.slug || cat.id}`
         }))
         
         // Always add "All Products" at the end
-        links.push({ name: "All Products", icon: "📦", href: "/shop" })
+        links.push({ name: "All Products", icon: "📦", href: "/shop", image: undefined })
         setQuickLinks(links)
       } catch (error) {
         console.error("Failed to fetch categories:", error)
         // Fallback to shop link only
-        setQuickLinks([{ name: "All Products", icon: "📦", href: "/shop" }])
+        setQuickLinks([{ name: "All Products", icon: "📦", href: "/shop", image: undefined }])
       }
     }
     fetchCategories()
@@ -199,8 +200,12 @@ export default function HomePage() {
                   href={link.href}
                   className="flex flex-col items-center gap-3 group transition-transform hover:scale-105 cursor-pointer"
                 >
-                  <div className="w-20 h-20 rounded-full flex items-center justify-center text-3xl shadow-md group-hover:shadow-lg transition-all border-2 border-[#E8DCC8] bg-white">
-                    {link.icon}
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center overflow-hidden shadow-md group-hover:shadow-lg transition-all border-2 border-[#E8DCC8] bg-white">
+                    {link.image ? (
+                        <img src={link.image} alt={link.name} className="w-full h-full object-cover" />
+                    ) : (
+                        <span className="text-3xl">{link.icon}</span>
+                    )}
                   </div>
                   <span className="text-sm font-semibold text-center max-w-[100px] leading-tight text-[#6B4423] group-hover:text-[#2D5F3F] transition-colors">
                     {link.name}
@@ -461,7 +466,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="py-20 bg-[#2D5F3F] text-white">
+        <section className="py-20 bg-[#6B4423] text-white">
           <div className="container mx-auto px-4 text-center">
             <h2 className="text-3xl md:text-5xl font-bold mb-4 text-balance">Experience Authentic Indian Flavors</h2>
             <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto text-pretty">

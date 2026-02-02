@@ -25,10 +25,59 @@ const poppinsSerif = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: "Swadeshika - Premium Ghee, Spices & Dry Fruits",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://swadeshika.vercel.app"),
+  title: {
+    default: "Swadeshika - Authentic Indian Ghee, Spices & Dry Fruits",
+    template: "%s | Swadeshika",
+  },
   description:
-    "Shop authentic Indian ghee, premium spices, and fresh dry fruits. Traditional quality meets modern convenience.",
-  generator: "v0.app",
+    "Shop authentic Indian ghee, premium spices, and fresh dry fruits from Swadeshika. Traditional quality meets modern convenience. Pure, Organic, and Healthy.",
+  keywords: [
+    "Swadeshika",
+    "Ghee",
+    "Desi Cow Ghee",
+    "A2 Ghee",
+    "Spices",
+    "Organic Spices",
+    "Dry Fruits",
+    "Cold Pressed Oils",
+    "Ayurvedic Products",
+    "Indian Grocery",
+    "Online Grocery India",
+  ],
+  authors: [{ name: "Swadeshika" }],
+  creator: "Swadeshika",
+  generator: "Next.js",
+  openGraph: {
+    type: "website",
+    locale: "en_IN",
+    url: "https://swadeshika.vercel.app",
+    title: "Swadeshika - Authentic Indian Ghee, Spices & Dry Fruits",
+    description:
+      "Shop authentic Indian ghee, premium spices, and fresh dry fruits. Traditional quality meets modern convenience.",
+    siteName: "Swadeshika",
+    images: [
+      {
+        url: "/og-image.jpg", // Ensure you have a default OG image at this path or update it
+        width: 1200,
+        height: 630,
+        alt: "Swadeshika - Authentic Indian Products",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Swadeshika - Authentic Indian Ghee, Spices & Dry Fruits",
+    description:
+      "Shop authentic Indian ghee, premium spices, and fresh dry fruits. Pure, Organic, and Healthy.",
+    images: ["/og-image.jpg"],
+    creator: "@swadeshika",
+  },
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon-16x16.png",
+    apple: "/apple-touch-icon.png",
+  },
 }
 
 export default function RootLayout({

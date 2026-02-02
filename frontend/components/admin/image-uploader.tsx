@@ -80,7 +80,7 @@ export function ImageUploader({ label = "Upload image", onChange, initialUrl }: 
   return (
     <div className="space-y-3">
       {/* Trigger button */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 mb-0">
           <Button 
             type="button" 
             variant="outline" 
@@ -121,7 +121,7 @@ export function ImageUploader({ label = "Upload image", onChange, initialUrl }: 
             type="button"
             onClick={clear}
             disabled={uploading}
-            className="absolute top-2 right-2 px-2 py-1 text-xs rounded-md bg-white/95 border-2 border-[#E8DCC8] disabled:opacity-50"
+            className="absolute top-2 right-2 px-2 py-1 text-xs rounded-md bg-white/95 border-2 border-[#E8DCC8] disabled:opacity-50 cursor-pointer"
           >
             Remove
           </button>

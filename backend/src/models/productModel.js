@@ -150,13 +150,21 @@ class ProductModel {
       params.push(`%${search}%`, `%${search}%`);
     }
 
+    // Use effective price for filtering (Lowest active variant price OR base price)
+    const effectivePriceSQL = `
+      COALESCE(
+        (SELECT MIN(price) FROM product_variants pv WHERE pv.product_id = p.id AND pv.is_active = 1), 
+        p.price
+      )
+    `;
+
     if (minPrice) {
-      sql += ` AND CAST(p.price AS DECIMAL(10,2)) >= ?`;
+      sql += ` AND CAST(${effectivePriceSQL} AS DECIMAL(10,2)) >= ?`;
       params.push(minPrice);
     }
 
     if (maxPrice) {
-      sql += ` AND CAST(p.price AS DECIMAL(10,2)) <= ?`;
+      sql += ` AND CAST(${effectivePriceSQL} AS DECIMAL(10,2)) <= ?`;
       params.push(maxPrice);
     }
 

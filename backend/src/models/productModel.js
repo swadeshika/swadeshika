@@ -151,12 +151,12 @@ class ProductModel {
     }
 
     if (minPrice) {
-      sql += ` AND p.price >= ?`;
+      sql += ` AND CAST(p.price AS DECIMAL(10,2)) >= ?`;
       params.push(minPrice);
     }
 
     if (maxPrice) {
-      sql += ` AND p.price <= ?`;
+      sql += ` AND CAST(p.price AS DECIMAL(10,2)) <= ?`;
       params.push(maxPrice);
     }
 
@@ -255,8 +255,8 @@ class ProductModel {
     const countParams = [];
     if (category) { countSql += ` AND c.slug = ?`; countParams.push(category); }
     if (search) { countSql += ` AND (p.name LIKE ? OR p.description LIKE ?)`; countParams.push(`%${search}%`, `%${search}%`); }
-    if (minPrice) { countSql += ` AND p.price >= ?`; countParams.push(minPrice); }
-    if (maxPrice) { countSql += ` AND p.price <= ?`; countParams.push(maxPrice); }
+    if (minPrice) { countSql += ` AND CAST(p.price AS DECIMAL(10,2)) >= ?`; countParams.push(minPrice); }
+    if (maxPrice) { countSql += ` AND CAST(p.price AS DECIMAL(10,2)) <= ?`; countParams.push(maxPrice); }
     if (inStock === 'true') countSql += ` AND p.in_stock = 1`;
     if (isActive === 'true') {
         countSql += ` AND p.is_active = 1`;

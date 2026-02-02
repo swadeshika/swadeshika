@@ -52,6 +52,9 @@ export function ShopFilters({
   const [mobileOpen, setMobileOpen] = useState(false)
   const [localPrice, setLocalPrice] = useState(priceRange)
   
+  console.log('ShopFilters Categories:', categories);
+  console.log('Built Tree:', buildCategoryTree(categories));
+
   // Sync local price when prop changes (e.g. Clear All)
   // We only want to sync if the prop is significantly different to avoid fighting with the slider
   useEffect(() => {
@@ -214,75 +217,17 @@ export function ShopFilters({
             <div className="space-y-4">
               <h3 className="font-medium">Categories</h3>
               <div className="space-y-1">
-                {/* Recursive Category Tree Renderer */}
-                {(() => {
-                  const CategoryItem = ({ category, level = 0 }: { category: any, level?: number }) => (
-                    <div className="space-y-1">
-                      <div 
-                         className="flex items-center space-x-2"
-                         style={{ paddingLeft: `${level * 16}px` }}
-                      >
-                        <Checkbox
-                          id={String(category.id)}
-                          checked={selectedCategories.includes(category.slug)}
-                          className="cursor-pointer"
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedCategories([...selectedCategories, category.slug])
-                            } else {
-                              setSelectedCategories(selectedCategories.filter((c) => c !== category.slug))
-                            }
-                          }}
-                        />
-                        <Label htmlFor={String(category.id)} className="text-sm font-normal cursor-pointer">
-                           {category.name}
-                        </Label>
-                      </div>
-                      
-                      {/* Render Children */}
-                      {category.children && category.children.length > 0 && (
-                        <div className="border-l-2 border-[#E8DCC8] ml-[7px]"> 
-                           {/* Small visual guide line for hierarchy */}
-                           {category.children.map((child: any) => (
-                             <CategoryItem key={child.id} category={child} level={level + 1} />
-                           ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                
-                  // Import helper inside or use if available in scope. 
-                  // Since we are in client component, it's better to process tree outside render or just here.
-                  // We'll reimplement simple tree builder locally or assume it's imported.
-                  // For cleanliness, we'll use the imported one if we add the import.
-                  
-                  // Let's use the local function approach since I can't easily add top-level imports in this specific tool call without context of full file.
-                  // WAIT, I should add the import. I'll assume I can add the utility logic here or the import.
-                  // I will add the import in a separate tool call to be safe? No, let's use the utility I just created.
-                  // But I need to add the import to the top of the file first.
-                  
-                  // Actually, I can just do the tree logic right here on the fly for the view if I don't import. 
-                  // But using the shared utility is better.
-                  // Implementation below assumes `buildCategoryTree` is imported. I will do a separate edit for imports.
-                  return (
-                    <div className="space-y-2">
-                        {/* We will map over the tree. We need to build it from 'categories' prop first. */}
-                        {/* Since I can't update imports and this block in one go easily without seeing top, I will use a simple inline builder for now or wait. */}
-                        {/* Better: I will Update logic to use the `buildCategoryTree` from imports. I will fix imports next. */}
-                    <div className="space-y-2">
-                        {/* Recursive Tree Build */}
-                         {buildCategoryTree(categories).map((parent) => (
-                             <CategoryItem key={parent.id} category={parent} />
-                         ))}
-                    </div>
-                         {/* NOTE: The above inline logic is flawed for deep nesting. Using the utility is critical. */}
-                    </div>
-                  )
-                })()}
-
-                {/* --- TEMPORARY INLINE LOGIC REPLACEMENT: Real implementation requires the import. --- */}
-                {/* I will use a custom tree builder inside this block for safety to ensure it works immediately without file import errors for now, 
-                    OR I will rely on the next step to add the import. I will rely on next step. */}
+                 <CategoryTree 
+                    tree={buildCategoryTree(categories)}
+                    selectedCategories={selectedCategories}
+                    onToggle={(slug, checked) => {
+                       if (checked) {
+                         setSelectedCategories([...selectedCategories, slug])
+                       } else {
+                         setSelectedCategories(selectedCategories.filter((c) => c !== slug))
+                       }
+                    }}
+                 />
               </div>
             </div>
             <Separator />
@@ -291,4 +236,52 @@ export function ShopFilters({
       </>
     )
   }
+}
+
+// Recursive Category Tree Component
+function CategoryTree({ 
+  tree, 
+  selectedCategories, 
+  onToggle,
+  level = 0
+}: { 
+  tree: any[], 
+  selectedCategories: string[], 
+  onToggle: (slug: string, checked: boolean) => void,
+  level?: number
+}) {
+  if (!tree || tree.length === 0) return null;
+
+  return (
+    <div className="space-y-1">
+      {tree.map((category) => (
+        <div key={category.id} className="space-y-1">
+          <div 
+             className="flex items-center space-x-2"
+             style={{ paddingLeft: `${Math.max(0, level * 16)}px` }}
+          >
+            <Checkbox
+              id={String(category.id)}
+              checked={selectedCategories.includes(category.slug)}
+              className="cursor-pointer"
+              onCheckedChange={(checked) => onToggle(category.slug, checked === true)}
+            />
+            <Label htmlFor={String(category.id)} className="text-sm font-normal cursor-pointer text-[#6B4423]">
+               {category.name}
+            </Label>
+          </div>
+          
+          {/* Render Children */}
+          {category.children && category.children.length > 0 && (
+             <CategoryTree 
+                tree={category.children} 
+                selectedCategories={selectedCategories} 
+                onToggle={onToggle}
+                level={level + 1}
+             />
+          )}
+        </div>
+      ))}
+    </div>
+  )
 }

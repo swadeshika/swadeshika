@@ -12,7 +12,7 @@ export interface CategoryTreeItem extends Category {
  */
 export function buildCategoryTree(categories: Category[], parentId: number | null = null): CategoryTreeItem[] {
     return categories
-        .filter((cat) => cat.parent_id === parentId) // Get direct children
+        .filter((cat) => (cat.parent_id ?? null) === (parentId ?? null)) // Get direct children, handle null/undefined
         .map((cat) => ({
             ...cat,
             children: buildCategoryTree(categories, cat.id), // Recursively find children

@@ -112,7 +112,7 @@ class ProductModel {
            (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image,
            (SELECT COUNT(*) FROM product_variants WHERE product_id = p.id AND is_active = 1) as variant_count,
            COALESCE(
-             (SELECT SUM(stock_quantity) FROM product_variants WHERE product_id = p.id),
+             (SELECT NULLIF(SUM(stock_quantity), 0) FROM product_variants WHERE product_id = p.id AND is_active = 1),
              p.stock_quantity
            ) as stock_quantity
     FROM products p

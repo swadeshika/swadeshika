@@ -25,7 +25,9 @@ class CartModel {
             JOIN products p ON ci.product_id = p.id
             LEFT JOIN categories c ON p.category_id = c.id
             LEFT JOIN product_variants pv ON ci.variant_id = pv.id
-            WHERE ci.user_id = ?
+            WHERE ci.user_id = ? 
+            AND p.is_active = 1
+            AND (ci.variant_id IS NULL OR pv.is_active = 1)
             ORDER BY ci.created_at DESC
         `;
         const [rows] = await db.query(sql, [userId]);

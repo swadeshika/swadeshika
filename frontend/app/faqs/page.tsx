@@ -2,6 +2,11 @@ import { FaqsContent } from "@/components/faqs-content"
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Frequently Asked Questions - Swadeshika",
+  description: "Find answers to common questions about Swadeshika products, orders, shipping, and returns.",
+}
+
 /**
  * FAQ Page Component (Server Side)
  * 

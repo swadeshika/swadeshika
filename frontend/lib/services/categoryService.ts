@@ -5,6 +5,7 @@ export interface Category {
     name: string;
     slug: string;
     description?: string;
+    image_url?: string;
     parent_id?: number | null;
     display_order?: number;
     product_count?: number; // Backend returns this as product_count

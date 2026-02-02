@@ -273,7 +273,7 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
             <CardContent className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Product Name</Label>
+                  <Label htmlFor="name">Product Name <span className="text-red-500 ml-1">*</span></Label>
                   <Input
                     id="name"
                     value={form.name}
@@ -330,12 +330,12 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
             <CardContent className="space-y-4">
               <div className="grid sm:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="price">Selling Price (₹)</Label>
+                  <Label htmlFor="price">Selling Price (₹) <span className="text-red-500 ml-1">*</span></Label>
                   <Input id="price" type="number" value={form.price} onChange={(e) => update("price", e.target.value)} className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
                   {errors.price && <p className="text-xs text-red-600">{errors.price}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="comparePrice">MRP (₹)</Label>
+                  <Label htmlFor="comparePrice">MRP (₹) <span className="text-red-500 ml-1">*</span></Label>
                   <Input id="comparePrice" type="number" value={form.comparePrice} onChange={(e) => update("comparePrice", e.target.value)} className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
                   {errors.mrp && <p className="text-xs text-red-600">{errors.mrp}</p>}
                 </div>
@@ -401,28 +401,72 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
                 <div className="space-y-2">
                   <Label htmlFor="weight">Weight</Label>
                   <div className="grid grid-cols-[1fr_auto] gap-2">
-                    <Input id="weight" type="number" value={form.weight} onChange={(e) => update("weight", e.target.value)} className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
+                    <Input 
+                      id="weight" 
+                      type="number" 
+                      min="0"
+                      value={form.weight} 
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (parseFloat(val) < 0) return;
+                        update("weight", val);
+                      }} 
+                      className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" 
+                    />
                     <div className="rounded-xl border-2 border-[#E8DCC8] bg-white px-3 py-2">g</div>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="length">Length</Label>
                   <div className="grid grid-cols-[1fr_auto] gap-2">
-                    <Input id="length" type="number" value={form.length} onChange={(e) => update("length", e.target.value)} className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
+                    <Input 
+                      id="length" 
+                      type="number" 
+                      min="0"
+                      value={form.length} 
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (parseFloat(val) < 0) return;
+                        update("length", val);
+                      }} 
+                      className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" 
+                    />
                     <div className="rounded-xl border-2 border-[#E8DCC8] bg-white px-3 py-2">cm</div>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="width">Width</Label>
                   <div className="grid grid-cols-[1fr_auto] gap-2">
-                    <Input id="width" type="number" value={form.width} onChange={(e) => update("width", e.target.value)} className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
+                    <Input 
+                      id="width" 
+                      type="number" 
+                      min="0"
+                      value={form.width} 
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (parseFloat(val) < 0) return;
+                        update("width", val);
+                      }} 
+                      className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" 
+                    />
                     <div className="rounded-xl border-2 border-[#E8DCC8] bg-white px-3 py-2">cm</div>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="height">Height</Label>
                   <div className="grid grid-cols-[1fr_auto] gap-2">
-                    <Input id="height" type="number" value={form.height} onChange={(e) => update("height", e.target.value)} className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
+                    <Input 
+                      id="height" 
+                      type="number" 
+                      min="0"
+                      value={form.height} 
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (parseFloat(val) < 0) return;
+                        update("height", val);
+                      }} 
+                      className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" 
+                    />
                     <div className="rounded-xl border-2 border-[#E8DCC8] bg-white px-3 py-2">cm</div>
                   </div>
                 </div>
@@ -502,7 +546,7 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="category">Category <span className="text-red-500 ml-1">*</span></Label>
                 <Select value={form.category} onValueChange={(v) => update("category", v)}>
                   <SelectTrigger id="category" className="border-2 border-[#E8DCC8]">
                     <SelectValue placeholder="Select category" />

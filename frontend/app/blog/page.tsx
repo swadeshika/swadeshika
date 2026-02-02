@@ -3,6 +3,8 @@ import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { blogService } from '@/lib/blogService'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata = {
   title: 'Blog - Wellness & Lifestyle | Swadeshika',
   description: 'Explore expert insights on health, wellness, and sustainable living to help you live your best life.',

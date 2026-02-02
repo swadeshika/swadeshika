@@ -58,7 +58,7 @@ export default async function BlogPostPage({ params }: BlogPostProps) {
     console.error("Error fetching blog data:", error);
   }
 
-  if (!post) {
+  if (!post || post.status !== 'published') {
     notFound()
   }
 

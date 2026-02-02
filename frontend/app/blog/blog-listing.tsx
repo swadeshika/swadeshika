@@ -60,6 +60,9 @@ export function BlogListing({ initialPosts, categories }: BlogListingProps) {
     // Parse tags if they are a string (JSON)
     const tagsArray = Array.isArray(post.tags) ? post.tags : (typeof post.tags === 'string' ? JSON.parse(post.tags || '[]') : [])
     
+    // Double-check status (safety net)
+    const isPublished = post.status === 'published'
+
     const matchesSearch = query === '' ||
                          post.title.toLowerCase().includes(query) ||
                          post.excerpt.toLowerCase().includes(query) ||
@@ -67,7 +70,7 @@ export function BlogListing({ initialPosts, categories }: BlogListingProps) {
                          
     const matchesCategory = selectedCategory === 'All' || post.category_name === selectedCategory
     
-    return matchesSearch && matchesCategory
+    return isPublished && matchesSearch && matchesCategory
   })
 
   return (

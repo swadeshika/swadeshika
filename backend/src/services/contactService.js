@@ -25,8 +25,49 @@ class ContactService {
       * @param {Object} data 
       */
      static async createSubmission(data) {
-          // Here we could add logic like sending an auto-response email to the user
-          return await ContactModel.create(data);
+          const submission = await ContactModel.create(data);
+
+          // Send Email Notifications (Async)
+          const { sendEmail } = require('../utils/email');
+          const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USERNAME;
+
+          // 1. Admin Notification
+          sendEmail({
+               email: adminEmail,
+               subject: `New Contact Form: ${data.subject}`,
+               message: `Name: ${data.name}\nEmail: ${data.email}\nMessage: ${data.message}`,
+               html: `
+                    <h3>New Contact Submission</h3>
+                    <p><strong>Name:</strong> ${data.name}</p>
+                    <p><strong>Email:</strong> ${data.email}</p>
+                    <p><strong>Subject:</strong> ${data.subject}</p>
+                    <p><strong>Message:</strong><br>${data.message.replace(/\n/g, '<br>')}</p>
+               `
+          }).catch(err => console.error('Failed to send contact admin notification:', err));
+
+          // 2. User Auto-Response (Acknowledgement)
+          if (data.email) {
+               sendEmail({
+                    to: data.email, // using 'to' or 'email' depending on utility implementation (utility handles both usually?)
+                    // wait, utility uses options.email (line 17 of email.js).
+                    // let's check email.js signature. options.email is used for 'to'.
+                    email: data.email,
+                    subject: 'We received your message - Swadeshika',
+                    message: `Hi ${data.name},\n\nThank you for contacting us. We have received your message regarding "${data.subject}" and will get back to you shortly.\n\nBest Regards,\nSwadeshika Team`,
+                    html: `
+                         <div style="font-family: Arial, sans-serif;">
+                              <h3 style="color: #2D5F3F;">Thank you for contacting us!</h3>
+                              <p>Hi ${data.name},</p>
+                              <p>We have received your message regarding <strong>${data.subject}</strong>.</p>
+                              <p>Our team will review it and get back to you shortly.</p>
+                              <br>
+                              <p>Best Regards,<br><strong>Swadeshika Team</strong></p>
+                         </div>
+                    `
+               }).catch(err => console.error('Failed to send contact auto-response:', err));
+          }
+
+          return submission;
      }
 
      /**

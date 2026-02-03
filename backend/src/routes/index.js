@@ -69,7 +69,9 @@ router.use('/notifications', notificationRoutes); // Real-time notifications (ad
 // Email Diagnostic Route
 router.get('/test-email', async (req, res) => {
     const transporter = nodemailer.createTransport({
-        service: process.env.EMAIL_SERVICE || 'gmail',
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true, // true for 465, false for other ports
         auth: {
             user: process.env.EMAIL_USERNAME,
             pass: process.env.EMAIL_PASSWORD,

@@ -12,6 +12,9 @@ export interface Product {
     compare_price?: number;
     cost_price?: number;
     weight?: number;
+    length?: number;
+    width?: number;
+    height?: number;
     weight_unit?: string;
     in_stock: boolean;
     stock_quantity: number;

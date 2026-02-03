@@ -46,18 +46,18 @@ export function VariantsEditor({ value, onChange }: VariantsEditorProps) {
   return (
     <div className="space-y-4">
       {value.map((v, i) => (
-        <div key={i} className="grid sm:grid-cols-6 gap-3 p-3 rounded-xl border-2 border-[#E8DCC8] bg-white">
+        <div key={i} className="grid sm:grid-cols-2 gap-3 p-3 rounded-xl border-2 border-[#E8DCC8] bg-white">
           <div className="space-y-1">
             <Label>Label <span className="text-red-500 ml-1">*</span></Label>
             <Input value={v.name || ""} onChange={(e) => update(i, "name", e.target.value)} placeholder="e.g. 500g" className="border-2 border-[#E8DCC8]" />
           </div>
           <div className="space-y-1">
-            <Label>Weight</Label>
-            <Input value={v.weight || ""} onChange={(e) => update(i, "weight", e.target.value)} placeholder="500g" className="border-2 border-[#E8DCC8]" />
+            <Label>Attribute 1 <span className="text-xs text-gray-500">(Optional, e.g., Weight)</span></Label>
+            <Input value={v.weight || ""} onChange={(e) => update(i, "weight", e.target.value)} placeholder="e.g., 500g, 1kg" className="border-2 border-[#E8DCC8]" />
           </div>
           <div className="space-y-1">
-            <Label>Size</Label>
-            <Input value={v.size || ""} onChange={(e) => update(i, "size", e.target.value)} placeholder="Small/Medium" className="border-2 border-[#E8DCC8]" />
+            <Label>Attribute 2 <span className="text-xs text-gray-500">(Optional, e.g., Size/Color)</span></Label>
+            <Input value={v.size || ""} onChange={(e) => update(i, "size", e.target.value)} placeholder="e.g., Small, Red" className="border-2 border-[#E8DCC8]" />
           </div>
           <div className="space-y-1">
             <Label>Selling Price (₹) <span className="text-red-500 ml-1">*</span></Label>

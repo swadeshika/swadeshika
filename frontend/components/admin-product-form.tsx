@@ -209,7 +209,10 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
             category_id: form.category ? parseInt(form.category) : null, // Send null if no category selected (allowed by DB)
             stock_quantity: parseInt(form.stock || "0") || 0,
             sku: form.sku || `SKU-${Date.now()}`, // Auto-generate SKU if missing
-            weight: parseFloat(form.weight || "0") || 0,
+            weight: form.weight ? parseFloat(form.weight) : null, // Send null if empty, not 0
+            length: form.length ? parseFloat(form.length) : null,
+            width: form.width ? parseFloat(form.width) : null,
+            height: form.height ? parseFloat(form.height) : null,
             weight_unit: 'kg', // fixed for now
             in_stock: form.status === 'active',
             // Respect explicit Publish toggle when provided; otherwise fall back to status
@@ -230,7 +233,10 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
                 compare_price: parseFloat(v.salePrice || "0"),
                 sku: v.sku,
                 stock_quantity: parseInt(v.stock || "0"),
-                attributes: { size: v.name }
+                attributes: { 
+                  weight: v.weight,
+                  size: v.size 
+                }
             }))
         }
         
@@ -243,9 +249,41 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
         }
         
         router.push("/admin/products")
-    } catch (error) {
+    } catch (error: any) {
         console.error(error)
-        toast({ title: "Error", description: "Failed to save product", variant: "destructive" })
+        
+        // Handle duplicate slug error
+        if (error?.message?.includes('Duplicate entry') && error?.message?.includes('slug')) {
+          // Auto-generate unique slug by appending random suffix
+          const randomSuffix = Math.random().toString(36).substring(2, 8)
+          const newSlug = `${form.slug}-${randomSuffix}`
+          
+          toast({ 
+            title: "Slug already exists", 
+            description: `Auto-generating unique slug: ${newSlug}`,
+            variant: "default"
+          })
+          
+          // Update form with new slug and retry
+          setForm(f => ({ ...f, slug: newSlug }))
+          setSubmitting(false)
+          return // Don't show error, let user retry with new slug
+        }
+        
+        // Handle validation errors
+        if (error?.message?.includes('Validation Failed')) {
+          toast({ 
+            title: "Validation Error", 
+            description: "Please check all required fields are filled correctly.",
+            variant: "destructive" 
+          })
+        } else {
+          toast({ 
+            title: "Error", 
+            description: error?.message || "Failed to save product", 
+            variant: "destructive" 
+          })
+        }
     } finally {
       setSubmitting(false)
     }
@@ -328,15 +366,36 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
               <CardTitle className="text-[#6B4423]">Pricing</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {hasVariants && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> Pricing is managed per variant above. Base pricing fields are disabled.
+                  </p>
+                </div>
+              )}
               <div className="grid sm:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="price">Selling Price (₹) <span className="text-red-500 ml-1">*</span></Label>
-                  <Input id="price" type="number" value={form.price} onChange={(e) => update("price", e.target.value)} className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
+                  <Input 
+                    id="price" 
+                    type="number" 
+                    value={form.price} 
+                    onChange={(e) => update("price", e.target.value)} 
+                    disabled={hasVariants}
+                    className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F] disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60" 
+                  />
                   {errors.price && <p className="text-xs text-red-600">{errors.price}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="comparePrice">MRP (₹) <span className="text-red-500 ml-1">*</span></Label>
-                  <Input id="comparePrice" type="number" value={form.comparePrice} onChange={(e) => update("comparePrice", e.target.value)} className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
+                  <Input 
+                    id="comparePrice" 
+                    type="number" 
+                    value={form.comparePrice} 
+                    onChange={(e) => update("comparePrice", e.target.value)} 
+                    disabled={hasVariants}
+                    className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F] disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60" 
+                  />
                   {errors.mrp && <p className="text-xs text-red-600">{errors.mrp}</p>}
                 </div>
                 <div className="space-y-2">
@@ -366,8 +425,9 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
                 </div>
               </div>
               <p className="text-xs text-[#8B6F47]">
-                Tip: Enter MRP and Selling Price to auto-show discount on product page.
-                {hasVariants ? " Since you added variants, default pricing is optional." : " If you don't add variants, both MRP and Selling are required."}
+                {hasVariants 
+                  ? "Pricing is managed individually for each variant above. Base pricing is optional and disabled." 
+                  : "Tip: Enter MRP and Selling Price to auto-show discount on product page. Both are required if you don't add variants."}
               </p>
             </CardContent>
           </Card>
@@ -376,18 +436,40 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
             <CardHeader>
               <CardTitle className="text-[#6B4423]">Inventory</CardTitle>
             </CardHeader>
-            <CardContent className="grid sm:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="sku">SKU</Label>
-                <Input id="sku" value={form.sku} onChange={(e) => update("sku", e.target.value)} className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="stock">Stock</Label>
-                <Input id="stock" type="number" value={form.stock} onChange={(e) => update("stock", e.target.value)} className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="tags">Tags (comma separated)</Label>
-                <Input id="tags" value={form.tags} onChange={(e) => update("tags", e.target.value)} placeholder="organic, premium" className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
+            <CardContent className="space-y-4">
+              {hasVariants && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> SKU and Stock are managed per variant above. Base inventory fields are disabled.
+                  </p>
+                </div>
+              )}
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="sku">SKU</Label>
+                  <Input 
+                    id="sku" 
+                    value={form.sku} 
+                    onChange={(e) => update("sku", e.target.value)} 
+                    disabled={hasVariants}
+                    className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F] disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="stock">Stock</Label>
+                  <Input 
+                    id="stock" 
+                    type="number" 
+                    value={form.stock} 
+                    onChange={(e) => update("stock", e.target.value)} 
+                    disabled={hasVariants}
+                    className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F] disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tags">Tags (comma separated)</Label>
+                  <Input id="tags" value={form.tags} onChange={(e) => update("tags", e.target.value)} placeholder="organic, premium" className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]" />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -399,7 +481,7 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
             <CardContent className="space-y-4">
               <div className="grid sm:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="weight">Weight</Label>
+                  <Label htmlFor="weight">Weight <span className="text-red-500 ml-1">*</span></Label>
                   <div className="grid grid-cols-[1fr_auto] gap-2">
                     <Input 
                       id="weight" 

@@ -86,8 +86,20 @@ const createProductValidation = [
         .matches(/^[A-Z0-9-]+$/i).withMessage('SKU can only contain letters, numbers, and hyphens'),
 
     body('weight')
-        .optional()
+        .optional({ nullable: true, checkFalsy: false })
         .isFloat({ min: 0.01 }).withMessage('Weight must be a positive number'),
+    
+    body('length')
+        .optional({ nullable: true, checkFalsy: false })
+        .isFloat({ min: 0.01 }).withMessage('Length must be a positive number'),
+    
+    body('width')
+        .optional({ nullable: true, checkFalsy: false })
+        .isFloat({ min: 0.01 }).withMessage('Width must be a positive number'),
+    
+    body('height')
+        .optional({ nullable: true, checkFalsy: false })
+        .isFloat({ min: 0.01 }).withMessage('Height must be a positive number'),
 
     body('weight_unit')
         .optional()

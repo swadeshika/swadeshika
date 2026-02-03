@@ -96,6 +96,10 @@ export default async function ProductPage({ params }: { params: { slug: string }
       inStock: apiProduct.in_stock,
       stockQuantity: apiProduct.stock_quantity,
       reviewCount: apiProduct.review_count,
+      weight: apiProduct.weight,
+      length: apiProduct.length,
+      width: apiProduct.width,
+      height: apiProduct.height,
       weightUnit: apiProduct.weight_unit || 'kg',
       category: (apiProduct as any).category_name || apiProduct.category_id?.toString() || 'Uncategorized',
       categorySlug: (apiProduct as any).category_slug || (apiProduct as any).category_name?.toLowerCase().replace(/\s+/g, '-') || '#',
@@ -106,7 +110,8 @@ export default async function ProductPage({ params }: { params: { slug: string }
       variants: (apiProduct as any).variants?.map((v: any) => ({
         ...v,
         quantity: v.stock_quantity,
-         comparePrice: v.compare_price,
+        comparePrice: v.compare_price,
+        attributes: typeof v.attributes === 'string' ? JSON.parse(v.attributes) : v.attributes,
         isActive: true
       })),
       rating: Number(apiProduct.average_rating) || 0

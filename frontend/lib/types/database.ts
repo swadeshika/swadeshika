@@ -46,6 +46,9 @@ export interface Product {
   track_quantity: boolean
   quantity: number
   weight?: number
+  length?: number
+  width?: number
+  height?: number
   weight_unit: string
   is_featured: boolean
   is_active: boolean

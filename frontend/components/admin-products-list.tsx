@@ -58,12 +58,26 @@ export function AdminProductsList() {
             }
         }
         
+        // Calculate variant price range if variants exist
+        const hasVariants = p.variant_count > 0 || (p.variants && p.variants.length > 0);
+        let minPrice = p.price;
+        let maxPrice = p.price;
+        
+        if (hasVariants && p.variants && p.variants.length > 0) {
+          const variantPrices = p.variants.map((v: any) => parseFloat(v.price));
+          minPrice = Math.min(...variantPrices, p.price);
+          maxPrice = Math.max(...variantPrices, p.price);
+        }
         
         return {
           id: p.id,
           name: p.name,
           category: p.category_name || 'Uncategorized',
           price: p.price,
+          minPrice,
+          maxPrice,
+          hasVariants,
+          variantCount: p.variant_count || 0,
           stock: p.stock_quantity,
           /**
            * CRITICAL FIX: Stock Status Display
@@ -194,7 +208,22 @@ export function AdminProductsList() {
                         </div>
                       </TableCell>
                       <TableCell>{product.category}</TableCell>
-                      <TableCell className="text-[#6B4423]">₹{product.price}</TableCell>
+                      <TableCell className="text-[#6B4423]">
+                        <div className="flex flex-col">
+                          {product.hasVariants ? (
+                            <>
+                              <span className="font-medium">
+                                ₹{product.minPrice}{product.minPrice !== product.maxPrice && ` - ₹${product.maxPrice}`}
+                              </span>
+                              <span className="text-xs text-[#8B6F47]">
+                                {product.variantCount} variant{product.variantCount > 1 ? 's' : ''}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="font-medium">₹{product.price}</span>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-[#6B4423]">{product.stock}</TableCell>
                       <TableCell>
                         <Badge

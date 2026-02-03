@@ -373,11 +373,13 @@ class ProductModel {
 
       // 1. Insert Product
       const [res] = await conn.query(
-        `INSERT INTO products (name, slug, description, short_description, category_id, sku, price, compare_price, cost_price, weight, weight_unit, stock_quantity, in_stock, is_active, is_featured, meta_title, meta_description, related_products) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO products (name, slug, description, short_description, category_id, sku, price, compare_price, cost_price, weight, length, width, height, weight_unit, stock_quantity, in_stock, is_active, is_featured, meta_title, meta_description, related_products) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           data.name, data.slug, data.description, data.short_description, data.category_id, data.sku,
-          data.price, data.compare_price, data.cost_price, data.weight, data.weight_unit || 'kg',
+          data.price, data.compare_price, data.cost_price, 
+          data.weight, data.length, data.width, data.height, 
+          data.weight_unit || 'kg',
           data.stock_quantity || 0,
           // in_stock and is_active: allow frontend to control publish/status; default true
           (data.in_stock === undefined ? true : !!data.in_stock),
@@ -423,9 +425,17 @@ class ProductModel {
 
       // 3. Insert Variants
       if (data.variants && data.variants.length) {
-        const variantValues = data.variants.map(v => [productId, v.name, v.sku, v.price, v.compare_price || null, v.stock_quantity || 0]);
+        const variantValues = data.variants.map(v => [
+          productId, 
+          v.name, 
+          v.sku, 
+          v.price, 
+          v.compare_price || null, 
+          v.stock_quantity || 0,
+          v.attributes ? JSON.stringify(v.attributes) : null // Save attributes as JSON
+        ]);
         await conn.query(
-          `INSERT INTO product_variants (product_id, name, sku, price, compare_price, stock_quantity) VALUES ?`,
+          `INSERT INTO product_variants (product_id, name, sku, price, compare_price, stock_quantity, attributes) VALUES ?`,
           [variantValues]
         );
       }
@@ -482,11 +492,12 @@ class ProductModel {
       await conn.query(
         `UPDATE products SET 
          name=?, slug=?, description=?, short_description=?, category_id=?, sku=?, price=?, compare_price=?, 
-         weight=?, weight_unit=?, stock_quantity=?, in_stock = COALESCE(?, in_stock), is_active = COALESCE(?, is_active), is_featured=?, meta_title=?, meta_description=?, related_products = COALESCE(?, related_products), updated_at=NOW()
+         weight=?, length=?, width=?, height=?, weight_unit=?, stock_quantity=?, in_stock = COALESCE(?, in_stock), is_active = COALESCE(?, is_active), is_featured=?, meta_title=?, meta_description=?, related_products = COALESCE(?, related_products), updated_at=NOW()
          WHERE id=?`,
         [
           data.name, data.slug, data.description, data.short_description, data.category_id, data.sku,
-          data.price, data.compare_price, data.weight, data.weight_unit,
+          data.price, data.compare_price, 
+          data.weight, data.length, data.width, data.height, data.weight_unit,
           data.stock_quantity,
           // Pass NULL to COALESCE when the frontend did not specify these fields so existing values are preserved
           (data.in_stock === undefined ? null : (data.in_stock ? 1 : 0)),
@@ -529,8 +540,16 @@ class ProductModel {
         // TODO: Handle referential integrity if variants are used.
         await conn.query(`DELETE FROM product_variants WHERE product_id = ?`, [id]);
         if (data.variants.length) {
-          const variantValues = data.variants.map(v => [id, v.name, v.sku, v.price, v.compare_price || null, v.stock_quantity || 0]);
-          await conn.query(`INSERT INTO product_variants (product_id, name, sku, price, compare_price, stock_quantity) VALUES ?`, [variantValues]);
+          const variantValues = data.variants.map(v => [
+            id, 
+            v.name, 
+            v.sku, 
+            v.price, 
+            v.compare_price || null, 
+            v.stock_quantity || 0,
+            v.attributes ? JSON.stringify(v.attributes) : null // Save attributes as JSON
+          ]);
+          await conn.query(`INSERT INTO product_variants (product_id, name, sku, price, compare_price, stock_quantity, attributes) VALUES ?`, [variantValues]);
         }
       }
 

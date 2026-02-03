@@ -83,6 +83,9 @@ interface Product {
   variants?: ProductVariant[]
   sku: string
   weight?: number
+  length?: number
+  width?: number
+  height?: number
   weightUnit: string
   tags: string[]
   metaTitle?: string
@@ -577,7 +580,7 @@ export function ProductDetailClientOptimized({
               {product.variants && product.variants.length > 0 && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-lg text-[#6B4423]">Size:</span>
+                    <span className="font-semibold text-lg text-[#6B4423]">Option:</span>
                     <div className="flex gap-2 flex-wrap">
                       {product.variants.map((variant) => (
                         <button
@@ -601,6 +604,32 @@ export function ProductDetailClientOptimized({
                       ))}
                     </div>
                   </div>
+                   {/* Selected Variant Attributes Display */}
+                  {selectedVariant && selectedVariant.attributes && (() => {
+                    const filteredAttrs = Object.entries(selectedVariant.attributes).filter(([key, value]) => {
+                         const valStr = String(value).trim().toLowerCase();
+                         const nameStr = selectedVariant.name.trim().toLowerCase();
+                         // Hide if value matches variant name
+                         if (valStr === nameStr) return false;
+                         return true;
+                    });
+                    
+                    if (filteredAttrs.length === 0) return null;
+
+                    return (
+                    <div className="mt-4 p-4 bg-[#F5F1E8] rounded-xl border border-[#E8DCC8]">
+                      <h4 className="font-semibold text-[#6B4423] mb-2 text-sm uppercase tracking-wide">Selected Option Details</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        {filteredAttrs.map(([key, value]) => (
+                          <div key={key} className="flex justify-between">
+                            <span className="text-sm font-medium capitalize text-[#6B4423]">{key}:</span>
+                            <span className="text-sm text-[#8B6F47] capitalize">{String(value)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                  })()}
                 </div>
               )}
 
@@ -809,6 +838,34 @@ export function ProductDetailClientOptimized({
                         <span className="text-base text-[#8B6F47]">{value}</span>
                       </div>
                     ))}
+
+                    {/* Dynamic Specifications from Product Fields */}
+                    {product.length && Number(product.length) > 0 && (
+                      <div className="flex items-center justify-between py-4 border-b border-[#E8DCC8]">
+                        <span className="font-semibold text-base text-[#6B4423]">Length</span>
+                        <span className="text-base text-[#8B6F47]">{product.length} cm</span>
+                      </div>
+                    )}
+                    {product.width && Number(product.width) > 0 && (
+                      <div className="flex items-center justify-between py-4 border-b border-[#E8DCC8]">
+                        <span className="font-semibold text-base text-[#6B4423]">Width</span>
+                        <span className="text-base text-[#8B6F47]">{product.width} cm</span>
+                      </div>
+                    )}
+                     {product.height && Number(product.height) > 0 && (
+                      <div className="flex items-center justify-between py-4 border-b border-[#E8DCC8]">
+                        <span className="font-semibold text-base text-[#6B4423]">Height</span>
+                        <span className="text-base text-[#8B6F47]">{product.height} cm</span>
+                      </div>
+                    )}
+                    {(product.weight || (selectedVariant?.weight)) && (
+                      <div className="flex items-center justify-between py-4 border-b border-[#E8DCC8]">
+                        <span className="font-semibold text-base text-[#6B4423]">Weight</span>
+                        <span className="text-base text-[#8B6F47]">
+                          {selectedVariant?.weight || product.weight} {product.weightUnit || 'kg'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

@@ -38,18 +38,31 @@ export default async function AdminEditProductPage({
     publish: product.is_active !== undefined ? !!product.is_active : true,
     related: product.related_products ? product.related_products.map(String) : [],
     weight: product.weight ? String(product.weight) : "",
-    weightUnit: product.weight_unit || ""
-    // dims...
+    weightUnit: product.weight_unit || "",
+    length: product.length ? String(product.length) : "",
+    width: product.width ? String(product.width) : "",
+    height: product.height ? String(product.height) : ""
   }
 
-  const initialVariants = (product as any).variants?.map((v: any) => ({
-    id: v.id,
-    name: v.name, // Size/Name
-    price: String(v.price), // Selling
-    salePrice: String(v.compare_price || ""), // MRP
-    sku: v.sku,
-    stock: String(v.stock_quantity),
-  })) || []
+  const initialVariants = (product as any).variants?.map((v: any) => {
+    // Parse attributes if it's a string (though it should be object from DB query usually)
+    let attrs: any = {};
+    try {
+      if (v.attributes && typeof v.attributes === 'string') attrs = JSON.parse(v.attributes);
+      else if (v.attributes) attrs = v.attributes;
+    } catch(e) {}
+
+    return {
+      id: v.id,
+      name: v.name, // Label
+      price: String(v.price), // Selling
+      salePrice: String(v.compare_price || ""), // MRP
+      sku: v.sku,
+      stock: String(v.stock_quantity),
+      weight: attrs.weight || "", // Map attribute weight
+      size: attrs.size || "",     // Map attribute size
+    }
+  }) || []
 
   // Feature mapping needs adjustment if features are strings
   const initialFeatures = product.features || []

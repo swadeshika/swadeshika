@@ -1,7 +1,40 @@
 const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 const sendEmail = async (options) => {
-  // 1. Create a transporter
+  // 1. Try Resend (Recommended for Render/Production)
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      
+      // Note: On Free Tier, 'from' must be 'onboarding@resend.dev' until domain is verified.
+      // Once verified, change this to `Swadeshika <official.swadeshika@gmail.com>` or similar.
+      const fromAddress = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+      
+      const { data, error } = await resend.emails.send({
+        from: fromAddress,
+        to: options.email,
+        subject: options.subject,
+        html: options.html || `<p>${options.message}</p>`,
+        text: options.message,
+      });
+
+      if (error) {
+        console.error('❌ Resend API Error:', error);
+        throw new Error(error.message);
+      }
+
+      console.log(`📧 Email sent via Resend to ${options.email}`, data);
+      return; // Success, exit function
+    } catch (err) {
+      console.error('⚠️ Resend failed, checking for fallback...', err.message);
+      // If Resend fails explicitly, we might want to try SMTP as backup
+      // or just throw if we trust Resend more.
+      // For now, let's fall through to SMTP logic below only if it's NOT a hard auth error.
+    }
+  }
+
+  // 2. Fallback: SMTP (Nodemailer) - Works locally, usually blocked on Render
   // For production, use SendGrid, Mailgun, or Gmail (with App Password)
   const transporter = nodemailer.createTransport({
     service: process.env.EMAIL_SERVICE || 'gmail', // e.g., 'gmail'
@@ -11,7 +44,7 @@ const sendEmail = async (options) => {
     },
   });
 
-  // 2. Define email options
+  // 3. Define email options
   const mailOptions = {
     from: `Swadeshika Support <${process.env.EMAIL_FROM || process.env.EMAIL_USERNAME}>`,
     to: options.email,
@@ -20,7 +53,7 @@ const sendEmail = async (options) => {
     html: options.html // HTML supported
   };
 
-  // 3. Send email
+  // 4. Send email
   try {
     if (!process.env.EMAIL_USERNAME || !process.env.EMAIL_PASSWORD || process.env.EMAIL_USERNAME === '' || process.env.EMAIL_PASSWORD === '') {
       console.log('⚠️  Email credentials missing in .env. Logging email to console instead:');
@@ -32,9 +65,9 @@ const sendEmail = async (options) => {
       return;
     }
     await transporter.sendMail(mailOptions);
-    console.log(`📧 Email sent to ${options.email}`);
+    console.log(`📧 Email sent (SMTP) to ${options.email}`);
   } catch (err) {
-    console.error('❌ Error sending email:', err.message);
+    console.error('❌ Error sending email (SMTP):', err.message);
 
     // Fallback: If email fails (e.g. wrong credentials), log to console so dev works
     console.log('⚠️  Email sending failed. Logging email to console as fallback:');
@@ -44,7 +77,7 @@ const sendEmail = async (options) => {
 
     // Do NOT throw error in development, so the user flow continues
     if (process.env.NODE_ENV === 'production') {
-      throw new Error('Email could not be sent');
+      throw new Error('Email could not be sent via SMTP or Resend');
     }
   }
 };

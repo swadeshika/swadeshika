@@ -17,6 +17,7 @@ const sendEmail = async (options) => {
         subject: options.subject,
         html: options.html || `<p>${options.message}</p>`,
         text: options.message,
+        reply_to: process.env.EMAIL_FROM || process.env.EMAIL_USERNAME // Replies will go to your Gmail
       });
 
       if (error) {

@@ -11,13 +11,16 @@ const sendEmail = async (options) => {
       // Once verified, change this to `Swadeshika <official.swadeshika@gmail.com>` or similar.
       const fromAddress = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
       
+      const replyToAddress = process.env.EMAIL_FROM || process.env.EMAIL_USERNAME || 'official.swadeshika@gmail.com';
+      console.log(`DEBUG: Sending email from ${fromAddress} with reply_to: ${replyToAddress}`);
+
       const { data, error } = await resend.emails.send({
         from: fromAddress,
         to: options.email,
         subject: options.subject,
         html: options.html || `<p>${options.message}</p>`,
         text: options.message,
-        reply_to: process.env.EMAIL_FROM || process.env.EMAIL_USERNAME // Replies will go to your Gmail
+        reply_to: [replyToAddress] // Passing as array for robustness
       });
 
       if (error) {

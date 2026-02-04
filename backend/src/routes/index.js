@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const nodemailer = require('nodemailer');
 
 /**
  * Main Router
@@ -65,47 +64,6 @@ router.use('/admin/dashboard', dashboardRoutes);
 router.use('/admin/reports', reportRoutes);
 router.use('/admin/analytics', analyticsRoutes); // Convenience alias
 router.use('/notifications', notificationRoutes); // Real-time notifications (admin only)
-
-// Email Diagnostic Route
-router.get('/test-email', async (req, res) => {
-    const transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true, // true for 465, false for other ports
-        auth: {
-            user: process.env.EMAIL_USERNAME,
-            pass: process.env.EMAIL_PASSWORD,
-        },
-        debug: true,
-        logger: true 
-    });
-
-    const mailOptions = {
-        from: `Diagnostic Test <${process.env.EMAIL_FROM || process.env.EMAIL_USERNAME}>`,
-        to: process.env.EMAIL_USERNAME, 
-        subject: 'Swadeshika Production Email Test',
-        text: 'If you receive this, the email configuration is CORRECT on this server.',
-    };
-
-    try {
-        const info = await transporter.sendMail(mailOptions);
-        res.json({
-            success: true,
-            network: process.env.NODE_ENV,
-            service: process.env.EMAIL_SERVICE,
-            messageId: info.messageId,
-            response: info.response
-        });
-    } catch (err) {
-        res.status(500).json({
-            success: false,
-            error: err.message,
-            code: err.code,
-            response: err.response,
-            hint: err.code === 'EAUTH' ? 'Check App Password' : 'Port Blocked?'
-        });
-    }
-});
 
 // Health Check
 router.get('/health', (req, res) => {

@@ -28,7 +28,7 @@ class ContactService {
           const submission = await ContactModel.create(data);
 
           // Send Email Notifications (Async)
-          const { sendEmail } = require('../utils/email');
+          const sendEmail = require('../utils/email');
           const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USERNAME;
 
           // 1. Admin Notification
@@ -96,13 +96,13 @@ class ContactService {
           if (!submission) throw new Error('Submission not found');
 
           // 2. Send email using nodemailer
-          const { sendEmail } = require('../utils/email');
+          const sendEmail = require('../utils/email');
           try {
-              await sendEmail({
-                  to: submission.email,
-                  subject: `Re: ${submission.subject || 'Your Contact Form Submission'}`,
-                  text: replyMessage,
-                  html: `
+               await sendEmail({
+                    to: submission.email,
+                    subject: `Re: ${submission.subject || 'Your Contact Form Submission'}`,
+                    text: replyMessage,
+                    html: `
                       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                           <h2 style="color: #2D5F3F;">Swadeshika Team Response</h2>
                           <p>Dear ${submission.name},</p>
@@ -114,10 +114,10 @@ class ContactService {
                           </p>
                       </div>
                   `
-              });
+               });
           } catch (emailError) {
-              console.error('Failed to send reply email:', emailError);
-              // Don't throw - still update status even if email fails
+               console.error('Failed to send reply email:', emailError);
+               // Don't throw - still update status even if email fails
           }
 
           // 3. Update status to 'replied'

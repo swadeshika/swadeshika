@@ -8,21 +8,19 @@ import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
 import { newsletterService } from "@/lib/services/newsletterService"
 import { useToast } from "@/hooks/use-toast"
+import { Category, productService } from "@/lib/services/productService"
 
 /**
  * Footer Navigation Links Configuration
- *
- * Organized into logical categories for easy maintenance and updates.
- * Each section represents a different aspect of the site navigation.
  */
 const footerLinks = {
-  // Product categories for shopping
+  // Product categories for shopping (Static fallback)
   shop: [
     { name: "All Products", href: "/shop" },
-    { name: "Ghee", href: "/shop/ghee" },
-    { name: "Spices", href: "/shop/spices" },
-    { name: "Dry Fruits", href: "/shop/dry-fruits" },
-    { name: "Oils", href: "/shop/oils" },
+    { name: "Ghee", href: "/shop?category=ghee-dairy" },
+    { name: "Spices", href: "/shop?category=spices" },
+    { name: "Dry Fruits", href: "/shop?category=dry-fruits" },
+    { name: "Oils", href: "/shop?category=oils" },
   ],
   // Company information pages
   company: [
@@ -65,6 +63,7 @@ export function SiteFooter() {
   const [email, setEmail] = useState("")
   const [subscribing, setSubscribing] = useState(false)
   const [visitorCount, setVisitorCount] = useState<number | null>(null)
+  const [categories, setCategories] = useState<Category[]>([])
   const { toast } = useToast()
 
   useEffect(() => {
@@ -88,7 +87,26 @@ export function SiteFooter() {
       }
     }
 
+    const fetchCategories = async () => {
+      try {
+        const cats = await productService.getAllCategories()
+        if (cats) {
+          // Filter only base categories (where parent_id is null or undefined)
+          const baseCats = cats.filter(c => !c.parent_id)
+          // Sort by product_count (descending) and take top 4
+          const topCats = baseCats
+            .sort((a, b) => (b.product_count || 0) - (a.product_count || 0))
+            .slice(0, 4)
+
+          setCategories(topCats)
+        }
+      } catch (error) {
+        console.error("Failed to fetch footer categories", error)
+      }
+    }
+
     trackAndFetchVisitors()
+    fetchCategories()
   }, [])
 
   const handleSubscribe = async () => {
@@ -171,13 +189,31 @@ export function SiteFooter() {
           <div>
             <h3 className="font-semibold mb-4">Shop</h3>
             <ul className="space-y-3">
-              {footerLinks.shop.map((link) => (
-                <li key={link.name}>
-                  <Link href={link.href} className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
+              <li>
+                <Link href="/shop" className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                  All Products
+                </Link>
+              </li>
+              {categories.length > 0 ? (
+                categories.map((cat) => (
+                  <li key={cat.id}>
+                    <Link
+                      href={`/shop?category=${cat.slug}`}
+                      className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    >
+                      {cat.name}
+                    </Link>
+                  </li>
+                ))
+              ) : (
+                footerLinks.shop.map((link) => (
+                  <li key={link.name}>
+                    <Link href={link.href} className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                      {link.name}
+                    </Link>
+                  </li>
+                ))
+              )}
             </ul>
           </div>
 

@@ -133,15 +133,7 @@ export default function ContactPage() {
                     >
                       <Instagram className="h-6 w-6" />
                     </a>
-                    <a
-                      href="https://twitter.com/swadeshika"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#8B6F47] hover:text-[#6B4423] transition-colors"
-                      aria-label="Twitter"
-                    >
-                      <Twitter className="h-6 w-6" />
-                    </a>
+                    
                     <a
                       href="https://www.facebook.com/share/19ZcPQy7N5/"
                       target="_blank"

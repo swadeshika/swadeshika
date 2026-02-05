@@ -7,14 +7,16 @@ import { ProductGrid } from "@/components/product-grid"
 import { ShopFilters } from "@/components/shop-filters"
 import { ShopHeader } from "@/components/shop-header"
 import { Breadcrumb } from "@/components/breadcrumb"
+import { Category } from "@/lib/services/productService"
 
 interface CategoryClientProps {
   category: string
   title: string
   description: string
+  initialCategories: Category[]
 }
 
-export default function CategoryClient({ category, title, description }: CategoryClientProps) {
+export default function CategoryClient({ category, title, description, initialCategories }: CategoryClientProps) {
   const [priceRange, setPriceRange] = useState([0, 10000])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([category])
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
@@ -44,6 +46,7 @@ export default function CategoryClient({ category, title, description }: Categor
                 setSelectedBrands={setSelectedBrands}
                 selectedTags={selectedTags}
                 setSelectedTags={setSelectedTags}
+                categories={initialCategories}
               />
             </aside>
 

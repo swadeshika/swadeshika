@@ -11,16 +11,18 @@ interface ProductReviewsProps {
   initialRating?: number
   initialReviewCount?: number
   onCountChange?: (count: number) => void
+  initialReviews?: any[]
 }
 
-export function ProductReviews({ 
-  productId, 
-  initialRating = 0, 
+export function ProductReviews({
+  productId,
+  initialRating = 0,
   initialReviewCount = 0,
-  onCountChange 
+  onCountChange,
+  initialReviews = []
 }: ProductReviewsProps) {
-  const [reviews, setReviews] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [reviews, setReviews] = useState<any[]>(initialReviews)
+  const [loading, setLoading] = useState(initialReviews.length === 0)
   const [stats, setStats] = useState<any>(null)
 
   const fetchReviews = async () => {
@@ -28,22 +30,22 @@ export function ProductReviews({
       setLoading(true)
       const data = await reviewService.getProductReviews(productId)
       console.log('Fetched reviews for product', productId, ':', data)
-      
+
       // The backend returns an array of reviews directly in data
       const reviewsList = Array.isArray(data) ? data : (data as any).reviews || []
       setReviews(reviewsList)
-      
+
       // Calculate stats from fetched reviews
       const total = reviewsList.length
-      const avg = total > 0 
+      const avg = total > 0
         ? reviewsList.reduce((acc: number, r: any) => acc + (Number(r.rating) || 0), 0) / total
         : 0
-      
+
       setStats({
         averageRating: avg,
         totalReviews: total
       })
-      
+
       if (onCountChange) onCountChange(total)
     } catch (error) {
       console.error('Failed to fetch reviews:', error)
@@ -53,10 +55,22 @@ export function ProductReviews({
   }
 
   useEffect(() => {
-    if (productId) {
+    // Only fetch if we didn't receive initial reviews and we have a productId
+    if (productId && initialReviews.length === 0) {
       fetchReviews()
+    } else if (initialReviews.length > 0) {
+      // If we have initial reviews, calculate stats immediately
+      const total = initialReviews.length
+      const avg = total > 0
+        ? initialReviews.reduce((acc: number, r: any) => acc + (Number(r.rating) || 0), 0) / total
+        : 0
+
+      setStats({
+        averageRating: avg,
+        totalReviews: total
+      })
     }
-  }, [productId])
+  }, [productId, initialReviews])
 
   if (loading) {
     return <div className="text-center py-12 animate-pulse text-[#8B6F47]">Loading reviews...</div>
@@ -87,7 +101,7 @@ export function ProductReviews({
                 </div>
                 <p className="text-base text-[#8B6F47] font-medium">Based on {totalReviews} reviews</p>
               </div>
-              
+
               {/* Write Review Button Removed - Reviews restricted to verified purchases via My Orders */}
             </div>
 
@@ -99,7 +113,7 @@ export function ProductReviews({
                   {totalReviews} total
                 </span>
               </div>
-              
+
 
 
               {/* Existing Reviews */}

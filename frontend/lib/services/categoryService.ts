@@ -11,6 +11,7 @@ export interface Category {
     product_count?: number; // Backend returns this as product_count
     parent_name?: string; // Optional helper if we join it in backend or frontend
     subcategories?: Category[]; // For nested view
+    is_active?: boolean;
 }
 
 export const categoryService = {

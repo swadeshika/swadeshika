@@ -27,6 +27,84 @@ class CategoryModel {
 
         const [rows] = await db.query(sql);
 
+        // Calculate recursive counts
+        const categoryMap = new Map();
+        rows.forEach(row => {
+            row.direct_count = row.product_count; // Keep original direct count if needed internally
+            row.total_product_count = row.product_count; // Initialize total with direct count
+            categoryMap.set(row.id, row);
+        });
+
+        // We need to process from bottom up (deepest level first) or just recurse.
+        // A simple way is to build the tree or valid parent pointers, but since `rows` is flat:
+        // Let's iterate. Since usually category depth is shallow, a few passes or recursion works.
+        // Let's use specific recursion for accuracy.
+
+        const getRecursiveCount = (catId) => {
+            const cat = categoryMap.get(catId);
+            if (!cat) return 0;
+
+            // If already calculated (marked by a flag, or we trust the order?), 
+            // actually, to avoid double counting if called multiple times, we need care.
+            // But here we just want to update the `row` objects in place for the output.
+
+            // Find children
+            const children = rows.filter(r => r.parent_id === catId);
+
+            let childSum = 0;
+            for (const child of children) {
+                childSum += getRecursiveCount(child.id);
+            }
+
+            return cat.direct_count + childSum;
+        };
+
+        // Update all rows with recursive count
+        rows.forEach(row => {
+            // We can re-calculate for every node (inefficient but safe for correctness) 
+            // or perform a memoized approach. Given strictly hierarchical (no loops), 
+            // let's do a simple memoized helper if performance matters, 
+            // but for <100 categories, simple recursion for each root is fine.
+            // Wait, if I call getRecursiveCount(root), it traverses everything.
+            // If I call it for leaf, it just returns direct.
+            // Let's just update the product_count property directly.
+
+            // Optimization: Only compute if we haven't 'finalized' it? 
+            // Actually, calculating on the fly is easiest to write correctly here.
+
+            // Note: This naive 2-pass approach (filter for children every time) is O(N^2). 
+            // Better: Build adjacency list first.
+        });
+
+        // 1. Build Adjacency List
+        const childrenMap = new Map();
+        rows.forEach(row => {
+            if (row.parent_id) {
+                if (!childrenMap.has(row.parent_id)) childrenMap.set(row.parent_id, []);
+                childrenMap.get(row.parent_id).push(row.id);
+            }
+        });
+
+        // 2. Recursive Aggregation with Memoization
+        const memo = new Map();
+        const aggregate = (id) => {
+            if (memo.has(id)) return memo.get(id);
+            const cat = categoryMap.get(id);
+            if (!cat) return 0;
+
+            let total = cat.direct_count;
+            const childrenIds = childrenMap.get(id) || [];
+            for (const childId of childrenIds) {
+                total += aggregate(childId);
+            }
+            memo.set(id, total);
+            return total;
+        };
+
+        rows.forEach(row => {
+            row.product_count = aggregate(row.id); // Overwrite with total
+        });
+
         if (includeSubcategories) {
             return this.buildCategoryTree(rows);
         }
@@ -99,13 +177,13 @@ class CategoryModel {
      */
     static async findByIds(ids) {
         if (!ids || ids.length === 0) return [];
-        
+
         const idList = Array.isArray(ids) ? ids : String(ids).split(',').map(s => s.trim());
         if (idList.length === 0) return [];
 
         const placeholders = idList.map(() => '?').join(',');
         const sql = `SELECT id, name, slug, image_url FROM categories WHERE id IN (${placeholders})`;
-        
+
         const [rows] = await db.query(sql, idList);
         return rows;
     }

@@ -161,10 +161,10 @@ const ProductError = ({ error, retry }: { error: string; retry: () => void }) =>
 /**
  * Lazy loaded image component with optimization
  */
-const LazyImage = ({ 
-  src, 
-  alt, 
-  className, 
+const LazyImage = ({
+  src,
+  alt,
+  className,
   priority = false,
   sizes = "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
 }: {
@@ -209,7 +209,7 @@ const useTouchGestures = (onSwipeLeft: () => void, onSwipeRight: () => void) => 
 
   const onTouchEnd = () => {
     if (!touchStart || !touchEnd) return
-    
+
     const distance = touchStart - touchEnd
     const isLeftSwipe = distance > minSwipeDistance
     const isRightSwipe = distance < -minSwipeDistance
@@ -245,7 +245,7 @@ const CouponCard = ({ coupon }: { coupon: any }) => {
         </div>
         <p className="text-xs text-gray-500 mt-1">{coupon.description || 'Apply code at checkout'}</p>
       </div>
-      <button 
+      <button
         onClick={handleCopy}
         className={cn(
           "text-xs font-medium cursor-pointer transition-all",
@@ -261,9 +261,9 @@ const CouponCard = ({ coupon }: { coupon: any }) => {
 /**
  * Main Product Detail Client Component
  */
-export function ProductDetailClientOptimized({ 
-  product, 
-  relatedProducts, 
+export function ProductDetailClientOptimized({
+  product,
+  relatedProducts,
   reviews,
   availableCoupons
 }: ProductDetailClientProps) {
@@ -304,16 +304,16 @@ export function ProductDetailClientOptimized({
     setQuantity(prev => {
       const newValue = prev + delta
       if (newValue < 1) return 1
-      
+
       const maxStock = selectedVariant ? selectedVariant.quantity : (product.stockQuantity || 0)
-      
+
       // Check limits including what's potentially in cart? 
       // User requested "+" disable when limit reached usually refers to local selection, but let's stick to local limit for selector
       // and total limit for "Add to Cart" to avoid confusion (e.g. if I have 20 in cart, and stock is 30, should I be able to select 11? No.)
       // But strictly following "Add to Cart" validation first. 
       // Actually, if I have 20 in cart, I SHOULD NOT be able to select 11.
       // But let's first fix the "Add to Cart" allowing overshoot.
-      
+
       if (maxStock > 0 && newValue > maxStock) {
         toast.warning(`Only ${maxStock} items available in stock`)
         return prev
@@ -327,16 +327,16 @@ export function ProductDetailClientOptimized({
    */
   const handleAddToCart = useCallback(async () => {
     const maxStock = selectedVariant ? selectedVariant.quantity : (product.stockQuantity || 0)
-    
+
     // Check if adding this quantity would exceed stock
     // Find existing item in cart
-    const existingCartItem = cartItems.find(item => 
-      item.productId === product.id && 
+    const existingCartItem = cartItems.find(item =>
+      item.productId === product.id &&
       item.variantId === (selectedVariant?.id || null)
     )
-    
+
     const currentCartQty = existingCartItem ? existingCartItem.quantity : 0
-    
+
     if (currentCartQty + quantity > maxStock) {
       toast.warning(`Cannot add ${quantity} more. You already have ${currentCartQty} in cart. Max available: ${maxStock}`)
       return
@@ -390,12 +390,12 @@ export function ProductDetailClientOptimized({
    */
   const handleWishlistToggle = useCallback(async () => {
     if (isWishlisted) {
-        const success = await removeFromWishlist(product.id)
-        if (!success) {
-             // Toast handled in store usually, or we can add extra handling here
-        }
+      const success = await removeFromWishlist(product.id)
+      if (!success) {
+        // Toast handled in store usually, or we can add extra handling here
+      }
     } else {
-        const success = await addToWishlist(product.id)
+      const success = await addToWishlist(product.id)
     }
   }, [isWishlisted, product.id, addToWishlist, removeFromWishlist])
 
@@ -433,8 +433,8 @@ export function ProductDetailClientOptimized({
 
   // Check stock availability including cart
   const maxStock = selectedVariant ? selectedVariant.quantity : (product.stockQuantity || 0)
-  const existingCartItem = cartItems.find(item => 
-    item.productId === product.id && 
+  const existingCartItem = cartItems.find(item =>
+    item.productId === product.id &&
     item.variantId === (selectedVariant?.id || null)
   )
   const currentCartQty = existingCartItem ? existingCartItem.quantity : 0
@@ -471,7 +471,7 @@ export function ProductDetailClientOptimized({
             {/* Image Gallery with Touch Support */}
             <div className="space-y-4">
               {/* Main Image Display with Lazy Loading */}
-              <div 
+              <div
                 className="relative aspect-square overflow-hidden rounded-2xl bg-[#F5F1E8] shadow-xl border-2 border-[#E8DCC8]"
                 onTouchStart={onTouchStart}
                 onTouchMove={onTouchMove}
@@ -489,7 +489,7 @@ export function ProductDetailClientOptimized({
                     {product.badge}
                   </Badge>
                 )}
-                
+
                 {/* Navigation arrows for desktop */}
                 <button
                   onClick={() => setSelectedImage(prev => (prev - 1 + product.images.length) % product.images.length)}
@@ -591,8 +591,8 @@ export function ProductDetailClientOptimized({
                             selectedVariant?.id === variant.id
                               ? "border-[#2D5F3F] bg-[#2D5F3F] text-white"
                               : "border-[#E8DCC8] hover:border-[#2D5F3F]/50 bg-white",
-                             // Disabled styles matching the user request
-                             "disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed disabled:opacity-70"
+                            // Disabled styles matching the user request
+                            "disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed disabled:opacity-70"
                           )}
                           disabled={!variant.isActive || variant.quantity === 0}
                         >
@@ -604,31 +604,31 @@ export function ProductDetailClientOptimized({
                       ))}
                     </div>
                   </div>
-                   {/* Selected Variant Attributes Display */}
+                  {/* Selected Variant Attributes Display */}
                   {selectedVariant && selectedVariant.attributes && (() => {
                     const filteredAttrs = Object.entries(selectedVariant.attributes).filter(([key, value]) => {
-                         const valStr = String(value).trim().toLowerCase();
-                         const nameStr = selectedVariant.name.trim().toLowerCase();
-                         // Hide if value matches variant name
-                         if (valStr === nameStr) return false;
-                         return true;
+                      const valStr = String(value).trim().toLowerCase();
+                      const nameStr = selectedVariant.name.trim().toLowerCase();
+                      // Hide if value matches variant name
+                      if (valStr === nameStr) return false;
+                      return true;
                     });
-                    
+
                     if (filteredAttrs.length === 0) return null;
 
                     return (
-                    <div className="mt-4 p-4 bg-[#F5F1E8] rounded-xl border border-[#E8DCC8]">
-                      <h4 className="font-semibold text-[#6B4423] mb-2 text-sm uppercase tracking-wide">Selected Option Details</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        {filteredAttrs.map(([key, value]) => (
-                          <div key={key} className="flex justify-between">
-                            <span className="text-sm font-medium capitalize text-[#6B4423]">{key}:</span>
-                            <span className="text-sm text-[#8B6F47] capitalize">{String(value)}</span>
-                          </div>
-                        ))}
+                      <div className="mt-4 p-4 bg-[#F5F1E8] rounded-xl border border-[#E8DCC8]">
+                        <h4 className="font-semibold text-[#6B4423] mb-2 text-sm uppercase tracking-wide">Selected Option Details</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          {filteredAttrs.map(([key, value]) => (
+                            <div key={key} className="flex justify-between">
+                              <span className="text-sm font-medium capitalize text-[#6B4423]">{key}:</span>
+                              <span className="text-sm text-[#8B6F47] capitalize">{String(value)}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )
+                    )
                   })()}
                 </div>
               )}
@@ -718,20 +718,20 @@ export function ProductDetailClientOptimized({
                 </Button>
               </div>
 
-                {/* Available Coupons Display */}
-                {availableCoupons && availableCoupons.length > 0 && (
-                  <div className="mt-6 p-4 bg-[#F5F1E8] border border-[#2D5F3F]/20 rounded-xl space-y-3">
-                    <div className="flex items-center gap-2 text-[#2D5F3F] font-semibold">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-ticket-percent"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M9 9h.01"/><path d="m15 9-6 6"/><path d="M15 15h.01"/></svg>
-                      <span>Available Offers</span>
-                    </div>
-                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-                      {availableCoupons.map((coupon: any) => (
-                        <CouponCard key={coupon.id} coupon={coupon} />
-                      ))}
-                    </div>
+              {/* Available Coupons Display */}
+              {availableCoupons && availableCoupons.length > 0 && (
+                <div className="mt-6 p-4 bg-[#F5F1E8] border border-[#2D5F3F]/20 rounded-xl space-y-3">
+                  <div className="flex items-center gap-2 text-[#2D5F3F] font-semibold">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-ticket-percent"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" /><path d="M9 9h.01" /><path d="m15 9-6 6" /><path d="M15 15h.01" /></svg>
+                    <span>Available Offers</span>
                   </div>
-                )}
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                    {availableCoupons.map((coupon: any) => (
+                      <CouponCard key={coupon.id} coupon={coupon} />
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Trust Badges */}
               <div className="grid grid-cols-3 gap-4 pt-6">
@@ -753,40 +753,40 @@ export function ProductDetailClientOptimized({
         </div>
       </section>
 
-  {/* Product Details Tabs with Lazy Loading */}
-  {/* No background on mobile, keep styled background on md+ */}
-  <section className="py-12 bg-[#F5F1E8] ">
+      {/* Product Details Tabs with Lazy Loading */}
+      {/* No background on mobile, keep styled background on md+ */}
+      <section className="py-12 bg-[#F5F1E8] ">
         <div className="container mx-auto px-4">
           <Tabs defaultValue="features" className="w-full">
 
             <div className="w-full max-w-2xl mx-auto overflow-x-auto">
-            <TabsList className="w-max h-14 bg-white md:bg-white border-2 border-[#E8DCC8] gap-x-6">
-              <TabsTrigger
-                value="features"
-                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white cursor-pointer"
-              >
-                Features
-              </TabsTrigger>
-              <TabsTrigger
-                value="description"
-                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white cursor-pointer"
-              >
-                Description
-              </TabsTrigger>
-              <TabsTrigger
-                value="specifications"
-                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white cursor-pointer"
-              >
-                Specifications
-              </TabsTrigger>
-              <TabsTrigger
-                value="reviews"
-                className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white cursor-pointer"
-              >
-                Reviews ({actualReviewCount})
-              </TabsTrigger>
-            </TabsList>
-                  </div>
+              <TabsList className="w-max h-14 bg-white md:bg-white border-2 border-[#E8DCC8] gap-x-6">
+                <TabsTrigger
+                  value="features"
+                  className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white cursor-pointer"
+                >
+                  Features
+                </TabsTrigger>
+                <TabsTrigger
+                  value="description"
+                  className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white cursor-pointer"
+                >
+                  Description
+                </TabsTrigger>
+                <TabsTrigger
+                  value="specifications"
+                  className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white cursor-pointer"
+                >
+                  Specifications
+                </TabsTrigger>
+                <TabsTrigger
+                  value="reviews"
+                  className="text-base font-semibold data-[state=active]:bg-[#2D5F3F] data-[state=active]:text-white cursor-pointer"
+                >
+                  Reviews ({actualReviewCount})
+                </TabsTrigger>
+              </TabsList>
+            </div>
             {/* Features Tab */}
             <TabsContent value="features" className="mt-8">
               <Card className="border-2 border-[#E8DCC8] shadow-lg">
@@ -814,7 +814,7 @@ export function ProductDetailClientOptimized({
                 <CardContent className="p-8">
                   <h3 className="font-sans text-2xl font-bold mb-6 text-[#6B4423]">Product Description</h3>
                   <div className="prose max-w-none text-[#6B4423]">
-                    <div 
+                    <div
                       className="leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: product.description.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'") }}
                     />
@@ -852,7 +852,7 @@ export function ProductDetailClientOptimized({
                         <span className="text-base text-[#8B6F47]">{product.width} cm</span>
                       </div>
                     )}
-                     {product.height && Number(product.height) > 0 && (
+                    {product.height && Number(product.height) > 0 && (
                       <div className="flex items-center justify-between py-4 border-b border-[#E8DCC8]">
                         <span className="font-semibold text-base text-[#6B4423]">Height</span>
                         <span className="text-base text-[#8B6F47]">{product.height} cm</span>
@@ -874,10 +874,11 @@ export function ProductDetailClientOptimized({
             {/* Reviews Tab with Lazy Loading */}
             <TabsContent value="reviews" className="mt-8">
               <Suspense fallback={<div className="h-64 bg-gray-200 rounded animate-pulse"></div>}>
-                <ProductReviews 
-                  productId={product.id} 
-                  initialRating={product.rating} 
-                  initialReviewCount={product.reviewCount} 
+                <ProductReviews
+                  productId={product.id}
+                  initialRating={product.rating}
+                  initialReviewCount={product.reviewCount}
+                  initialReviews={reviews}
                   onCountChange={setActualReviewCount}
                 />
               </Suspense>

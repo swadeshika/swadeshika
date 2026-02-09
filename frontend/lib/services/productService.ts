@@ -142,4 +142,5 @@ export interface Category {
     image_url?: string;
     parent_id?: number | null;
     is_active?: boolean;
+    product_count?: number;
 }

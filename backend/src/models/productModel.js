@@ -5,12 +5,12 @@ const db = require('../config/db');
 // Helper to convert relative upload paths to absolute URLs
 function toAssetUrl(p) {
   if (!p) return p;
-  
+
   // CRITICAL FIX: Handle Cloudinary URLs and strip double-prefixes if present
   if (String(p).includes('cloudinary.com')) {
-      // If the URL is double-prefixed (e.g. https://backend...https://res.cloudinary...), strip the prefix
-      const match = String(p).match(/(https?:\/\/res\.cloudinary\.com.*)/);
-      return match ? match[1] : p;
+    // If the URL is double-prefixed (e.g. https://backend...https://res.cloudinary...), strip the prefix
+    const match = String(p).match(/(https?:\/\/res\.cloudinary\.com.*)/);
+    return match ? match[1] : p;
   }
 
   const backendBase = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
@@ -133,7 +133,7 @@ class ProductModel {
         SELECT id FROM CategoryTree`,
         [category]
       );
-      
+
       if (categoryRows.length > 0) {
         const categoryIds = categoryRows.map(row => row.id);
         const placeholders = categoryIds.map(() => '?').join(',');
@@ -196,8 +196,8 @@ class ProductModel {
     // Sorting
     console.log(`[ProductModel] Sort param: ${sort}`); // Debug log
 
-    if (sort === 'price_asc') sql += ` ORDER BY CAST(p.price AS DECIMAL(10,2)) ASC`;
-    else if (sort === 'price_desc') sql += ` ORDER BY CAST(p.price AS DECIMAL(10,2)) DESC`;
+    if (sort === 'price_asc') sql += ` ORDER BY CAST(${effectivePriceSQL} AS DECIMAL(10,2)) ASC`;
+    else if (sort === 'price_desc') sql += ` ORDER BY CAST(${effectivePriceSQL} AS DECIMAL(10,2)) DESC`;
     else if (sort === 'name_asc') sql += ` ORDER BY p.name ASC`;
     else if (sort === 'name_desc') sql += ` ORDER BY p.name DESC`;
     else if (sort === 'newest') sql += ` ORDER BY p.created_at DESC`;
@@ -267,9 +267,9 @@ class ProductModel {
     if (maxPrice) { countSql += ` AND CAST(p.price AS DECIMAL(10,2)) <= ?`; countParams.push(maxPrice); }
     if (inStock === 'true') countSql += ` AND p.in_stock = 1`;
     if (isActive === 'true') {
-        countSql += ` AND p.is_active = 1`;
+      countSql += ` AND p.is_active = 1`;
     } else if (isActive === 'false') {
-        countSql += ` AND p.is_active = 0`;
+      countSql += ` AND p.is_active = 0`;
     }
     if (featured === 'true') countSql += ` AND p.is_featured = 1`;
 
@@ -349,16 +349,16 @@ class ProductModel {
    */
   static async findByIds(ids) {
     if (!ids || ids.length === 0) return [];
-    
+
     // Ensure IDs are valid format
     // If ids is "1,2,3" string split it, if array use as is.
     const idList = Array.isArray(ids) ? ids : String(ids).split(',').map(s => s.trim());
-    
+
     if (idList.length === 0) return [];
 
     const placeholders = idList.map(() => '?').join(',');
     const sql = `SELECT id, name, slug FROM products WHERE id IN (${placeholders})`;
-    
+
     const [rows] = await db.query(sql, idList);
     return rows;
   }
@@ -377,8 +377,8 @@ class ProductModel {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           data.name, data.slug, data.description, data.short_description, data.category_id, data.sku,
-          data.price, data.compare_price, data.cost_price, 
-          data.weight, data.length, data.width, data.height, 
+          data.price, data.compare_price, data.cost_price,
+          data.weight, data.length, data.width, data.height,
           data.weight_unit || 'kg',
           data.stock_quantity || 0,
           // in_stock and is_active: allow frontend to control publish/status; default true
@@ -426,11 +426,11 @@ class ProductModel {
       // 3. Insert Variants
       if (data.variants && data.variants.length) {
         const variantValues = data.variants.map(v => [
-          productId, 
-          v.name, 
-          v.sku, 
-          v.price, 
-          v.compare_price || null, 
+          productId,
+          v.name,
+          v.sku,
+          v.price,
+          v.compare_price || null,
           v.stock_quantity || 0,
           v.attributes ? JSON.stringify(v.attributes) : null // Save attributes as JSON
         ]);
@@ -496,13 +496,13 @@ class ProductModel {
          WHERE id=?`,
         [
           data.name, data.slug, data.description, data.short_description, data.category_id, data.sku,
-          data.price, data.compare_price, 
+          data.price, data.compare_price,
           data.weight, data.length, data.width, data.height, data.weight_unit,
           data.stock_quantity,
           // Pass NULL to COALESCE when the frontend did not specify these fields so existing values are preserved
           (data.in_stock === undefined ? null : (data.in_stock ? 1 : 0)),
           (data.is_active === undefined ? null : (data.is_active ? 1 : 0)),
-          data.is_featured, data.meta_title, data.meta_description, 
+          data.is_featured, data.meta_title, data.meta_description,
           // Use JSON_SET or just full replace. Since we pass full array, full replace is fine. 
           // But SQL needs valid JSON string.
           (data.related_products ? JSON.stringify(data.related_products) : null), // Use COALESCE in query or handle here?
@@ -541,11 +541,11 @@ class ProductModel {
         await conn.query(`DELETE FROM product_variants WHERE product_id = ?`, [id]);
         if (data.variants.length) {
           const variantValues = data.variants.map(v => [
-            id, 
-            v.name, 
-            v.sku, 
-            v.price, 
-            v.compare_price || null, 
+            id,
+            v.name,
+            v.sku,
+            v.price,
+            v.compare_price || null,
             v.stock_quantity || 0,
             v.attributes ? JSON.stringify(v.attributes) : null // Save attributes as JSON
           ]);
@@ -595,10 +595,10 @@ class ProductModel {
     const conn = await db.getConnection();
     try {
       await conn.beginTransaction();
-  
+
       // Check if product has been ordered
       const [orderItems] = await conn.query(
-        `SELECT COUNT(*) as count FROM order_items WHERE product_id = ?`, 
+        `SELECT COUNT(*) as count FROM order_items WHERE product_id = ?`,
         [id]
       );
       const hasOrders = orderItems[0].count > 0;
@@ -614,10 +614,10 @@ class ProductModel {
         await conn.query(`DELETE FROM product_images WHERE product_id = ?`, [id]);
         await conn.query(`DELETE FROM product_features WHERE product_id = ?`, [id]);
         await conn.query(`DELETE FROM product_variants WHERE product_id = ?`, [id]);
-        
+
         // Keep reviews but set product_id to NULL for history
         await conn.query(`UPDATE reviews SET product_id = NULL WHERE product_id = ?`, [id]);
-        
+
         // Finally delete the product
         await conn.query(`DELETE FROM products WHERE id = ?`, [id]);
         console.log(`✓ Product ${id} hard-deleted (no order history)`);

@@ -1,6 +1,7 @@
 
 import { Metadata } from "next"
 import CategoryClient from "./category-client"
+import { productService } from "@/lib/services/productService"
 
 const categoryInfo: Record<string, { title: string; description: string }> = {
   ghee: {
@@ -27,9 +28,9 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const category = params.category
-  const info = categoryInfo[category] || { 
-    title: `${category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' ')}`, 
-    description: `Shop authentic ${category.replace(/-/g, ' ')} from Swadeshika` 
+  const info = categoryInfo[category] || {
+    title: `${category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' ')}`,
+    description: `Shop authentic ${category.replace(/-/g, ' ')} from Swadeshika`
   }
 
   return {
@@ -45,18 +46,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default function CategoryPage({ params }: Props) {
+export default async function CategoryPage({ params }: Props) {
   const category = params.category
-  const info = categoryInfo[category] || { 
-    title: category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' '), 
-    description: `Browse our collection of ${category.replace(/-/g, ' ')}` 
+  const info = categoryInfo[category] || {
+    title: category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' '),
+    description: `Browse our collection of ${category.replace(/-/g, ' ')}`
+  }
+
+  // Server-Side Fetch
+  let categories: any[] = []
+  try {
+    categories = await productService.getAllCategories()
+  } catch (error) {
+    console.error("Failed to fetch categories for category page", error)
   }
 
   return (
-    <CategoryClient 
-      category={category} 
-      title={info.title} 
-      description={info.description} 
+    <CategoryClient
+      category={category}
+      title={info.title}
+      description={info.description}
+      initialCategories={categories}
     />
   )
 }

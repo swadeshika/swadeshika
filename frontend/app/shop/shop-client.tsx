@@ -9,11 +9,16 @@ import { SiteFooter } from "@/components/site-footer"
 import { ProductGrid } from "@/components/product-grid"
 import { ShopFilters } from "@/components/shop-filters"
 import { ShopHeader } from "@/components/shop-header"
+import { Category } from "@/lib/services/productService"
+
+interface ShopClientProps {
+  initialCategories: Category[]
+}
 
 // Create a client-only wrapper component
 function ClientOnly({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false)
-  
+
   useEffect(() => {
     setMounted(true)
   }, [])
@@ -45,14 +50,14 @@ function ClientOnly({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function ShopContent() {
+function ShopContent({ initialCategories }: ShopClientProps) {
   const searchParams = useSearchParams()
   const [searchQuery, setSearchQuery] = useState("")
   const [priceRange, setPriceRange] = useState([0, 10000])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [categories, setCategories] = useState<any[]>([])
+  const [categories, setCategories] = useState<Category[]>(initialCategories)
 
   // Update search query and categories when URL changes
   useEffect(() => {
@@ -64,21 +69,6 @@ function ShopContent() {
       setSelectedCategories([categoryParam])
     }
   }, [searchParams])
-
-  // Fetch categories
-  useEffect(() => {
-    const fetchCategories = async () => {
-        try {
-            // Dynamically import to avoid server-side issues if any
-            const { productService } = await import('@/lib/services/productService')
-            const cats = await productService.getAllCategories()
-            setCategories(cats || [])
-        } catch (error) {
-            console.error("Failed to fetch categories:", error)
-        }
-    }
-    fetchCategories()
-  }, [])
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -123,14 +113,10 @@ function ShopContent() {
   )
 }
 
-export default function ShopClient() {
+export default function ShopClient({ initialCategories }: ShopClientProps) {
   return (
     <ClientOnly>
-       {/* ShopContent uses useSearchParams, so strict hydration safe logic suggests wrapping it or handling it inside. 
-           But useSearchParams is generally safe in Client Components. 
-           However, in Next.js app directory, it's good practice to wrap usage in Suspense if parent is Server.
-       */}
-       <ShopContent />
+      <ShopContent initialCategories={initialCategories} />
     </ClientOnly>
   )
 }

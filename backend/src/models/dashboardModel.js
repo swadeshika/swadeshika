@@ -91,7 +91,7 @@ class DashboardModel {
             LEFT JOIN customers c ON u.email COLLATE utf8mb4_unicode_ci = c.email COLLATE utf8mb4_unicode_ci
             WHERE o.created_at BETWEEN ? AND ?
             AND o.status != 'cancelled'
-            GROUP BY u.id, u.name, c.first_name
+            GROUP BY u.id, u.name, c.first_name, c.last_name
             ORDER BY spent DESC
             LIMIT 5
         `;

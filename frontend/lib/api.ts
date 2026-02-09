@@ -31,7 +31,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
         }
     }
 
-    console.log(`[API] Fetching: ${url}`, options);
+    // console.log(`[API] Fetching: ${url}`, options);
     let response;
     try {
         response = await fetch(url, {
@@ -91,7 +91,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
                 endpoint.includes('/auth/logout');
 
             if (isTokenExpired && !isAuthEndpoint) {
-                console.log('[API] Access token expired, attempting refresh...');
+                // console.log('[API] Access token expired, attempting refresh...');
 
                 try {
                     // Call refresh token endpoint
@@ -109,7 +109,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
                         // Save new access token
                         localStorage.setItem('accessToken', newAccessToken);
-                        console.log('[API] Token refreshed successfully, retrying request...');
+                        // console.log('[API] Token refreshed successfully, retrying request...');
 
                         // Retry original request with new token
                         headers['Authorization'] = `Bearer ${newAccessToken}`;
@@ -131,7 +131,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
                         }
                     } else {
                         // Refresh token also expired or invalid
-                        console.log('[API] Refresh token expired, logging out...');
+                        // console.log('[API] Refresh token expired, logging out...');
                         await handleLogout();
                     }
                 } catch (refreshError) {
@@ -157,12 +157,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
         throw error;
     }
 
-    console.log(`[API] Response received for ${url}:`, {
-        status: response.status,
-        ok: response.ok,
-        statusText: response.statusText
-    });
-    console.log(`[API] Response data:`, data);
+    // console.log(`[API] Response received for ${url}:`, {
+    //     status: response.status,
+    //     ok: response.ok,
+    //     statusText: response.statusText
+    // });
+    // console.log(`[API] Response data:`, data);
 
     return { data };
 }

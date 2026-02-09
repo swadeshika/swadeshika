@@ -193,18 +193,18 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    console.log('[IMAGE UPLOAD] File selected:', file?.name, file?.size)
+    // console.log('[IMAGE UPLOAD] File selected:', file?.name, file?.size)
     
     if (file) {
       try {
         // Store old image URL to delete later
         const oldImageUrl = post.featured_image
-        console.log('[IMAGE UPLOAD] Old image URL:', oldImageUrl)
+        // console.log('[IMAGE UPLOAD] Old image URL:', oldImageUrl)
 
         // Show loading state
         const reader = new FileReader()
         reader.onloadend = () => {
-          console.log('[IMAGE UPLOAD] FileReader complete, showing preview')
+          // console.log('[IMAGE UPLOAD] FileReader complete, showing preview')
           // Temporarily show preview while uploading
           setPost({
             ...post,
@@ -214,17 +214,17 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
         reader.readAsDataURL(file)
 
         // Upload using centralized service
-        console.log('[IMAGE UPLOAD] Uploading to server via uploadService...')
+        // console.log('[IMAGE UPLOAD] Uploading to server via uploadService...')
         const uploadedUrl = await uploadService.uploadImage(file)
         
-        console.log('[IMAGE UPLOAD] Upload successful, URL:', uploadedUrl)
+        // console.log('[IMAGE UPLOAD] Upload successful, URL:', uploadedUrl)
         
         setPost(prev => {
           const updated = {
             ...prev,
             featured_image: uploadedUrl
           }
-          console.log('[IMAGE UPLOAD] Updated post state:', updated)
+          // console.log('[IMAGE UPLOAD] Updated post state:', updated)
           return updated
         })
         

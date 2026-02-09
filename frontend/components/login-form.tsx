@@ -64,9 +64,20 @@ export function LoginForm() {
     setIsLoading(true)
 
     try {
+      // ---------------------------------------------------------
+      // 1. Call Login Action
+      // ---------------------------------------------------------
+      // Calls the `login` function from `auth-store.ts`.
+      // This sends a POST request to `/api/auth/login` with email & password.
       const { success, role, error } = await login(email, password)
 
+      // ---------------------------------------------------------
+      // 2. Handle Response
+      // ---------------------------------------------------------
       if (success) {
+        // A. SUCCESS:
+        // - Show success toast
+        // - Redirect user based on their role (Admin -> /admin, User -> /account)
         toast({
           title: "Login Successful",
           description: `Welcome back! Redirecting to ${role === "admin" ? "admin dashboard" : "your account"}...`,
@@ -78,6 +89,8 @@ export function LoginForm() {
           router.push("/account")
         }
       } else {
+        // B. FAILURE:
+        // - Show error toast with the message from backend (e.g., "Invalid credentials")
         toast({
           title: "Login Failed",
           description: error || "Invalid email or password. Please try again.",
@@ -85,6 +98,8 @@ export function LoginForm() {
         })
       }
     } catch (error) {
+      // C. UNEXPECTED ERROR:
+      // - Network issues or client-side crashes
       toast({
         title: "Error",
         description: "An error occurred during login. Please try again.",

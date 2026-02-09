@@ -29,7 +29,7 @@ export function ProductReviews({
     try {
       setLoading(true)
       const data = await reviewService.getProductReviews(productId)
-      console.log('Fetched reviews for product', productId, ':', data)
+      // console.log('Fetched reviews for product', productId, ':', data)
 
       // The backend returns an array of reviews directly in data
       const reviewsList = Array.isArray(data) ? data : (data as any).reviews || []

@@ -38,7 +38,13 @@ class DashboardService {
             avgResolutionSeconds: Number(returnStats?.avgResolutionSeconds || 0)
         };
 
-        // Calculate Return Rate
+        // ---------------------------------------------------------
+        // Calculate Business Metrics
+        // ---------------------------------------------------------
+
+        // 1. Return Rate Calculation
+        // Formula: (Returned Count / Total Count) * 100
+        // e.g., 1 return / 19 orders = 5.26% -> 5.3%
         const returnRate = safeReturnStats.total > 0
             ? ((safeReturnStats.returned / safeReturnStats.total) * 100).toFixed(1)
             : "0.0";
@@ -65,15 +71,27 @@ class DashboardService {
                 value: safeKpis.orders > 0 ? Math.round((Number(p.value || 0) / safeKpis.orders) * 100) : 0
             })),
             coupons: couponPerformance,
+            
+            // ---------------------------------------------------------
+            // Returns & Refunds Section Data
+            // ---------------------------------------------------------
             returns: [
-                { label: "Return Rate", value: `${returnRate}%` },
+                { 
+                    label: "Return Rate", 
+                    value: `${returnRate}%` // e.g. "5.3%"
+                },
                 { 
                     label: "Avg. Resolution Time", 
+                    // Convert seconds back to days for display
+                    // e.g. 432000 seconds / 86400 = 5.0 days
                     value: safeReturnStats.avgResolutionSeconds > 0 
                         ? `${(safeReturnStats.avgResolutionSeconds / 86400).toFixed(1)} days` 
                         : "N/A" 
                 },
-                    { label: "Refunded Amount", value: `₹${safeReturnStats.refundedAmount.toLocaleString('en-IN')}` }
+                { 
+                    label: "Refunded Amount", 
+                    value: `₹${safeReturnStats.refundedAmount.toLocaleString('en-IN')}` // e.g. "₹1,298"
+                }
             ]
         };
     }

@@ -54,7 +54,7 @@ const validate = (req, res, next) => {
     value: e.value    // The invalid value user sent
   }));
 
-  console.log('❌ [Validation Failed]:', JSON.stringify(formatted, null, 2));
+  // console.log('❌ [Validation Failed]:', JSON.stringify(formatted, null, 2));
 
   // Respond with 400 Bad Request
   return res.status(400).json({

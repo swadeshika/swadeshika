@@ -194,7 +194,7 @@ class ProductModel {
     }
 
     // Sorting
-    console.log(`[ProductModel] Sort param: ${sort}`); // Debug log
+    // console.log(`[ProductModel] Sort param: ${sort}`); // Debug log
 
     if (sort === 'price_asc') sql += ` ORDER BY CAST(${effectivePriceSQL} AS DECIMAL(10,2)) ASC`;
     else if (sort === 'price_desc') sql += ` ORDER BY CAST(${effectivePriceSQL} AS DECIMAL(10,2)) DESC`;
@@ -607,7 +607,7 @@ class ProductModel {
         // SOFT DELETE: Product has orders, cannot hard delete
         // Set is_active = FALSE to hide from storefront
         await conn.query(`UPDATE products SET is_active = FALSE WHERE id = ?`, [id]);
-        console.log(`✓ Product ${id} soft-deleted (marked as inactive) due to existing orders`);
+        // console.log(`✓ Product ${id} soft-deleted (marked as inactive) due to existing orders`);
       } else {
         // HARD DELETE: No orders, safe to fully remove
         // Clean up related data (referential integrity)
@@ -620,7 +620,7 @@ class ProductModel {
 
         // Finally delete the product
         await conn.query(`DELETE FROM products WHERE id = ?`, [id]);
-        console.log(`✓ Product ${id} hard-deleted (no order history)`);
+        // console.log(`✓ Product ${id} hard-deleted (no order history)`);
       }
 
       await conn.commit();

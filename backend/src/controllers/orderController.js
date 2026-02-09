@@ -177,7 +177,7 @@ exports.createOrder = async (req, res, next) => {
         const shippingThreshold = (settings && settings.free_shipping_threshold != null) ? Number(settings.free_shipping_threshold) : 500;
         const flatRate = (settings && settings.flat_rate != null) ? Number(settings.flat_rate) : 50;
 
-        console.log(`DEBUG: Subtotal: ${subtotal}, Threshold: ${shippingThreshold}, FlatRate: ${flatRate}`);
+        // console.log(`DEBUG: Subtotal: ${subtotal}, Threshold: ${shippingThreshold}, FlatRate: ${flatRate}`);
 
         let discountAmount = 0;
         let appliedCouponId = null;
@@ -273,7 +273,7 @@ exports.createOrder = async (req, res, next) => {
                 read: false,
                 created_at: new Date()
             });
-            console.log(`📬 New order notification sent: ${newOrder.order_number}`);
+            // console.log(`📬 New order notification sent: ${newOrder.order_number}`);
         } catch (notifErr) {
             console.error('Failed to send order notification:', notifErr);
             // Don't fail the order if notification fails
@@ -480,12 +480,14 @@ exports.exportOrders = async (req, res, next) => {
 
         let query = `
             SELECT o.order_number, o.created_at, o.total_amount, o.status,
+                   o.returned_at, o.refunded_at,
                    COALESCE(NULLIF(CONCAT(c.first_name, ' ', COALESCE(c.last_name, '')), ''), NULLIF(u.name, ''), u.email) as display_name,
                    COALESCE(c.email, u.email) as display_email,
-                   c.phone
+                   COALESCE(a.phone, c.phone, u.phone) as phone
             FROM orders o
             LEFT JOIN users u ON o.user_id = u.id
             LEFT JOIN customers c ON u.email COLLATE utf8mb4_unicode_ci = c.email COLLATE utf8mb4_unicode_ci
+            LEFT JOIN addresses a ON o.address_id = a.id
         `;
 
         const params = [];
@@ -511,11 +513,13 @@ exports.exportOrders = async (req, res, next) => {
         const [rows] = await db.query(query, params);
 
         // Convert to CSV
-        const csvHeader = 'Order Number,Date,Customer Name,Email,Phone,Amount,Status\n';
+        const csvHeader = 'Order Number,Date,Customer Name,Email,Phone,Amount,Status,Returned At,Refunded At\n';
         const csvRows = rows.map(row => {
             const date = new Date(row.created_at).toLocaleDateString();
             const name = row.display_name || 'Guest';
-            return `${row.order_number},${date},"${name}",${row.display_email || ''},${row.phone || ''},${row.total_amount},${row.status}`;
+            const returnedAt = row.returned_at ? new Date(row.returned_at).toLocaleDateString() : '';
+            const refundedAt = row.refunded_at ? new Date(row.refunded_at).toLocaleDateString() : '';
+            return `${row.order_number},${date},"${name}",${row.display_email || ''},${row.phone || ''},${row.total_amount},${row.status},${returnedAt},${refundedAt}`;
         }).join('\n');
 
         const csvContent = csvHeader + csvRows;
@@ -689,10 +693,16 @@ exports.getOrderById = async (req, res, next) => {
             totalAmount: order.total_amount, // Added for frontend
             couponCode: order.coupon_code, // Added coupon code validation field
             trackingNumber: order.tracking_number,
+            carrier: order.carrier || 'Blue Dart', // Default to Blue Dart
             estimatedDeliveryDate: order.estimated_delivery_date || new Date(new Date(order.created_at).setDate(new Date(order.created_at).getDate() + 5)),
             createdAt: order.created_at,
             deliveredAt: order.delivered_at,
-            timeline: timeline
+            timeline: timeline,
+            tracking: order.tracking_number ? {
+                carrier: order.carrier || 'Blue Dart',
+                trackingNumber: order.tracking_number,
+                estimatedDelivery: order.estimated_delivery_date || new Date(new Date(order.created_at).setDate(new Date(order.created_at).getDate() + 5))
+            } : null
         };
 
         res.status(200).json({
@@ -896,9 +906,9 @@ exports.downloadInvoice = async (req, res, next) => {
  */
 exports.updateOrderStatus = async (req, res, next) => {
     try {
-        const { status, trackingNumber } = req.body;
+        const { status, trackingNumber, carrier } = req.body;
 
-        const success = await Order.updateStatus(req.params.id, status, trackingNumber);
+        const success = await Order.updateStatus(req.params.id, status, trackingNumber, carrier);
 
         if (!success) {
             return res.status(404).json({ success: false, message: 'Order not found or update failed' });

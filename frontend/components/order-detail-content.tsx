@@ -20,7 +20,7 @@ import { useWishlistStore } from "@/lib/wishlist-store"
 import { useState } from "react"
 import { useAuthStore } from "@/lib/auth-store"
 import { toast } from "@/hooks/use-toast"
-import { cn } from "@/lib/utils"
+import { cn, getTrackingUrl } from "@/lib/utils"
 import { ordersService, Order } from "@/lib/services/ordersService"
 import { useEffect } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -207,7 +207,7 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
                 })}
               </div>
 
-              {order.status === "shipped" && order.tracking && (
+              {['shipped', 'delivered'].includes(order.status) && order.tracking && (
                 <>
                   <Separator className="my-6" />
                   <div className="space-y-2">
@@ -220,7 +220,7 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
                         Tracking Number:{" "}
                         <span className="text-foreground font-medium">{order.tracking.trackingNumber}</span>
                       </p>
-                      <p className="text-muted-foreground">
+                      {/* <p className="text-muted-foreground">
                         Estimated Delivery:{" "}
                         <span className="text-foreground font-medium">
                           {new Date(order.tracking.estimatedDelivery).toLocaleDateString("en-IN", {
@@ -228,11 +228,11 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
                             month: "long",
                           })}
                         </span>
-                      </p>
+                      </p> */}
                     </div>
                     <Button variant="outline" size="sm" className="mt-4 bg-transparent" asChild>
                       <a
-                        href={`https://www.bluedart.com/tracking/${order.tracking.trackingNumber}`}
+                        href={getTrackingUrl(order.tracking.carrier, order.tracking.trackingNumber)}
                         target="_blank"
                         rel="noopener noreferrer"
                       >

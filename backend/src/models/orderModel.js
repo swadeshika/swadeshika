@@ -79,24 +79,24 @@ class Order {
                 let stockResult;
                 if (item.variant_id) {
                     // Update Variant Stock
-                    console.log(`[Stock] Updating variant stock: variant_id=${item.variant_id}, quantity=${item.quantity}`);
+                    // console.log(`[Stock] Updating variant stock: variant_id=${item.variant_id}, quantity=${item.quantity}`);
                     [stockResult] = await connection.execute(
                         `UPDATE product_variants 
                          SET stock_quantity = stock_quantity - ? 
                          WHERE id = ? AND stock_quantity >= ?`,
                         [item.quantity, item.variant_id, item.quantity]
                     );
-                    console.log(`[Stock] Variant stock update result: affectedRows=${stockResult.affectedRows}`);
+                    // console.log(`[Stock] Variant stock update result: affectedRows=${stockResult.affectedRows}`);
                 } else {
                     // Update Product Stock
-                    console.log(`[Stock] Updating product stock: product_id=${item.product_id}, quantity=${item.quantity}`);
+                    // console.log(`[Stock] Updating product stock: product_id=${item.product_id}, quantity=${item.quantity}`);
                     [stockResult] = await connection.execute(
                         `UPDATE products 
                          SET stock_quantity = stock_quantity - ? 
                          WHERE id = ? AND stock_quantity >= ?`,
                         [item.quantity, item.product_id, item.quantity]
                     );
-                    console.log(`[Stock] Product stock update result: affectedRows=${stockResult.affectedRows}`);
+                    // console.log(`[Stock] Product stock update result: affectedRows=${stockResult.affectedRows}`);
                 }
 
                 // 3. Check for Insufficient Stock
@@ -246,10 +246,12 @@ class Order {
      * Update order status
      * @param {string} id 
      * @param {string} status 
+     * @param {string|null} trackingNumber
+     * @param {string|null} carrier
      * @returns {Promise<boolean>}
      */
-    static async updateStatus(id, status, trackingNumber = null) {
-        const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
+    static async updateStatus(id, status, trackingNumber = null, carrier = null) {
+        const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded', 'returned'];
         if (!validStatuses.includes(status)) {
             throw new Error('Invalid status');
         }
@@ -263,11 +265,20 @@ class Order {
             updates.push('delivered_at = NOW()');
         } else if (status === 'cancelled') {
             updates.push('cancelled_at = NOW()');
+        } else if (status === 'returned') {
+            updates.push('returned_at = NOW()');
+        } else if (status === 'refunded') {
+            updates.push('refunded_at = NOW()');
         }
 
         if (trackingNumber) {
             updates.push('tracking_number = ?');
             params.push(trackingNumber);
+        }
+
+        if (carrier) {
+            updates.push('carrier = ?');
+            params.push(carrier);
         }
 
         params.push(id);

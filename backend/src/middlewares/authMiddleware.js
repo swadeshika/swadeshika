@@ -72,6 +72,9 @@ const optionalAuthenticate = async (req, res, next) => {
  */
 const authenticate = async (req, res, next) => {
   try {
+    // ---------------------------------------------------------
+    // 1. Extract Token from Header
+    // ---------------------------------------------------------
     // Authorization header may be "authorization" (lowercase) on some clients
     const header = req.headers.authorization || req.headers.Authorization;
 
@@ -83,10 +86,17 @@ const authenticate = async (req, res, next) => {
         message: getMessage('TOKEN_REQUIRED')
       });
 
-    // Verify ACCESS token
+    // ---------------------------------------------------------
+    // 2. Verify Token Authenticity
+    // ---------------------------------------------------------
+    // Uses crypto library to verify the JWT signature against our secret key.
+    // Also ensures it's an ACCESS type token (not a refresh token).
     const decoded = verifyToken(token, TOKEN_TYPES.ACCESS);
 
-    // Load user from DB
+    // ---------------------------------------------------------
+    // 3. Load User from Database
+    // ---------------------------------------------------------
+    // The token contains the user's ID. We fetch the full user profile.
     const user = await UserModel.findById(decoded.id);
     if (!user)
       return res.status(401).json({
@@ -94,14 +104,21 @@ const authenticate = async (req, res, next) => {
         message: getMessage('USER_NOT_FOUND')
       });
 
-    // Attach user to request for future middlewares/controllers
+    // ---------------------------------------------------------
+    // 4. Attach User to Request
+    // ---------------------------------------------------------
+    // Attach user to request for future middlewares/controllers to use.
+    // e.g. req.user.id, req.user.role
     req.user = user;
 
     // DIAGNOSTIC LOGGING: Log user role for debugging
-    console.log(`[AUTH] User Authenticated: ${user.email}, Role: ${user.role}`);
+    // console.log(`[AUTH] User Authenticated: ${user.email}, Role: ${user.role}`);
 
     next();
   } catch (err) {
+    // ---------------------------------------------------------
+    // 5. Handle Verification Errors
+    // ---------------------------------------------------------
     // Access token expired → ask user to refresh
     if (err.code === 'token_expired' || err.message === 'Token has expired') {
       return res.status(401).json({

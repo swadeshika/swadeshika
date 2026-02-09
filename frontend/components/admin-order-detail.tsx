@@ -23,6 +23,8 @@ const statusConfig = {
   shipped: { label: "Shipped", color: "bg-orange-500" },
   delivered: { label: "Delivered", color: "bg-green-500" },
   cancelled: { label: "Cancelled", color: "bg-red-500" },
+  returned: { label: "Returned", color: "bg-rose-500" },
+  refunded: { label: "Refunded", color: "bg-gray-500" },
 }
 
 export default function AdminOrderDetailContent({ orderId }: { orderId: string }) {
@@ -46,6 +48,7 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
         setOrder(data)
         setOrderStatus(data.status)
         setTrackingNumber(data.trackingNumber || "")
+        setCarrier(data.carrier || "bluedart") // Default to bluedart if empty, or just empty? UI select placeholder is "Select carrier"
       } catch (error) {
         console.error("Failed to fetch order:", error)
       } finally {
@@ -88,15 +91,13 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
         // Verify if we can update tracking number. Backend updateStatus accepts it.
         // We might not want to change status if just adding tracking, but updateStatus requires status.
         // So we send current status.
-        await ordersService.updateStatus(orderId, orderStatus, trackingNumber) // Modified service to accept tracking? No wait.
-        // I need to update ordersService to accept tracking number in updateStatus
-        // Checking ordersService.ts... I haven't updated it to accept trackingNumber yet in Step 58.
-        // I need to do that first or duplicate the call.
-        // Actually, I can just update ordersService.ts now or pass it if I overload the function.
-        // Let's assume I will update ordersService.ts in next step or use a direct api call here for now?
-        // No, better to update service.
-        // For now, I will write the code assuming service handles it or I'll fix service.
-        // Let's use `updateStatus` and I will fix service signature in a moment.
+        await ordersService.updateStatus(orderId, orderStatus, trackingNumber, carrier)
+
+        setDialog({
+          open: true,
+          title: "Tracking Added",
+          description: `Tracking details saved: ${trackingNumber} (${carrier}).`,
+        })
 
         setDialog({
           open: true,
@@ -446,6 +447,8 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
                       <SelectItem value="shipped">Shipped</SelectItem>
                       <SelectItem value="delivered">Delivered</SelectItem>
                       <SelectItem value="cancelled">Cancelled</SelectItem>
+                      <SelectItem value="returned">Returned</SelectItem>
+                      <SelectItem value="refunded">Refunded</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

@@ -29,7 +29,7 @@ export function ImageGalleryUploader({ label = "Upload gallery images", onChange
   // Initialize from provided initialUrls (useful in edit mode)
   useEffect(() => {
     if (initialUrls && initialUrls.length) {
-      const next = initialUrls.map((u) => ({ url: u }))
+      const next: FilePreview[] = initialUrls.map((u) => ({ url: u }))
       setItems(next)
       onChange([], initialUrls)
     }
@@ -51,7 +51,7 @@ export function ImageGalleryUploader({ label = "Upload gallery images", onChange
       const uploadedUrls = await uploadService.uploadImages(files)
       
       // Add to existing items
-      const next = [
+      const next: FilePreview[] = [
         ...items,
         ...uploadedUrls.map((url) => ({ url })),
       ]
@@ -78,7 +78,7 @@ export function ImageGalleryUploader({ label = "Upload gallery images", onChange
     if (item.url && (item.url.startsWith(`${BACKEND_ORIGIN}/uploads/`) || item.url.startsWith(`${BACKEND_ORIGIN}/api/v1/images/`))) {
       try {
         await uploadService.deleteImage(item.url);
-        console.log('[ImageGalleryUploader] File deleted from server');
+        // console.log('[ImageGalleryUploader] File deleted from server');
       } catch (error) {
         console.error('[ImageGalleryUploader] Failed to delete file:', error);
         // Continue anyway - file might already be deleted or not exist

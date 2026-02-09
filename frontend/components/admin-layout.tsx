@@ -116,7 +116,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     
     // Normalize role for comparison
     const normalizedRole = user?.role?.toLowerCase().trim();
-    console.log(`[AdminLayout] Auth Check - Role: ${user?.role}, Normalized: ${normalizedRole}, Authenticated: ${isAuthenticated}, Initialized: ${isInitialized}`);
+    // console.log(`[AdminLayout] Auth Check - Role: ${user?.role}, Normalized: ${normalizedRole}, Authenticated: ${isAuthenticated}, Initialized: ${isInitialized}`);
 
     if (!isAuthenticated || normalizedRole !== "admin") {
       toast({

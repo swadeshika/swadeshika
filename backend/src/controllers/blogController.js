@@ -83,7 +83,7 @@ const getPostBySlug = async (req, res, next) => {
  */
 const createPost = async (req, res, next) => {
     try {
-        console.log('createPost called with body:', JSON.stringify(req.body).substring(0, 100) + '...');
+        // console.log('createPost called with body:', JSON.stringify(req.body).substring(0, 100) + '...');
 
         let { title, content, excerpt, featured_image, category, category_id, tags, status, author_id, published_at } = req.body;
         const authorId = author_id || 1; 
@@ -126,7 +126,7 @@ const createPost = async (req, res, next) => {
             }
         }
 
-        console.log('Creating post:', { title, slug, authorId, categoryId, status });
+        // console.log('Creating post:', { title, slug, authorId, categoryId, status });
 
         const newPostId = await BlogModel.create({
             title,
@@ -170,7 +170,7 @@ const createPost = async (req, res, next) => {
  */
 const updatePost = async (req, res, next) => {
     try {
-        console.log('updatePost called with body:', JSON.stringify(req.body).substring(0, 100) + '...');
+        // console.log('updatePost called with body:', JSON.stringify(req.body).substring(0, 100) + '...');
 
         const { id } = req.params;
         let { title, content, excerpt, featuredImage, featured_image, category, category_id, tags, status, slug, author_id, published_at } = req.body;
@@ -223,7 +223,7 @@ const updatePost = async (req, res, next) => {
             published_at // Allow updating published_at
         };
 
-        console.log('Updating post', id, updateData);
+        // console.log('Updating post', id, updateData);
 
         const updated = await BlogModel.update(id, updateData);
 

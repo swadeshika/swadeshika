@@ -16,7 +16,7 @@
  * - When adding infinite scroll or pagination, wrap the mapped section appropriately.
  */
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import Link from "next/link"
 import { ProductCard } from "@/components/product-card"
 import { Button } from "@/components/ui/button"
@@ -32,6 +32,9 @@ interface ProductGridProps {
   selectedBrands?: string[]
   selectedTags?: string[]
   searchQuery?: string
+  initialProducts?: Product[]
+  initialTotal?: number
+  initialPages?: number
 }
 
 export function ProductGrid({
@@ -40,17 +43,21 @@ export function ProductGrid({
   selectedCategories = [],
   selectedBrands = [],
   selectedTags = [],
-  searchQuery = ""
+  searchQuery = "",
+  initialProducts,
+  initialTotal = 0,
+  initialPages = 1
 }: ProductGridProps) {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [sortBy, setSortBy] = useState("featured")
 
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
+  // Initialize with server data if available
+  const [products, setProducts] = useState<Product[]>(initialProducts || [])
+  const [loading, setLoading] = useState(!initialProducts)
   const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalProducts, setTotalProducts] = useState(0)
-  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(initialPages)
+  const [totalProducts, setTotalProducts] = useState(initialTotal)
+  const [total, setTotal] = useState(initialTotal)
 
   // Fetch logic extracted for reuse
   const fetchProducts = async () => {
@@ -108,15 +115,18 @@ export function ProductGrid({
     }
   }
 
+  const isFirstRun = useState(true)[0] // Actually need useRef or state + effect to toggle
+  // But inside effect we need mutable.
+  const isFirstMount = useRef(true)
+
   // Debounced effect for filters (Search, Price, Filters)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-        // Only run if we are not initial mount or check something? 
-        // Actually, checking if not loading is hard. 
-        // Just run it.
-        // We reset page to 1 when filters change, that is handled by separate effect below? 
-        // No, let's keep page 1 reset logic here or separate?
-        // Let's do fetch here.
+        if (isFirstMount.current) {
+            isFirstMount.current = false;
+            // If we have initial products, we SKIP the first fetch derived from default filters
+            if (initialProducts) return;
+        }
         fetchProducts()
     }, 500)
 
@@ -127,6 +137,14 @@ export function ProductGrid({
 
   // Immediate effect for Sort and Pagination
   useEffect(() => {
+    // If initial load, sortBy is default.
+    // If user changes sort, fetch.
+    if (!loading && initialProducts && currentPage === 1 && sortBy === "featured") {
+        // Likely initial state matches server. Skip.
+        return;
+    }
+    // Note: If filters change, currentPage resets to 1 (in logic below or above). 
+    // If pure sort change, we fetch.
     fetchProducts()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortBy, currentPage])

@@ -9,9 +9,9 @@ async function createAdmin() {
         const name = 'Admin User';
         const phone = '9999999999';
 
-        console.log(`🚀 Creating/Updating Admin User...`);
-        console.log(`Email: ${email}`);
-        console.log(`Password: ${password}`);
+        // console.log(`🚀 Creating/Updating Admin User...`);
+        // console.log(`Email: ${email}`);
+        // console.log(`Password: ${password}`);
 
         // Check if user exists
         const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
@@ -24,7 +24,7 @@ async function createAdmin() {
                 'UPDATE users SET role = "admin", password = ?, name = ? WHERE email = ?',
                 [hashedPassword, name, email]
             );
-            console.log('✅ Existing user updated to ADMIN role.');
+            // console.log('✅ Existing user updated to ADMIN role.');
         } else {
             // Create new admin user
             const id = uuidv4();
@@ -32,10 +32,10 @@ async function createAdmin() {
                 'INSERT INTO users (id, email, password, name, phone, role) VALUES (?, ?, ?, ?, ?, "admin")',
                 [id, email, hashedPassword, name, phone]
             );
-            console.log('✅ New ADMIN user created.');
+            // console.log('✅ New ADMIN user created.');
         }
 
-        console.log('\n✨ You can now login with these credentials to get the token.');
+        // console.log('\n✨ You can now login with these credentials to get the token.');
         process.exit(0);
     } catch (err) {
         console.error('❌ Error creating admin:', err.message);

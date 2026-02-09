@@ -52,8 +52,8 @@ export function ShopFilters({
   const [mobileOpen, setMobileOpen] = useState(false)
   const [localPrice, setLocalPrice] = useState(priceRange)
   
-  console.log('ShopFilters Categories:', categories);
-  console.log('Built Tree:', buildCategoryTree(categories));
+  // console.log('ShopFilters Categories:', categories);
+  // console.log('Built Tree:', buildCategoryTree(categories));
 
   // Sync local price when prop changes (e.g. Clear All)
   // We only want to sync if the prop is significantly different to avoid fighting with the slider

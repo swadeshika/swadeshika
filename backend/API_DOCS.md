@@ -285,6 +285,7 @@ CREATE TABLE orders (
   payment_id VARCHAR(255),
   notes TEXT,
   tracking_number VARCHAR(100),
+  carrier VARCHAR(50),
   shipped_at TIMESTAMP NULL,
   delivered_at TIMESTAMP NULL,
   cancelled_at TIMESTAMP NULL,
@@ -1348,7 +1349,8 @@ Auth: Required (Admin)
 ```json
 {
   "status": "shipped",
-  "trackingNumber": "TRACK123"
+  "trackingNumber": "TRACK123",
+  "carrier": "Blue Dart"
 }
 ```
 
@@ -2932,6 +2934,7 @@ POST /api/v1/orders/track
     "orderNumber": "ORD-2025-001",
     "status": "shipped",
     "trackingNumber": "TRK123456789",
+    "carrier": "Blue Dart",
     "items": [
       {
         "productName": "Pure Desi Cow Ghee",

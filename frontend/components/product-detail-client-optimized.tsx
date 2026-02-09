@@ -361,7 +361,7 @@ export function ProductDetailClientOptimized({
         payload.sku = selectedVariant.sku
       }
 
-      console.log('[ProductDetail] Adding to cart:', { payload, selectedVariant });
+      // console.log('[ProductDetail] Adding to cart:', { payload, selectedVariant });
       addItem(payload, quantity) // Ensure quantity is passed separately if needed by store logic
 
       toast.success(

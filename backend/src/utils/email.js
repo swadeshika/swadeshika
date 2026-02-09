@@ -12,7 +12,7 @@ const sendEmail = async (options) => {
       const fromAddress = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
       
       const replyToAddress = process.env.EMAIL_FROM || process.env.EMAIL_USERNAME || 'official.swadeshika@gmail.com';
-      console.log(`DEBUG: Sending email from ${fromAddress} with reply_to: ${replyToAddress}`);
+      // console.log(`DEBUG: Sending email from ${fromAddress} with reply_to: ${replyToAddress}`);
 
       const { data, error } = await resend.emails.send({
         from: fromAddress,
@@ -28,7 +28,7 @@ const sendEmail = async (options) => {
         throw new Error(error.message);
       }
 
-      console.log(`📧 Email sent via Resend to ${options.email}`, data);
+      // console.log(`📧 Email sent via Resend to ${options.email}`, data);
       return; // Success, exit function
     } catch (err) {
       console.error('⚠️ Resend failed, checking for fallback...', err.message);
@@ -60,24 +60,24 @@ const sendEmail = async (options) => {
   // 4. Send email
   try {
     if (!process.env.EMAIL_USERNAME || !process.env.EMAIL_PASSWORD || process.env.EMAIL_USERNAME === '' || process.env.EMAIL_PASSWORD === '') {
-      console.log('⚠️  Email credentials missing in .env. Logging email to console instead:');
-      console.log(`To: ${options.email}`);
-      console.log(`Subject: ${options.subject}`);
-      console.log(`Message: ${options.message}`);
+      // console.log('⚠️  Email credentials missing in .env. Logging email to console instead:');
+      // console.log(`To: ${options.email}`);
+      // console.log(`Subject: ${options.subject}`);
+      // console.log(`Message: ${options.message}`);
       // IMPORTANT: We do NOT return here, we treat this as a "success" so the user isn't blocked.
       // But we skip the actual nodemailer send
       return;
     }
     await transporter.sendMail(mailOptions);
-    console.log(`📧 Email sent (SMTP) to ${options.email}`);
+    // console.log(`📧 Email sent (SMTP) to ${options.email}`);
   } catch (err) {
     console.error('❌ Error sending email (SMTP):', err.message);
 
     // Fallback: If email fails (e.g. wrong credentials), log to console so dev works
-    console.log('⚠️  Email sending failed. Logging email to console as fallback:');
-    console.log(`To: ${options.email}`);
-    console.log(`Subject: ${options.subject}`);
-    console.log(`Message: ${options.message}`);
+    // console.log('⚠️  Email sending failed. Logging email to console as fallback:');
+    // console.log(`To: ${options.email}`);
+    // console.log(`Subject: ${options.subject}`);
+    // console.log(`Message: ${options.message}`);
 
     // Do NOT throw error in development, so the user flow continues
     if (process.env.NODE_ENV === 'production') {

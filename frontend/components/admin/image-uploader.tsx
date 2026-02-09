@@ -63,7 +63,7 @@ export function ImageUploader({ label = "Upload image", onChange, initialUrl }: 
     if (preview && (preview.startsWith(`${BACKEND_ORIGIN}/uploads/`) || preview.startsWith(`${BACKEND_ORIGIN}/api/v1/images/`))) {
       try {
         await uploadService.deleteImage(preview);
-        console.log('[ImageUploader] File deleted from server');
+        // console.log('[ImageUploader] File deleted from server');
       } catch (error) {
         console.error('[ImageUploader] Failed to delete file:', error);
         // Continue anyway - file might already be deleted or not exist

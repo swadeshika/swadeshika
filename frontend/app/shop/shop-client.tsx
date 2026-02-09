@@ -9,52 +9,27 @@ import { SiteFooter } from "@/components/site-footer"
 import { ProductGrid } from "@/components/product-grid"
 import { ShopFilters } from "@/components/shop-filters"
 import { ShopHeader } from "@/components/shop-header"
-import { Category } from "@/lib/services/productService"
+import { Category, Product } from "@/lib/services/productService"
 
 interface ShopClientProps {
   initialCategories: Category[]
+  initialProducts?: Product[]
+  initialTotal?: number
+  initialPages?: number
 }
 
-// Create a client-only wrapper component
-function ClientOnly({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false)
+// ClientOnly component removed as it blocks SSR
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return (
-      <div className="flex min-h-screen flex-col">
-        <div className="container mx-auto px-4 py-8">
-          <div className="h-12 w-full max-w-md bg-gray-200 animate-pulse rounded"></div>
-          <div className="mt-8 grid lg:grid-cols-4 gap-8">
-            <div className="lg:col-span-1 space-y-4">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-8 w-full bg-gray-100 animate-pulse rounded"></div>
-              ))}
-            </div>
-            <div className="lg:col-span-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="h-64 bg-gray-100 animate-pulse rounded-lg"></div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  return <>{children}</>
-}
-
-function ShopContent({ initialCategories }: ShopClientProps) {
+function ShopContent({ initialCategories, initialProducts, initialTotal, initialPages }: ShopClientProps) {
   const searchParams = useSearchParams()
-  const [searchQuery, setSearchQuery] = useState("")
-  const [priceRange, setPriceRange] = useState([0, 10000])
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  
+  // Initialize state from URL Params to match Server Side Render
+  const [searchQuery, setSearchQuery] = useState(() => searchParams?.get('q') || "")
+  const [priceRange, setPriceRange] = useState([0, 10000]) // Could also read from params
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
+    const cat = searchParams?.get('category');
+    return cat ? [cat] : [];
+  })
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [categories, setCategories] = useState<Category[]>(initialCategories)
@@ -67,6 +42,10 @@ function ShopContent({ initialCategories }: ShopClientProps) {
     const categoryParam = searchParams?.get('category')
     if (categoryParam) {
       setSelectedCategories([categoryParam])
+    } else {
+        // If removed, clear? Or keep user selection?
+        // Usually URL drives state.
+        setSelectedCategories([])
     }
   }, [searchParams])
 
@@ -102,6 +81,9 @@ function ShopContent({ initialCategories }: ShopClientProps) {
                 selectedCategories={selectedCategories}
                 selectedBrands={selectedBrands}
                 selectedTags={selectedTags}
+                initialProducts={initialProducts}
+                initialTotal={initialTotal}
+                initialPages={initialPages}
               />
             </div>
           </div>
@@ -113,10 +95,13 @@ function ShopContent({ initialCategories }: ShopClientProps) {
   )
 }
 
-export default function ShopClient({ initialCategories }: ShopClientProps) {
+export default function ShopClient({ initialCategories, initialProducts, initialTotal, initialPages }: ShopClientProps) {
   return (
-    <ClientOnly>
-      <ShopContent initialCategories={initialCategories} />
-    </ClientOnly>
+    <ShopContent 
+      initialCategories={initialCategories}
+      initialProducts={initialProducts} 
+      initialTotal={initialTotal}
+      initialPages={initialPages}
+    />
   )
 }

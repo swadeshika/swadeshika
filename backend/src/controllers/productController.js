@@ -79,14 +79,14 @@ exports.createProduct = async (req, res, next) => {
         // Log basic payload size to help diagnose connection-reset / packet issues
         const payloadStr = JSON.stringify(req.body || {});
         const payloadSize = Buffer.byteLength(payloadStr, 'utf8');
-        console.log(`📦 [CreateProduct] Payload size: ${payloadSize} bytes`);
+        // console.log(`📦 [CreateProduct] Payload size: ${payloadSize} bytes`);
 
         // If images are passed as data URLs (base64), log their lengths (useful for debugging)
         if (req.body && Array.isArray(req.body.images)) {
             req.body.images.forEach((img, idx) => {
                 const dataUrl = img && (img.image_url || img.url);
                 if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
-                    console.log(`📷 [CreateProduct] image[${idx}] data URL length: ${dataUrl.length}`);
+                    // console.log(`📷 [CreateProduct] image[${idx}] data URL length: ${dataUrl.length}`);
                 }
             });
         }
@@ -170,7 +170,7 @@ exports.updateProduct = async (req, res, next) => {
         try {
             const payloadStr = JSON.stringify(req.body || {});
             const payloadSize = Buffer.byteLength(payloadStr, 'utf8');
-            console.log(`📦 [UpdateProduct] Payload size: ${payloadSize} bytes`);
+            // console.log(`📦 [UpdateProduct] Payload size: ${payloadSize} bytes`);
         } catch (e) {
             // ignore JSON stringify errors
         }

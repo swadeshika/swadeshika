@@ -264,9 +264,9 @@ export function CheckoutForm() {
     }
 
     try {
-      console.log("Submitting order...", orderData);
+      // console.log("Submitting order...", orderData);
       const response = await ordersService.createOrder(orderData as any);
-      console.log("Order created response:", response);
+      // console.log("Order created response:", response);
       
       const { clearCart } = useCartStore.getState();
       await clearCart();
@@ -277,7 +277,7 @@ export function CheckoutForm() {
       })
       
       if (response && response.data && response.data.orderId) {
-          console.log("Redirecting to confirmation:", `/order-confirmation/${response.data.orderId}`);
+          // console.log("Redirecting to confirmation:", `/order-confirmation/${response.data.orderId}`);
           router.push(`/order-confirmation/${response.data.orderId}`)
       } else {
           console.error("Missing orderId in response:", response);

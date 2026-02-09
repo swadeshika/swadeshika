@@ -36,6 +36,8 @@ const statusColors: Record<string, string> = {
   processing: "bg-[#8B6F47]/10 text-[#6B4423]",
   pending: "bg-[#FF7E00]/10 text-[#FF7E00]",
   cancelled: "bg-red-100 text-red-700",
+  returned: "bg-rose-100 text-rose-700",
+  refunded: "bg-gray-100 text-gray-700",
 }
 
 export function AdminOrdersList() {
@@ -173,6 +175,8 @@ export function AdminOrdersList() {
                 <SelectItem value="shipped">Shipped</SelectItem>
                 <SelectItem value="delivered">Delivered</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="returned">Returned</SelectItem>
+                <SelectItem value="refunded">Refunded</SelectItem>
               </SelectContent>
             </Select>
           </div>

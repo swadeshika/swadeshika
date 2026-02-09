@@ -108,6 +108,10 @@ export function AdminReports() {
     exportCsv("sales-by-category.csv", ["Category", "Value"], data.salesByCategory.map((r: any) => [r.name, r.value]))
   }
 
+  const exportReturns = () => {
+    exportCsv("returns-report.csv", ["Metric", "Value"], data.returns.map((r: any) => [r.label, r.value]))
+  }
+
   return (
     <div className="space-y-6 font-sans">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0">
@@ -269,7 +273,7 @@ export function AdminReports() {
               <div key={c.code} className="flex items-center justify-between p-3 bg-white rounded-xl border-2 border-[#E8DCC8]">
                 <div className="flex items-center gap-2">
                   <code className="font-mono font-semibold bg-[#F5F1E8] border-2 border-[#E8DCC8] text-[#6B4423] px-2 py-1 rounded">{c.code}</code>
-                  <span className="text-sm text-[#8B6F47]">{c.usage}/{c.limit}</span>
+                  <span className="text-sm text-[#8B6F47]">{c.usage} / {c.limit ? c.limit : '∞'}</span>
                 </div>
                 <p className="font-semibold text-[#2D5F3F]">{inr(c.revenue)}</p>
               </div>
@@ -280,7 +284,12 @@ export function AdminReports() {
         <Card className="rounded-2xl py-5 border-2 border-[#E8DCC8]">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-[#6B4423]">Returns & Refunds</CardTitle>
-            <RotateCcw className="h-5 w-5 text-[#8B6F47]" />
+            <div className="flex items-center gap-3">
+              <Button onClick={exportReturns} variant="outline" size="sm" className="h-7 text-xs bg-transparent border-[#E8DCC8] hover:bg-[#FF7E00] hover:text-white">
+                Export
+              </Button>
+              <RotateCcw className="h-5 w-5 text-[#8B6F47]" />
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
             {data.returns.map((r: any) => (

@@ -7,16 +7,27 @@ import { ProductGrid } from "@/components/product-grid"
 import { ShopFilters } from "@/components/shop-filters"
 import { ShopHeader } from "@/components/shop-header"
 import { Breadcrumb } from "@/components/breadcrumb"
-import { Category } from "@/lib/services/productService"
+import { Category, Product } from "@/lib/services/productService"
 
 interface CategoryClientProps {
   category: string
   title: string
   description: string
   initialCategories: Category[]
+  initialProducts?: Product[]
+  initialTotal?: number
+  initialPages?: number
 }
 
-export default function CategoryClient({ category, title, description, initialCategories }: CategoryClientProps) {
+export default function CategoryClient({ 
+  category, 
+  title, 
+  description, 
+  initialCategories,
+  initialProducts,
+  initialTotal,
+  initialPages
+}: CategoryClientProps) {
   const [priceRange, setPriceRange] = useState([0, 10000])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([category])
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
@@ -58,6 +69,9 @@ export default function CategoryClient({ category, title, description, initialCa
                 selectedCategories={selectedCategories}
                 selectedBrands={selectedBrands}
                 selectedTags={selectedTags}
+                initialProducts={initialProducts}
+                initialTotal={initialTotal}
+                initialPages={initialPages}
               />
             </div>
           </div>

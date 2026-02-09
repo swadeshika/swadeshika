@@ -2,14 +2,14 @@ const db = require('../src/config/db');
 
 async function seedReviews() {
     try {
-        console.log('🌱 Seeding reviews...');
+        // console.log('🌱 Seeding reviews...');
 
         // 1. Clear existing reviews
         await db.query('DELETE FROM reviews');
-        console.log('Cleared existing reviews.');
+        // console.log('Cleared existing reviews.');
 
         // 2. Check and Add Columns
-        console.log('Checking products table schema...');
+        // console.log('Checking products table schema...');
         const [columns] = await db.pool.query(`
             SELECT COLUMN_NAME 
             FROM INFORMATION_SCHEMA.COLUMNS 
@@ -18,20 +18,20 @@ async function seedReviews() {
         `);
         
         const columnNames = columns.map(c => c.COLUMN_NAME);
-        console.log('Existing columns:', columnNames);
+        // console.log('Existing columns:', columnNames);
 
         if (!columnNames.includes('average_rating')) {
-            console.log('Adding average_rating column...');
+            // console.log('Adding average_rating column...');
             await db.pool.query('ALTER TABLE products ADD COLUMN average_rating DECIMAL(3,2) DEFAULT 0');
         } else {
-            console.log('average_rating column already exists.');
+            // console.log('average_rating column already exists.');
         }
 
         if (!columnNames.includes('review_count')) {
-            console.log('Adding review_count column...');
+            // console.log('Adding review_count column...');
             await db.pool.query('ALTER TABLE products ADD COLUMN review_count INT DEFAULT 0');
         } else {
-            console.log('review_count column already exists.');
+            // console.log('review_count column already exists.');
         }
 
         // 3. Fetch Products and Users
@@ -39,13 +39,13 @@ async function seedReviews() {
         const [users] = await db.query('SELECT id FROM users');
 
         if (products.length === 0) {
-            console.log('No products found to review.');
+            // console.log('No products found to review.');
             process.exit(0);
         }
 
         let userIds = users.map(u => u.id);
         if (userIds.length === 0) {
-            console.log('No users found. Creating a dummy user for reviews...');
+            // console.log('No users found. Creating a dummy user for reviews...');
             const dummyId = 'seed-user-' + Date.now();
             await db.query('INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)', 
                 [dummyId, 'Reviewer', 'reviewer@test.com', 'hashedpassword', 'customer']);
@@ -113,10 +113,10 @@ async function seedReviews() {
             await db.pool.query(sql, [batch]);
         }
         
-        console.log(`✅ Inserted ${totalReviews} reviews.`);
+        // console.log(`✅ Inserted ${totalReviews} reviews.`);
 
         // 5. Update Product Statistics
-        console.log('Updating product statistics...');
+        // console.log('Updating product statistics...');
         
         // Reset all counts first
         await db.pool.query('UPDATE products SET review_count = 0, average_rating = 0');
@@ -133,7 +133,7 @@ async function seedReviews() {
         `;
         await db.pool.query(updateSql);
 
-        console.log('✅ Product statistics updated successfully.');
+        // console.log('✅ Product statistics updated successfully.');
         process.exit(0);
 
     } catch (err) {

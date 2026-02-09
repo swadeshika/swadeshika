@@ -28,7 +28,7 @@ function initSocketServer(httpServer) {
     const token = socket.handshake.auth.token;
     
     if (!token) {
-      console.log('❌ Socket connection rejected: No token provided');
+      // console.log('❌ Socket connection rejected: No token provided');
       return next(new Error('Authentication error'));
     }
 
@@ -37,7 +37,7 @@ function initSocketServer(httpServer) {
       
       // Only allow admin users to connect
       if (decoded.role?.toLowerCase() !== 'admin') {
-        console.log('❌ Socket connection rejected: Not an admin', decoded.role);
+        // console.log('❌ Socket connection rejected: Not an admin', decoded.role);
         return next(new Error('Not authorized - Admin access only'));
       }
 
@@ -54,8 +54,8 @@ function initSocketServer(httpServer) {
   // Connection handler
   io.on('connection', (socket) => {
     const userIdentifier = socket.userEmail || socket.userId || 'Unknown';
-    console.log(`✅ Admin connected: ${userIdentifier} (ID: ${socket.userId})`);
-    console.log(`   Role: ${socket.userRole}, Email: ${socket.userEmail || 'N/A'}`);
+    // console.log(`✅ Admin connected: ${userIdentifier} (ID: ${socket.userId})`);
+    // console.log(`   Role: ${socket.userRole}, Email: ${socket.userEmail || 'N/A'}`);
     
     
     // Join admin room (for broadcasting to all admins)
@@ -63,7 +63,7 @@ function initSocketServer(httpServer) {
 
     // Handle disconnection
     socket.on('disconnect', (reason) => {
-      console.log(`⚠️  Admin disconnected: ${socket.userEmail} - Reason: ${reason}`);
+      // console.log(`⚠️  Admin disconnected: ${socket.userEmail} - Reason: ${reason}`);
     });
 
     // Handle errors
@@ -72,7 +72,7 @@ function initSocketServer(httpServer) {
     });
   });
 
-  console.log('🔌 Socket.IO server initialized');
+  // console.log('🔌 Socket.IO server initialized');
   return io;
 }
 
@@ -95,7 +95,7 @@ function emitToAdmins(event, data) {
     return;
   }
   io.to('admins').emit(event, data);
-  console.log(`📡 Emitted ${event} to all admins:`, data.title || data);
+  // console.log(`📡 Emitted ${event} to all admins:`, data.title || data);
 }
 
 module.exports = { initSocketServer, getIO, emitToAdmins };

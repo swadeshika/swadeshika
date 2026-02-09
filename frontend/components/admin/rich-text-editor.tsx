@@ -26,7 +26,7 @@ interface RichTextEditorProps {
 function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEditorProps) {
   // Debug log to check if content is received
   useEffect(() => {
-    console.log('RichTextEditor received value length:', value?.length);
+    // console.log('RichTextEditor received value length:', value?.length);
   }, [value]);
 
   // Hidden file inputs for client-side image/video insertion as data URLs
@@ -430,7 +430,7 @@ function RichTextEditorComponent({ value, onChange, placeholder }: RichTextEdito
                 // Directly set innerHTML to ensure content matches exactly
                 // This bypasses any potential Quill delta inconsistencies on load
                 if (quill.root.innerHTML !== value) {
-                   console.log('Force setting content via innerHTML on load');
+                  //  console.log('Force setting content via innerHTML on load');
                    quill.root.innerHTML = value;
                 }
              }

@@ -2,7 +2,7 @@ const db = require('../src/config/db');
 
 async function seedCategories() {
     try {
-        console.log('🌱 Seeding categories...');
+        // console.log('🌱 Seeding categories...');
 
         const categories = [
             ['Ghee', 'ghee', 'Pure and organic ghee products'],
@@ -18,7 +18,7 @@ async function seedCategories() {
             );
         }
 
-        console.log('✅ Categories seeded successfully');
+        // console.log('✅ Categories seeded successfully');
 
         const [rows] = await db.query('SELECT * FROM categories');
         console.table(rows);

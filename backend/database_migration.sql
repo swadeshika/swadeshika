@@ -313,6 +313,7 @@ CREATE TABLE orders (
   payment_id VARCHAR(255),
   notes TEXT,
   tracking_number VARCHAR(100),
+  carrier VARCHAR(50),
   shipped_at TIMESTAMP NULL,
   delivered_at TIMESTAMP NULL,
   cancelled_at TIMESTAMP NULL,

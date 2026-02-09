@@ -69,13 +69,13 @@ export function useNotifications() {
         });
 
         newSocket.on('connect', () => {
-            console.log('✅ Socket.IO connected');
+            // console.log('✅ Socket.IO connected');
             setConnected(true);
             fetchNotifications(); // Load existing notifications on connect
         });
 
         newSocket.on('notification', (notification: Notification) => {
-            console.log('📬 New notification received:', notification);
+            // console.log('📬 New notification received:', notification);
             setNotifications((prev) => [notification, ...prev]);
 
             // Optional: Show browser notification
@@ -88,7 +88,7 @@ export function useNotifications() {
         });
 
         newSocket.on('disconnect', (reason) => {
-            console.log('⚠️  Socket.IO disconnected:', reason);
+            // console.log('⚠️  Socket.IO disconnected:', reason);
             setConnected(false);
         });
 
@@ -101,7 +101,7 @@ export function useNotifications() {
 
         // Cleanup on unmount
         return () => {
-            console.log('🔌 Closing Socket.IO connection');
+            // console.log('🔌 Closing Socket.IO connection');
             newSocket.close();
         };
     }, [isAuthenticated, token, user?.role, fetchNotifications]);

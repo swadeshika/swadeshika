@@ -59,6 +59,7 @@ export interface Order {
         trackingNumber: string;
         estimatedDelivery: string;
     };
+    carrier?: string; // Added for flat access
 }
 
 interface OrdersResponse {
@@ -98,8 +99,8 @@ export const ordersService = {
     /**
      * Update order status (Admin)
      */
-    updateStatus: async (id: string, status: string, trackingNumber?: string) => {
-        const res = await api.put<{ message: string }>(`/orders/${id}/status`, { status, trackingNumber });
+    updateStatus: async (id: string, status: string, trackingNumber?: string, carrier?: string) => {
+        const res = await api.put<{ message: string }>(`/orders/${id}/status`, { status, trackingNumber, carrier });
         return res.data;
     },
 

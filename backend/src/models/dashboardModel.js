@@ -232,9 +232,8 @@ class DashboardModel {
                 c.usage_limit as 'limit', 
                 COALESCE(SUM(o.total_amount), 0) as revenue
             FROM coupons c
-            LEFT JOIN coupon_usage cu ON c.id = cu.coupon_id
+            LEFT JOIN coupon_usage cu ON c.id = cu.coupon_id AND cu.used_at BETWEEN ? AND ?
             LEFT JOIN orders o ON cu.order_id = o.id
-            WHERE cu.used_at BETWEEN ? AND ?
             GROUP BY c.id
             ORDER BY revenue DESC
             LIMIT 5
@@ -243,29 +242,64 @@ class DashboardModel {
         return rows;
     }
 
+    /**
+     * Get Returns & Refunds Statistics
+     * --------------------------------
+     * Calculates:
+     * 1. Return Rate: % of orders returned/refunded.
+     * 2. Refunded Amount: Total value of refunded orders.
+     * 3. Avg Resolution Time: Avg time from Order Creation -> Return/Refund.
+     * 
+     * @param {string} startDate 
+     * @param {string} endDate 
+     */
     static async getReturns(startDate, endDate) {
-        // Return Rate
+        // ---------------------------------------------------------
+        // 1. Calculate Return Rate
+        // ---------------------------------------------------------
+        // Metric: (Returned + Refunded Orders) / Total Orders * 100
+        
+        // A. Get Total Orders count in the selected date range
         const [totalOrders] = await db.query(
             'SELECT COUNT(*) as count FROM orders WHERE created_at BETWEEN ? AND ?',
             [startDate, endDate]
         );
+
+        // B. Get Count of Orders that were Returned or Refunded
+        // We include both statuses to capture all return-related events.
         const [returnedOrders] = await db.query(
-            'SELECT COUNT(*) as count FROM orders WHERE created_at BETWEEN ? AND ? AND (status = "refunded" OR status = "cancelled")',
+            'SELECT COUNT(*) as count FROM orders WHERE created_at BETWEEN ? AND ? AND (status IN ("returned", "refunded"))',
             [startDate, endDate]
         );
 
-        // Refunded Amount
+        // ---------------------------------------------------------
+        // 2. Calculate Total Refunded Amount
+        // ---------------------------------------------------------
+        // Metric: Sum of order totals where status is strictly 'refunded'.
+        // We only count money as 'refunded' if the status is explicitly 'refunded'.
+        // 'returned' status implies item is back but money might not be sent yet.
         const [refundedAmount] = await db.query(
             'SELECT COALESCE(SUM(total_amount), 0) as amount FROM orders WHERE created_at BETWEEN ? AND ? AND status = "refunded"',
             [startDate, endDate]
         );
 
-        // Avg Resolution Time (for delivered orders)
+        // ---------------------------------------------------------
+        // 3. Calculate Average Resolution Time
+        // ---------------------------------------------------------
+        // Metric: Average time (in days) from Order Creation to Resolution.
+        // Resolution Timestamp Logic:
+        // - Priority 1: `refunded_at` (if refunded)
+        // - Priority 2: `returned_at` (if returned but not refunded)
+        // - Priority 3: `updated_at` (fallback for legacy data or manual updates)
+        // 
+        // We use TIMESTAMPDIFF(DAY, ...) to get the difference in full days.
         const [resolutionTime] = await db.query(
-            `SELECT COALESCE(AVG(TIMESTAMPDIFF(SECOND, created_at, delivered_at)), 0) as avg_seconds 
+            `SELECT COALESCE(AVG(
+                TIMESTAMPDIFF(DAY, created_at, COALESCE(refunded_at, returned_at, updated_at))
+             ), 0) as avg_days 
              FROM orders 
              WHERE created_at BETWEEN ? AND ? 
-             AND status = "delivered" AND delivered_at IS NOT NULL`,
+             AND status IN ("returned", "refunded")`,
             [startDate, endDate]
         );
 
@@ -273,7 +307,7 @@ class DashboardModel {
             total: totalOrders[0].count,
             returned: returnedOrders[0].count,
             refundedAmount: refundedAmount[0].amount,
-            avgResolutionSeconds: resolutionTime[0].avg_seconds
+            avgResolutionSeconds: resolutionTime[0].avg_days * 86400 // Convert days to seconds for frontend consistency
         };
     }
 }

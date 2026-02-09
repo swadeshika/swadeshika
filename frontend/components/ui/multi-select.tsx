@@ -126,7 +126,7 @@ export function MultiSelect({
                       e.stopPropagation()
                     }}
                     onSelect={() => {
-                        console.log("Selected:", option.value); // Debug
+                        // console.log("Selected:", option.value); // Debug
                         handleSelect(option.value)
                     }}
                     className="cursor-pointer"

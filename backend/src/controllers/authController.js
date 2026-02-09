@@ -144,7 +144,10 @@ const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    // Check if user exists
+    // ---------------------------------------------------------
+    // 1. Check if User Exists
+    // ---------------------------------------------------------
+    // Query database for user with this email.
     const userRow = await UserModel.findByEmail(email);
     if (!userRow)
       return res.status(401).json({
@@ -152,7 +155,10 @@ const login = async (req, res, next) => {
         message: getMessage('INVALID_CREDENTIALS'),
       });
 
-    // Validate password
+    // ---------------------------------------------------------
+    // 2. Verify Password
+    // ---------------------------------------------------------
+    // Use bcrypt to compare the provided password with the hashed password in DB.
     const isValid = await comparePasswords(password, userRow.password);
     if (!isValid)
       return res.status(401).json({
@@ -160,18 +166,31 @@ const login = async (req, res, next) => {
         message: getMessage('INVALID_CREDENTIALS'),
       });
 
-    // Remove password before sending user info
+    // ---------------------------------------------------------
+    // 3. Prepare User Data
+    // ---------------------------------------------------------
+    // Remove sensitive password field before sending user object to client.
     const { password: _, ...user } = userRow;
 
-    // Generate token pair
+    // ---------------------------------------------------------
+    // 4. Generate Tokens
+    // ---------------------------------------------------------
+    // Create Access Token (short-lived) and Refresh Token (long-lived).
     const tokens = generateAuthTokens(user);
 
-    // Link any previous guest orders
+    // ---------------------------------------------------------
+    // 5. Link Guest Orders
+    // ---------------------------------------------------------
+    // If this email placed orders as a guest before, link them to this account now.
     await OrderModel.claimGuestOrders(email, user.id).catch(err => console.error('Error linking orders:', err));
 
-    // Save refresh token to cookie
+    // ---------------------------------------------------------
+    // 6. Set Cookies & Respond
+    // ---------------------------------------------------------
+    // Store Refresh Token in a secure HTTP-only cookie.
     res.cookie('refreshToken', tokens.refresh.token, COOKIE_OPTIONS);
 
+    // Send success response with Access Token and User Info.
     return res.status(200).json({
       success: true,
       message: getMessage('LOGIN_SUCCESS'),

@@ -184,6 +184,21 @@ export default async function ProductPage({ params }: { params: { slug: string }
     } catch (e) {
       console.warn("Failed to fetch coupons for product page", e);
     }
+
+    // Fetch reviews server-side
+    try {
+      const { reviewService } = await import("@/lib/services/reviewService");
+      // console.log("Fetching reviews server-side for product:", apiProduct.id);
+      const reviewData = await reviewService.getProductReviews(apiProduct.id);
+      // Backend returns { success, data: { reviews: [], ... } } OR array
+      // reviewService.getProductReviews returns res.data.data
+      
+      // Check structure based on reviewService.ts: returns res.data.data
+      // If endpoint returns array, good. If object with reviews property, extract it.
+      reviews = Array.isArray(reviewData) ? reviewData : (reviewData as any).reviews || [];
+    } catch (e) {
+      console.warn("Failed to fetch reviews server-side", e);
+    }
     
   } catch (error) {
     notFound()

@@ -5,7 +5,7 @@ require('dotenv').config();
 async function run() {
     try {
         await db.connectDB();
-        console.log('Connected to DB');
+        // console.log('Connected to DB');
 
         // Fetch a valid category
         const [categories] = await db.query('SELECT id FROM categories LIMIT 1');
@@ -14,7 +14,7 @@ async function run() {
             process.exit(1);
         }
         const validCategoryId = categories[0].id;
-        console.log(`Using Category ID: ${validCategoryId}`);
+        // console.log(`Using Category ID: ${validCategoryId}`);
 
         const productData = {
             name: "Premium Saffron (Kesar) with Variations",
@@ -88,10 +88,10 @@ async function run() {
             }
         };
 
-        console.log("Creating product...");
+        // console.log("Creating product...");
         const newProductId = await ProductModel.create(productData);
-        console.log(`Successfully created product with ID: ${newProductId}`);
-        console.log(`Check it at /products/${productData.slug}`);
+        // console.log(`Successfully created product with ID: ${newProductId}`);
+        // console.log(`Check it at /products/${productData.slug}`);
 
         process.exit(0);
     } catch (error) {

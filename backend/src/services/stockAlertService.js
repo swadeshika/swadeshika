@@ -26,7 +26,7 @@ async function checkAndAlertLowStock(productId, stockQuantity, productName, thre
 
       // Save to database
       const notificationId = await NotificationModel.create(notification);
-      console.log(`📦 Stock alert created for ${productName}: ${stockQuantity} units`);
+      // console.log(`📦 Stock alert created for ${productName}: ${stockQuantity} units`);
 
       // Emit to all connected admins via Socket.IO
       emitToAdmins('notification', {
@@ -53,7 +53,7 @@ async function checkAndAlertLowStock(productId, stockQuantity, productName, thre
       };
 
       const notificationId = await NotificationModel.create(notification);
-      console.log(`⚠️  Out of stock alert for ${productName}`);
+      // console.log(`⚠️  Out of stock alert for ${productName}`);
 
       emitToAdmins('notification', {
         id: notificationId,
@@ -95,7 +95,7 @@ async function checkAllProductsStock() {
       [globalThreshold, globalThreshold]
     );
 
-    console.log(`🔍 Checking stock for ${products.length} low-stock products`);
+    // console.log(`🔍 Checking stock for ${products.length} low-stock products`);
 
     for (const product of products) {
       await checkAndAlertLowStock(

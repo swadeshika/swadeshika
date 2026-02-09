@@ -72,16 +72,16 @@ const productsToSeed = [
 async function seed() {
     try {
         await db.connectDB();
-        console.log('Connected to DB');
+        // console.log('Connected to DB');
 
         for (const p of productsToSeed) {
-            console.log(`Processing ${p.name} (ID: ${p.id})...`);
+            // console.log(`Processing ${p.name} (ID: ${p.id})...`);
 
             // Check if exists
             const [rows] = await db.query('SELECT id FROM products WHERE id = ?', [p.id]);
 
             if (rows.length > 0) {
-                console.log(`Update product ${p.id}`);
+                // console.log(`Update product ${p.id}`);
                 await db.query(`
                     UPDATE products SET 
                     name=?, slug=?, price=?, compare_price=?, sku=?, 
@@ -89,7 +89,7 @@ async function seed() {
                     WHERE id=?
                 `, [p.name, p.slug, p.price, p.compare_price, p.sku, p.description, p.short_description, p.is_active, p.id]);
             } else {
-                console.log(`Insert product ${p.id}`);
+                // console.log(`Insert product ${p.id}`);
                 // Allow inserting explicit ID
                 await db.query(`
                     INSERT INTO products 
@@ -99,7 +99,7 @@ async function seed() {
             }
         }
 
-        console.log('Done!');
+        // console.log('Done!');
         process.exit(0);
     } catch (e) {
         console.error(e);

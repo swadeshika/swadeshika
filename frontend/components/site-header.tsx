@@ -87,29 +87,29 @@ export function SiteHeader() {
 
         // Map tree to submenu items
         const categorySubmenu = categoryTree
-  .filter(c => c.is_active !== false)
-  .slice(0, 8)
-  .map(c => {
-    const subs = c.children || [];
+          .filter(c => c.is_active !== false)
+          .slice(0, 8)
+          .map(c => {
+            const subs = c.children || [];
 
-    const displayedSubs = subs.slice(0, 4).map(sub => ({
-      name: sub.name,
-      href: `/shop?category=${sub.slug}`
-    }));
+            const displayedSubs = subs.slice(0, 4).map(sub => ({
+              name: sub.name,
+              href: `/shop/${sub.slug}`
+            }));
 
-    if (subs.length > 4) {
-      displayedSubs.push({
-        name: "View All",
-        href: `/shop?category=${c.slug}`
-      });
-    }
+            if (subs.length > 4) {
+              displayedSubs.push({
+                name: "View All",
+                href: `/shop/${c.slug}`
+              });
+            }
 
-    return {
-      name: c.name,
-      href: `/shop?category=${c.slug}`,
-      children: displayedSubs
-    };
-  });
+            return {
+              name: c.name,
+              href: `/shop/${c.slug}`,
+              children: displayedSubs
+            };
+          });
 
 
         if (categorySubmenu.length > 0) {
@@ -199,7 +199,7 @@ export function SiteHeader() {
                                       <div className="rounded-2xl shadow-xl bg-white border border-[#E8DCC8]/50 overflow-hidden ring-1 ring-black/5">
                                         <div className="p-2 bg-white">
                                           {/* Header for Submenu */}
-                                          
+
                                           {subItem.children.map(child => (
                                             <Link
                                               key={child.name}

@@ -14,14 +14,7 @@ import { Category, productService } from "@/lib/services/productService"
  * Footer Navigation Links Configuration
  */
 const footerLinks = {
-  // Product categories for shopping (Static fallback)
-  shop: [
-    { name: "All Products", href: "/shop" },
-    { name: "Ghee", href: "/shop?category=ghee-dairy" },
-    { name: "Spices", href: "/shop?category=spices" },
-    { name: "Dry Fruits", href: "/shop?category=dry-fruits" },
-    { name: "Oils", href: "/shop?category=oils" },
-  ],
+
   // Company information pages
   company: [
     { name: "About Us", href: "/about" },
@@ -194,26 +187,16 @@ export function SiteFooter() {
                   All Products
                 </Link>
               </li>
-              {categories.length > 0 ? (
-                categories.map((cat) => (
-                  <li key={cat.id}>
-                    <Link
-                      href={`/shop?category=${cat.slug}`}
-                      className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    >
-                      {cat.name}
-                    </Link>
-                  </li>
-                ))
-              ) : (
-                footerLinks.shop.map((link) => (
-                  <li key={link.name}>
-                    <Link href={link.href} className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                      {link.name}
-                    </Link>
-                  </li>
-                ))
-              )}
+              {categories.map((cat) => (
+                <li key={cat.id}>
+                  <Link
+                    href={`/shop/${cat.slug}`}
+                    className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    {cat.name}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 

@@ -66,7 +66,9 @@ export default function HomePage() {
     const fetchCategories = async () => {
       try {
         const categories = await productService.getAllCategories()
-        const activeCategories = categories.filter(c => c.is_active !== false).slice(0, 5)
+
+        const activeCategories = categories.filter(c => c.is_active !== false && !c.parent_id).slice(0, 6)
+        // const activeCategories = categories.filter(c => c.is_active !== false).slice(0, 5)
         
         const links = activeCategories.map(cat => ({
           name: cat.name,

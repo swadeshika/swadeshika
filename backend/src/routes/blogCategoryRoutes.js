@@ -8,7 +8,7 @@ const { validate } = require('../middlewares/validationMiddleware');
 // Validation rules
 const categoryValidation = [
     body('name').trim().notEmpty().withMessage('Category name is required'),
-    body('slug').optional().trim().matches(/^[a-z0-9-]+$/).withMessage('Slug must be lowercase letters, numbers, and hyphens only'),
+    body('slug').optional().trim().isString().withMessage('Slug must be a string'),
     body('description').optional().trim(),
     body('display_order').optional().isInt({ min: 0 }).withMessage('Display order must be a positive number'),
     body('is_active').optional().isBoolean().withMessage('is_active must be a boolean')

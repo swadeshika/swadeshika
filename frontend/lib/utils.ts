@@ -29,3 +29,32 @@ export function getTrackingUrl(carrier: string, trackingNumber: string): string 
 
   return '#';
 }
+
+/**
+ * Generates a URL-friendly slug that supports Unicode characters (e.g., Hindi).
+ * keeps alphanumeric characters, marks (accents), and hyphens.
+ * Replaces spaces with hyphens.
+ */
+export function generateSlug(text: string): string {
+  if (!text) return '';
+
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\p{L}\p{N}\p{M}\s-]/gu, '') // Keep letters, numbers, marks, spaces, hyphens
+    .replace(/\s+/g, '-')     // Replace spaces with hyphens
+    .replace(/-+/g, '-');     // Remove duplicate hyphens
+}
+
+/**
+ * Formats a Date object or ISO string to MySQL compatible DATETIME string (YYYY-MM-DD HH:mm:ss)
+ */
+export function formatDateForMySQL(date: Date | string): string {
+  if (!date) return '';
+  const d = new Date(date);
+
+  // Ensure valid date
+  if (isNaN(d.getTime())) return '';
+
+  return d.toISOString().slice(0, 19).replace('T', ' ');
+}

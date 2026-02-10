@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 import { blogService, BlogCategory } from "@/lib/blogService"
+import { generateSlug } from "@/lib/utils"
 
 export default function BlogCategoriesPage() {
   const { toast } = useToast()
@@ -20,14 +21,14 @@ export default function BlogCategoriesPage() {
   const [search, setSearch] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<BlogCategory | null>(null)
-  
+
   // Form State
   const [form, setForm] = useState<{ name: string; slug: string; description: string }>({
     name: "",
     slug: "",
     description: "",
   })
-  
+
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [toDeleteId, setToDeleteId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -50,13 +51,7 @@ export default function BlogCategoriesPage() {
     fetchCategories()
   }, [])
 
-  const slugify = (name: string) =>
-    name
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, "")
-      .trim()
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
+
 
   const startCreate = () => {
     setEditing(null)
@@ -79,7 +74,7 @@ export default function BlogCategoriesPage() {
       ...prev,
       name: val,
       // Auto-generate slug only when creating or when slug empty in edit
-      slug: !editing || !prev.slug ? slugify(val) : prev.slug,
+      slug: !editing || !prev.slug ? generateSlug(val) : prev.slug,
     }))
   }
 
@@ -88,13 +83,13 @@ export default function BlogCategoriesPage() {
       toast({ title: "Name required", description: "Please enter a category name.", variant: "destructive" })
       return
     }
-    
+
     setIsSaving(true)
     try {
       const payload = {
-          name: form.name.trim(),
-          slug: form.slug || slugify(form.name),
-          description: form.description,
+        name: form.name.trim(),
+        slug: form.slug || generateSlug(form.name),
+        description: form.description,
       }
 
       if (editing) {
@@ -177,7 +172,7 @@ export default function BlogCategoriesPage() {
                   <Input
                     id="cat-slug"
                     value={form.slug}
-                    onChange={(e) => setForm((p) => ({ ...p, slug: slugify(e.target.value) }))}
+                    onChange={(e) => setForm((p) => ({ ...p, slug: generateSlug(e.target.value) }))}
                     placeholder="auto-generated-from-name"
                     className="font-mono"
                   />
@@ -223,9 +218,9 @@ export default function BlogCategoriesPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">Loading categories...</TableCell>
-                  </TableRow>
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center">Loading categories...</TableCell>
+                </TableRow>
               ) : filtered.map((category) => (
                 <TableRow key={category.id}>
                   <TableCell className="font-medium">{category.name}</TableCell>

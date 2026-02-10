@@ -17,7 +17,7 @@ import Link from "next/link"
 import { format } from 'date-fns'
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
+import { cn, generateSlug, formatDateForMySQL } from "@/lib/utils"
 import dynamic from 'next/dynamic'
 import { useToast } from "@/hooks/use-toast"
 
@@ -32,23 +32,16 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
   const { toast } = useToast()
   const [isSaving, setIsSaving] = useState(false)
   const [newTag, setNewTag] = useState('')
-  
+
   const [categories, setCategories] = useState<BlogCategory[]>([])
   const [authors, setAuthors] = useState<BlogAuthor[]>([])
   const [isLoadingMeta, setIsLoadingMeta] = useState(true)
-  
+
   // Track if slug has been manually modified
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false)
 
   // Function to generate URL-friendly slug from title
-  const generateSlug = (title: string) => {
-    return title
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, '') // Remove special characters
-      .trim()
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
-  }
+
 
   const [post, setPost] = useState<Partial<BlogPost>>(initialPost || {
     title: '',
@@ -74,10 +67,10 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
         ])
         setCategories(cats)
         setAuthors(auths)
-        
+
         // If isNew and no author selected, default to first author or admin
         if (isNew && !post.author_id && auths.length > 0) {
-            setPost(prev => ({ ...prev, author_id: typeof auths[0].id === 'string' ? parseInt(auths[0].id) : auths[0].id as number }))
+          setPost(prev => ({ ...prev, author_id: typeof auths[0].id === 'string' ? parseInt(auths[0].id) : auths[0].id as number }))
         }
       } catch (error) {
         toast({ title: "Failed to load metadata", variant: "destructive" })
@@ -122,26 +115,26 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Validate required fields
     if (!post.title) {
 
-        toast({ title: "Title is required", variant: "destructive" })
+      toast({ title: "Title is required", variant: "destructive" })
       return
     }
-    
+
     // Ensure slug is generated if empty
     const finalPost = {
       ...post,
       slug: post.slug || generateSlug(post.title || ''),
+      published_at: post.published_at ? formatDateForMySQL(post.published_at) : new Date().toISOString().slice(0, 19).replace('T', ' '),
       // Ensure arrays are arrays? Typescript handles this.
-      // Date handling: Ensure published_at is string ISO
     }
-    
 
-    
+
+
     setIsSaving(true)
-    
+
     try {
       if (isNew) {
         const result = await blogService.createPost(finalPost)
@@ -156,9 +149,9 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
 
       router.push('/admin/blog')
     } catch (error: any) {
-        console.error("Failed to save blog post:", error);
-        const msg = error.message || "Something went wrong";
-        toast({ title: "Failed to save post", description: msg, variant: "destructive" })
+      console.error("Failed to save blog post:", error);
+      const msg = error.message || "Something went wrong";
+      toast({ title: "Failed to save post", description: msg, variant: "destructive" })
     } finally {
 
       setIsSaving(false)
@@ -168,11 +161,11 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && newTag.trim()) {
       e.preventDefault()
-    //   Handle both string (JSON) or array tags
-    //   Our BlogPost type says tags?: string[] | string
-    //   Let's assume we work with array locally
+      //   Handle both string (JSON) or array tags
+      //   Our BlogPost type says tags?: string[] | string
+      //   Let's assume we work with array locally
       const currentTags = Array.isArray(post.tags) ? post.tags : (typeof post.tags === 'string' ? JSON.parse(post.tags) : [])
-      
+
       if (!currentTags.includes(newTag.trim())) {
         setPost({
           ...post,
@@ -184,7 +177,7 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
   }
 
   const removeTag = (tagToRemove: string) => {
-      const currentTags = Array.isArray(post.tags) ? post.tags : (typeof post.tags === 'string' ? JSON.parse(post.tags) : [])
+    const currentTags = Array.isArray(post.tags) ? post.tags : (typeof post.tags === 'string' ? JSON.parse(post.tags) : [])
     setPost({
       ...post,
       tags: currentTags.filter((tag: string) => tag !== tagToRemove)
@@ -194,7 +187,7 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     // console.log('[IMAGE UPLOAD] File selected:', file?.name, file?.size)
-    
+
     if (file) {
       try {
         // Store old image URL to delete later
@@ -216,9 +209,9 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
         // Upload using centralized service
         // console.log('[IMAGE UPLOAD] Uploading to server via uploadService...')
         const uploadedUrl = await uploadService.uploadImage(file)
-        
+
         // console.log('[IMAGE UPLOAD] Upload successful, URL:', uploadedUrl)
-        
+
         setPost(prev => {
           const updated = {
             ...prev,
@@ -227,14 +220,14 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
           // console.log('[IMAGE UPLOAD] Updated post state:', updated)
           return updated
         })
-        
+
         toast({ title: "Image uploaded successfully" })
       } catch (error: any) {
         console.error('[IMAGE UPLOAD] Error occurred:', error)
-        toast({ 
-          title: "Image upload failed", 
+        toast({
+          title: "Image upload failed",
           description: error.message || "Please try again",
-          variant: "destructive" 
+          variant: "destructive"
         })
         // Clear the failed image
         setPost({
@@ -269,12 +262,12 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
             />
             <Label htmlFor="publish-status">{post.status === 'published' ? 'Published' : 'Draft'}</Label>
           </div>
-          <Button 
+          <Button
             onClick={(e) => {
               // Manually trigger submit if outside form
               handleSubmit(e as any)
-            }} 
-            disabled={isSaving} 
+            }}
+            disabled={isSaving}
             className="w-full md:w-auto mt-2 md:mt-0 bg-[#2D5F3F] hover:bg-[#1e4a30]"
           >
             <Save className="mr-2 h-4 w-4" />
@@ -291,21 +284,21 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="title">Title</Label>
-                    <Input 
-                      id="title" 
-                      placeholder="Enter post title" 
-                      required 
+                    <Input
+                      id="title"
+                      placeholder="Enter post title"
+                      required
                       className="text-lg font-medium"
                       value={post.title}
                       onChange={handleTitleChange}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="slug">URL Slug</Label>
-                    <Input 
-                      id="slug" 
-                      placeholder="post-url-slug" 
+                    <Input
+                      id="slug"
+                      placeholder="post-url-slug"
                       value={post.slug}
                       onChange={handleSlugChange}
                       className="font-mono text-sm"
@@ -314,25 +307,25 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
                       This is how your post will appear in the URL
                     </p>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="excerpt">Excerpt</Label>
-                    <Textarea 
-                      id="excerpt" 
-                      placeholder="A short summary of your post" 
-                      rows={3} 
-                      required 
+                    <Textarea
+                      id="excerpt"
+                      placeholder="A short summary of your post"
+                      rows={3}
+                      required
                       value={post.excerpt}
                       onChange={(e) => updatePost({ excerpt: e.target.value })}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label>Content</Label>
                     <div className="border-0 px-0 rounded-lg overflow-hidden sm:border-2 sm:border-[#E8DCC8] sm:p-6">
                       <RichTextEditor
                         value={post.content ?? ""}
-                        onChange={(content) => setPost({...post, content})}
+                        onChange={(content) => setPost({ ...post, content })}
                         placeholder="Write your post content here..."
                       />
                     </div>
@@ -350,9 +343,9 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Status</Label>
-                  <Select 
+                  <Select
                     value={post.status}
-                    onValueChange={(value: 'draft' | 'published') => setPost({...post, status: value})}
+                    onValueChange={(value: 'draft' | 'published') => setPost({ ...post, status: value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
@@ -363,7 +356,7 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label>Publish Date</Label>
                   <Popover>
@@ -387,15 +380,15 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
                       <Calendar
                         mode="single"
                         selected={new Date(post.published_at || new Date())}
-                        onSelect={(date) => date && setPost({...post, published_at: date.toISOString()})}
+                        onSelect={(date) => date && setPost({ ...post, published_at: date.toISOString() })}
                         initialFocus
                       />
                     </PopoverContent>
                   </Popover>
                 </div>
-                
-                <Button 
-                  type="submit" 
+
+                <Button
+                  type="submit"
                   className="w-full bg-[#2D5F3F] hover:bg-[#1e4a30]"
                   disabled={isSaving}
                 >
@@ -413,8 +406,8 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
                   {post.featured_image ? (
                     <div className="relative w-full h-full">
                       <img
-                        src={post.featured_image.startsWith('http') || post.featured_image.startsWith('data:') 
-                          ? post.featured_image 
+                        src={post.featured_image.startsWith('http') || post.featured_image.startsWith('data:')
+                          ? post.featured_image
                           : `${BACKEND_ORIGIN}${post.featured_image.startsWith('/') ? '' : '/'}${post.featured_image}`}
                         alt="Featured"
                         className="object-cover w-full h-full rounded-md"
@@ -429,7 +422,7 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
                         className="absolute top-2 right-2 bg-white/80 hover:bg-white"
                         onClick={(e) => {
                           e.preventDefault()
-                          setPost({...post, featured_image: ''})
+                          setPost({ ...post, featured_image: '' })
                         }}
                       >
                         <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -443,9 +436,9 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
                       <p className="text-sm text-center text-[#6B4423]">
                         <span className="font-medium">Click to upload</span> or drag and drop
                       </p>
-                      <input 
-                        type="file" 
-                        className="hidden" 
+                      <input
+                        type="file"
+                        className="hidden"
                         accept="image/*"
                         onChange={handleImageUpload}
                       />
@@ -462,7 +455,7 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
               <CardContent>
                 <Select
                   value={post.category_id?.toString()}
-                  onValueChange={(value) => setPost({...post, category_id: parseInt(value)})}
+                  onValueChange={(value) => setPost({ ...post, category_id: parseInt(value) })}
                   disabled={isLoadingMeta}
                 >
                   <SelectTrigger>
@@ -493,31 +486,32 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
                 <div className="space-y-2">
                   <div className="flex flex-wrap gap-2 mb-2">
                     {(() => {
-                        const tags = Array.isArray(post.tags) ? post.tags : (typeof post.tags === 'string' ? JSON.parse(post.tags || '[]') : []);
-                        return tags.map((tag: string) => (
-                      <span 
-                        key={tag} 
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E8DCC8] text-[#6B4423]"
-                      >
-                        {tag}
-                        <button 
-                          type="button" 
-                          className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full bg-[#D4C8B8] text-[#6B4423] hover:bg-[#C4B8A8]"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            removeTag(tag)
-                          }}
+                      const tags = Array.isArray(post.tags) ? post.tags : (typeof post.tags === 'string' ? JSON.parse(post.tags || '[]') : []);
+                      return tags.map((tag: string) => (
+                        <span
+                          key={tag}
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E8DCC8] text-[#6B4423]"
                         >
-                          <span className="sr-only">Remove tag</span>
-                          <svg className="h-2 w-2" fill="currentColor" viewBox="0 0 8 8">
-                            <path d="M8 0.8L7.2 0L4 3.2L0.8 0L0 0.8L3.2 4L0 7.2L0.8 8L4 4.8L7.2 8L8 7.2L4.8 4L8 0.8Z" />
-                          </svg>
-                        </button>
-                      </span>
-                    ))})()}
+                          {tag}
+                          <button
+                            type="button"
+                            className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full bg-[#D4C8B8] text-[#6B4423] hover:bg-[#C4B8A8]"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              removeTag(tag)
+                            }}
+                          >
+                            <span className="sr-only">Remove tag</span>
+                            <svg className="h-2 w-2" fill="currentColor" viewBox="0 0 8 8">
+                              <path d="M8 0.8L7.2 0L4 3.2L0.8 0L0 0.8L3.2 4L0 7.2L0.8 8L4 4.8L7.2 8L8 7.2L4.8 4L8 0.8Z" />
+                            </svg>
+                          </button>
+                        </span>
+                      ))
+                    })()}
                   </div>
-                  <Input 
-                    placeholder="Add a tag and press Enter" 
+                  <Input
+                    placeholder="Add a tag and press Enter"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
                     onKeyDown={handleAddTag}
@@ -533,7 +527,7 @@ export function AdminBlogEditor({ post: initialPost, isNew = false }: { post?: P
               <CardContent>
                 <Select
                   value={post.author_id?.toString()}
-                  onValueChange={(value) => setPost({...post, author_id: parseInt(value)})}
+                  onValueChange={(value) => setPost({ ...post, author_id: parseInt(value) })}
                   disabled={isLoadingMeta}
                 >
                   <SelectTrigger>

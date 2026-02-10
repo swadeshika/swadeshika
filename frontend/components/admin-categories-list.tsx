@@ -1,4 +1,5 @@
 "use client"
+import { generateSlug } from "@/lib/utils"
 
 /**
  * Admin Categories List Component
@@ -56,13 +57,7 @@ export function AdminCategoriesList() {
     }
   };
 
-  const slugify = (str: string) =>
-    str
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
+
 
   const topLevelOptions = items.filter((c) => !c.parent_id);
 
@@ -90,22 +85,22 @@ export function AdminCategoriesList() {
       toast({ title: "Name required", description: "Please enter a category name.", variant: "destructive" })
       return
     }
-    
+
     try {
-        const payload: Partial<Category> = {
-            name,
-            slug: slugify(name),
-            parent_id: newCategory.parent && newCategory.parent !== "none" ? parseInt(newCategory.parent) : null,
-            image_url: newCategory.image || undefined
-        };
-        
-        await categoryService.createCategory(payload);
-        toast({ title: "Category Added", description: `${name} has been added successfully.` })
-        setIsAddDialogOpen(false)
-        setNewCategory({ name: "", parent: "none", image: null })
-        fetchCategories(); // Refresh list
+      const payload: Partial<Category> = {
+        name,
+        slug: generateSlug(name),
+        parent_id: newCategory.parent && newCategory.parent !== "none" ? parseInt(newCategory.parent) : null,
+        image_url: newCategory.image || undefined
+      };
+
+      await categoryService.createCategory(payload);
+      toast({ title: "Category Added", description: `${name} has been added successfully.` })
+      setIsAddDialogOpen(false)
+      setNewCategory({ name: "", parent: "none", image: null })
+      fetchCategories(); // Refresh list
     } catch (error: any) {
-        toast({ title: "Error", description: error.message || "Failed to create category", variant: "destructive" })
+      toast({ title: "Error", description: error.message || "Failed to create category", variant: "destructive" })
     }
   }
 
@@ -127,45 +122,45 @@ export function AdminCategoriesList() {
     }
 
     try {
-        const payload: Partial<Category> = {
-            name,
-            slug: slugify(name), // Optionally update slug or keep original? Let's auto-update for now
-            parent_id: editCategory.parent && editCategory.parent !== "none" ? parseInt(editCategory.parent) : null,
-            image_url: editCategory.image || "" // Send empty string if null to allow removal depending on backend logic, or backend handles null
-        };
+      const payload: Partial<Category> = {
+        name,
+        slug: generateSlug(name), // Optionally update slug or keep original? Let's auto-update for now
+        parent_id: editCategory.parent && editCategory.parent !== "none" ? parseInt(editCategory.parent) : null,
+        image_url: editCategory.image || "" // Send empty string if null to allow removal depending on backend logic, or backend handles null
+      };
 
-        if (editCategory.image === null) {
-            // explicit removal intent or no change? 
-            // If it was null and is still null, undefined might be better.
-            // But if we want to clear it, we should send null/empty.
-            // My backend logic: if (data.image_url) upload. if data.image_url === undefined, ignore. 
-            // if data.image_url === "", set to null.
-            // So if I want to clear, I should send "".
-             payload.image_url = editCategory.image || ""
-        }
+      if (editCategory.image === null) {
+        // explicit removal intent or no change? 
+        // If it was null and is still null, undefined might be better.
+        // But if we want to clear it, we should send null/empty.
+        // My backend logic: if (data.image_url) upload. if data.image_url === undefined, ignore. 
+        // if data.image_url === "", set to null.
+        // So if I want to clear, I should send "".
+        payload.image_url = editCategory.image || ""
+      }
 
-        await categoryService.updateCategory(editCategory.id, payload);
-        toast({ title: "Category Updated", description: `${name} has been updated.` })
-        setIsEditDialogOpen(false)
-        setEditCategory(null)
-        fetchCategories();
+      await categoryService.updateCategory(editCategory.id, payload);
+      toast({ title: "Category Updated", description: `${name} has been updated.` })
+      setIsEditDialogOpen(false)
+      setEditCategory(null)
+      fetchCategories();
     } catch (error: any) {
-        toast({ title: "Error", description: error.message || "Failed to update category", variant: "destructive" })
+      toast({ title: "Error", description: error.message || "Failed to update category", variant: "destructive" })
     }
   }
 
   const confirmDelete = (id: number, name: string) => setDeleteTarget({ id, name })
-  
+
   const handleDelete = async () => {
     if (!deleteTarget) return
     try {
-        await categoryService.deleteCategory(deleteTarget.id);
-        toast({ title: "Category Deleted", description: `${deleteTarget.name} has been removed.` })
-        fetchCategories(); 
+      await categoryService.deleteCategory(deleteTarget.id);
+      toast({ title: "Category Deleted", description: `${deleteTarget.name} has been removed.` })
+      fetchCategories();
     } catch (error: any) {
-        toast({ title: "Error", description: error.message || "Failed to delete category", variant: "destructive" })
+      toast({ title: "Error", description: error.message || "Failed to delete category", variant: "destructive" })
     } finally {
-        setDeleteTarget(null)
+      setDeleteTarget(null)
     }
   }
 
@@ -192,10 +187,10 @@ export function AdminCategoriesList() {
               <div className="space-y-2">
                 <Label>Category Image</Label>
                 <div className="flex justify-center border-2 border-dashed border-[#E8DCC8] rounded-xl p-4">
-                    <ImageUploader 
-                        label="Upload Image"
-                        onChange={(_, url) => setNewCategory(prev => ({ ...prev, image: url }))}
-                    />
+                  <ImageUploader
+                    label="Upload Image"
+                    onChange={(_, url) => setNewCategory(prev => ({ ...prev, image: url }))}
+                  />
                 </div>
               </div>
               <div className="space-y-2">
@@ -265,9 +260,9 @@ export function AdminCategoriesList() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                    <TableRow>
-                        <TableCell colSpan={6} className="py-12 text-center text-[#8B6F47]">Loading...</TableCell>
-                    </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-12 text-center text-[#8B6F47]">Loading...</TableCell>
+                  </TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="py-12 text-center text-[#8B6F47]">
@@ -278,11 +273,11 @@ export function AdminCategoriesList() {
                   filtered.map((category) => (
                     <TableRow key={category.id}>
                       <TableCell>
-                          {category.image_url ? (
-                              <img src={category.image_url} alt={category.name} className="w-10 h-10 object-cover rounded-md border border-[#E8DCC8]" />
-                          ) : (
-                              <div className="w-10 h-10 bg-[#F5F5F5] rounded-md border border-[#E8DCC8] flex items-center justify-center text-xs text-[#8B6F47]">No Img</div>
-                          )}
+                        {category.image_url ? (
+                          <img src={category.image_url} alt={category.name} className="w-10 h-10 object-cover rounded-md border border-[#E8DCC8]" />
+                        ) : (
+                          <div className="w-10 h-10 bg-[#F5F5F5] rounded-md border border-[#E8DCC8] flex items-center justify-center text-xs text-[#8B6F47]">No Img</div>
+                        )}
                       </TableCell>
                       <TableCell className="font-medium">{category.name}</TableCell>
                       <TableCell>{category.slug}</TableCell>
@@ -293,19 +288,19 @@ export function AdminCategoriesList() {
                           <span className="text-[#8B6F47] text-sm">Top Level</span>
                         )}
                       </TableCell>
-                    <TableCell>{category.product_count || 0}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(category.id)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => confirmDelete(category.id, category.name)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      <TableCell>{category.product_count || 0}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(category.id)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => confirmDelete(category.id, category.name)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
               </TableBody>
             </Table>
@@ -321,16 +316,16 @@ export function AdminCategoriesList() {
             <DialogDescription>Update the category details</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-             <div className="space-y-2">
-                <Label>Category Image</Label>
-                <div className="flex justify-center border-2 border-dashed border-[#E8DCC8] rounded-xl p-4">
-                    <ImageUploader 
-                        label="Change Image"
-                        initialUrl={editCategory?.image || undefined}
-                        onChange={(_, url) => setEditCategory((prev) => (prev ? { ...prev, image: url } : prev))}
-                    />
-                </div>
+            <div className="space-y-2">
+              <Label>Category Image</Label>
+              <div className="flex justify-center border-2 border-dashed border-[#E8DCC8] rounded-xl p-4">
+                <ImageUploader
+                  label="Change Image"
+                  initialUrl={editCategory?.image || undefined}
+                  onChange={(_, url) => setEditCategory((prev) => (prev ? { ...prev, image: url } : prev))}
+                />
               </div>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="edit-category-name">Category Name</Label>
               <Input

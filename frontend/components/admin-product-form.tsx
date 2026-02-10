@@ -54,6 +54,8 @@ import { flattenCategoryTree } from "@/lib/category-utils"
 
 // ... imports
 
+import { generateSlug } from "@/lib/utils"
+
 interface AdminProductFormProps {
   initial?: Partial<{
     name: string
@@ -145,13 +147,7 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
 
   const update = (key: keyof typeof form, value: any) => setForm((f) => ({ ...f, [key]: value }))
 
-  const slugify = (s: string) =>
-    s
-      .toLowerCase()
-      .trim()
-      .replace(/[^\p{L}\p{N}\p{M}\s-]/gu, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
+
 
   // ... validation logic same as before ...
   // whether user added any variants; affects pricing requirements
@@ -318,7 +314,7 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
                     onChange={(e) => {
                       const v = e.target.value
                       update("name", v)
-                      if (!slugTouched) update("slug", slugify(v))
+                      if (!slugTouched) update("slug", generateSlug(v))
                     }}
                     className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]"
                   />
@@ -331,7 +327,7 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
                     value={form.slug}
                     onChange={(e) => {
                       setSlugTouched(true)
-                      update("slug", slugify(e.target.value))
+                      update("slug", generateSlug(e.target.value))
                     }}
                     placeholder="auto-generated if empty"
                     className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]"

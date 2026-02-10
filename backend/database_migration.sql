@@ -317,6 +317,8 @@ CREATE TABLE orders (
   shipped_at TIMESTAMP NULL,
   delivered_at TIMESTAMP NULL,
   cancelled_at TIMESTAMP NULL,
+  refunded_at TIMESTAMP NULL,
+  returned_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   -- Snapshot fields (Added for data integrity)

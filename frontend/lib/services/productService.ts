@@ -28,6 +28,7 @@ export interface Product {
     meta_title?: string;
     meta_description?: string;
     created_at?: string;
+    updated_at?: string; // Added for sitemap
     primary_image?: string; // from View
     category?: string; // added to fix missing property errors
     category_name?: string; // added to fix missing property errors
@@ -38,6 +39,7 @@ export interface Product {
     variants?: ProductVariant[];
     related_products?: number[];
 }
+
 
 
 export interface ProductVariant {

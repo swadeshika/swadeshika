@@ -47,6 +47,28 @@ const contactInfo = [
 export default function ContactPage() {
   return (
     <div className="flex min-h-screen flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ContactPage",
+            name: "Contact Us - Swadeshika",
+            description: "Get in touch with Swadeshika team for support and inquiries.",
+            url: `${process.env.NEXT_PUBLIC_APP_URL || "https://swadeshika.in"}/contact`,
+            mainEntity: {
+              "@type": "Organization",
+              name: "Swadeshika",
+              contactPoint: {
+                "@type": "ContactPoint",
+                telephone: "+91-9876543210",
+                contactType: "customer service",
+                email: "support@swadeshika.com"
+              }
+            }
+          })
+        }}
+      />
       <SiteHeader />
       <main className="flex-1 bg-muted/30">
         <div className="container mx-auto px-4 py-12">

@@ -25,7 +25,7 @@ const poppinsSerif = Poppins({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://swadeshika.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://swadeshika.in"),
   title: {
     default: "Swadeshika - Authentic Indian Ghee, Spices & Dry Fruits",
     template: "%s | Swadeshika",
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_IN",
-    url: "https://swadeshika.vercel.app",
+    url: "https://swadeshika.in",
     title: "Swadeshika - Authentic Indian Ghee, Spices & Dry Fruits",
     description:
       "Shop authentic Indian ghee, premium spices, and fresh dry fruits. Traditional quality meets modern convenience.",
@@ -87,6 +87,30 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+             __html: JSON.stringify({
+               "@context": "https://schema.org",
+               "@type": "Organization",
+               name: "Swadeshika",
+               url: process.env.NEXT_PUBLIC_APP_URL || "https://swadeshika.in",
+               logo: `${process.env.NEXT_PUBLIC_APP_URL || "https://swadeshika.in"}/logo.png`,
+               sameAs: [
+                 "https://facebook.com/swadeshika",
+                 "https://instagram.com/swadeshika",
+                 "https://twitter.com/swadeshika"
+               ],
+               contactPoint: {
+                 "@type": "ContactPoint",
+                 telephone: "+91 7300039429, +91 8150976411",
+                 contactType: "customer service"
+               }
+             })
+          }}
+        />
+      </head>
       <body className={`${poppinsSans.className} ${poppinsSerif.variable} antialiased`}>
         <AuthInitializer />
         <ScrollToTop />

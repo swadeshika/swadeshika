@@ -64,6 +64,35 @@ export default async function ShopPage({ searchParams }: Props) {
 
   return (
     <Suspense fallback={<div>Loading shop...</div>}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            name: "Shop - Swadeshika",
+            description: "Browse our collection of authentic Indian products including Ghee, Spices, and more.",
+            url: `${process.env.NEXT_PUBLIC_APP_URL || "https://swadeshika.in"}/shop`,
+            breadcrumb: {
+              "@type": "BreadcrumbList",
+              itemListElement: [
+                {
+                  "@type": "ListItem",
+                  position: 1,
+                  name: "Home",
+                  item: process.env.NEXT_PUBLIC_APP_URL || "https://swadeshika.in"
+                },
+                {
+                  "@type": "ListItem",
+                  position: 2,
+                  name: "Shop",
+                  item: `${process.env.NEXT_PUBLIC_APP_URL || "https://swadeshika.in"}/shop`
+                }
+              ]
+            }
+          })
+        }}
+      />
       <ShopClient 
         initialCategories={categories}
         initialProducts={productsData.products}
@@ -71,5 +100,6 @@ export default async function ShopPage({ searchParams }: Props) {
         initialPages={productsData.pages}
       />
     </Suspense>
+
   )
 }

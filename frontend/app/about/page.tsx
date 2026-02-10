@@ -10,6 +10,24 @@ export const metadata = {
 export default function AboutPage() {
   return (
     <div className="flex min-h-screen flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "AboutPage",
+            name: "About Us - Swadeshika",
+            description: "Learn about Swadeshika's mission to bring authentic Indian products to your doorstep.",
+            url: `${process.env.NEXT_PUBLIC_APP_URL || "https://swadeshika.in"}/about`,
+            mainEntity: {
+              "@type": "Organization",
+              name: "Swadeshika",
+              foundingDate: "2023",
+              description: "A platform for authentic Indian ghee, spices, and dry fruits."
+            }
+          })
+        }}
+      />
       <SiteHeader />
       <main className="flex-1 bg-muted/30">
         <div className="container mx-auto px-4 py-10">

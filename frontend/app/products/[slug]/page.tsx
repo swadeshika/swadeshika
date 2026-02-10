@@ -207,7 +207,42 @@ export default async function ProductPage({ params }: { params: { slug: string }
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
-      <main className="flex-1">
+     <main className="flex-1">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Product",
+              name: product.name,
+              description: product.description?.substring(0, 160), // SEO friendly truncation
+              image: product.images,
+              sku: product.sku || product.id,
+              mpn: product.sku || product.id,
+              brand: {
+                "@type": "Brand",
+                name: "Swadeshika",
+              },
+              offers: {
+                "@type": "Offer",
+                url: `${process.env.NEXT_PUBLIC_APP_URL || "https://swadeshika.in"}/products/${product.slug}`,
+                priceCurrency: "INR",
+                price: product.price,
+                itemCondition: "https://schema.org/NewCondition",
+                availability: product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+                seller: {
+                  "@type": "Organization",
+                  name: "Swadeshika",
+                },
+              },
+              aggregateRating: product.rating > 0 ? {
+                "@type": "AggregateRating",
+                ratingValue: product.rating,
+                reviewCount: product.reviewCount || 1,
+              } : undefined,
+            }),
+          }}
+        />
         <Suspense fallback={
           <div className="bg-background font-sans">
             <div className="border-b bg-[#F5F1E8]">

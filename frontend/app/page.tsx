@@ -145,6 +145,25 @@ export default function HomePage() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "Swadeshika",
+            url: process.env.NEXT_PUBLIC_APP_URL || "https://swadeshika.in",
+            potentialAction: {
+              "@type": "SearchAction",
+              target: {
+                "@type": "EntryPoint",
+                urlTemplate: `${process.env.NEXT_PUBLIC_APP_URL || "https://swadeshika.in"}/shop?q={search_term_string}`
+              },
+              "query-input": "required name=search_term_string"
+            }
+          })
+        }}
+      />
       <SiteHeader />
 
       <main className="flex-1">

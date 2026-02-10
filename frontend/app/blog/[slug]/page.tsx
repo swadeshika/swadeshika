@@ -152,6 +152,36 @@ export default async function BlogPostPage({ params }: BlogPostProps) {
         </div>
       </div>
 
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BlogPosting",
+            headline: post.title,
+            image: post.featured_image ? [post.featured_image] : [],
+            author: {
+              "@type": "Person",
+              name: post.author_name || "Swadeshika"
+            },
+            publisher: {
+                "@type": "Organization",
+                name: "Swadeshika",
+                logo: {
+                  "@type": "ImageObject",
+                  url: `${process.env.NEXT_PUBLIC_APP_URL || "https://swadeshika.in"}/logo.png`
+                }
+            },
+            datePublished: post.published_at || post.created_at,
+            dateModified: post.updated_at || post.published_at || post.created_at,
+            description: post.excerpt,
+            mainEntityOfPage: {
+                "@type": "WebPage",
+                "@id": `${process.env.NEXT_PUBLIC_APP_URL || "https://swadeshika.in"}/blog/${slug}`
+            }
+          })
+        }}
+      />
       <main className="flex-1 w-full overflow-hidden bg-white">
         {/* Article Header */}
         <div className="relative">

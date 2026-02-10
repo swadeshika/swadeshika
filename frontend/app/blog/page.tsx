@@ -23,6 +23,18 @@ export default async function BlogPage() {
     <div className="flex min-h-screen flex-col w-full overflow-x-hidden">
       <SiteHeader />
 
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Blog",
+            name: "Swadeshika Blog",
+            description: "Read the latest updates, recipes, and health tips from Swadeshika.",
+            url: `${process.env.NEXT_PUBLIC_APP_URL || "https://swadeshika.in"}/blog`
+          })
+        }}
+      />
       <main className="flex-1 w-full overflow-x-hidden">
         <BlogListing initialPosts={publishedPosts} categories={categoriesData} />
       </main>

@@ -65,10 +65,41 @@ class ProductService {
     }
 
     static async createProduct(data) {
+        // Auto-fill price from variants if main price is 0/missing but variants exist
+        if ((!data.price || parseFloat(data.price) === 0) && data.variants && data.variants.length > 0) {
+            // Find min price from variants to set as base product price
+            const minPrice = Math.min(...data.variants.map(v => parseFloat(v.price || 0) || 0).filter(p => p > 0));
+            if (minPrice > 0 && minPrice !== Infinity) {
+                data.price = minPrice;
+            }
+            
+            // Also handle compare_price (MRP)
+            if (!data.compare_price || parseFloat(data.compare_price) === 0) {
+                 const minMrp = Math.min(...data.variants.map(v => parseFloat(v.compare_price || 0) || 0).filter(p => p > 0));
+                 if (minMrp > 0 && minMrp !== Infinity) {
+                     data.compare_price = minMrp;
+                 }
+            }
+        }
         return await ProductModel.create(data);
     }
 
     static async updateProduct(id, data) {
+         // Auto-fill price from variants if main price is 0/missing but variants exist
+         if ((!data.price || parseFloat(data.price) === 0) && data.variants && data.variants.length > 0) {
+            const minPrice = Math.min(...data.variants.map(v => parseFloat(v.price || 0) || 0).filter(p => p > 0));
+            if (minPrice > 0 && minPrice !== Infinity) {
+                data.price = minPrice;
+            }
+            
+             if (!data.compare_price || parseFloat(data.compare_price) === 0) {
+                 const minMrp = Math.min(...data.variants.map(v => parseFloat(v.compare_price || 0) || 0).filter(p => p > 0));
+                 if (minMrp > 0 && minMrp !== Infinity) {
+                     data.compare_price = minMrp;
+                 }
+            }
+        }
+
         const result = await ProductModel.update(id, data);
         
         // Check for low stock and send alert if needed

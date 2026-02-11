@@ -8,6 +8,8 @@ const AdminSettingsService = require('../services/adminSettingsService'); // Imp
 const CouponService = require('../services/couponService');
 const sendEmail = require('../utils/email');
 
+const PaymentService = require('../services/paymentService');
+
 exports.createOrder = async (req, res, next) => {
     try {
         const userId = req.user ? req.user.id : null;
@@ -111,42 +113,59 @@ exports.createOrder = async (req, res, next) => {
         if (bodyItems && bodyItems.length > 0) {
             // Use items from request body
             const productIds = [...new Set(bodyItems.map(item => item.productId))];
+            const variantIds = [...new Set(bodyItems.map(item => item.variantId).filter(id => id))];
 
-            // Verify products exist
+            // Verify products exist and get prices
             if (productIds.length > 0) {
-                // Fix for pool.execute: Expand array to placeholders
                 const placeholders = productIds.map(() => '?').join(',');
-                const [existingProducts] = await db.query(
-                    `SELECT id, name FROM products WHERE id IN (${placeholders})`,
+                const [dbProducts] = await db.query(
+                    `SELECT id, name, price FROM products WHERE id IN (${placeholders})`,
                     productIds
                 );
 
-                const existingIds = existingProducts.map(p => p.id);
-                const missingIds = productIds.filter(id => !existingIds.includes(id));
-
-                if (missingIds.length > 0) {
-                    return res.status(400).json({
-                        success: false,
-                        message: `Some items in your cart are no longer available (IDs: ${missingIds.join(', ')}). Please remove them.`
-                    });
+                let dbVariants = [];
+                if (variantIds.length > 0) {
+                    const vPlaceholders = variantIds.map(() => '?').join(',');
+                    const [vRows] = await db.query(
+                        `SELECT id, product_id, price FROM product_variants WHERE id IN (${vPlaceholders})`,
+                        variantIds
+                    );
+                    dbVariants = vRows;
                 }
-            }
 
-            orderItems = bodyItems.map(item => {
-                const itemSubtotal = parseFloat(item.price) * item.quantity;
-                subtotal += itemSubtotal;
-                return {
-                    product_id: item.productId,
-                    variant_id: item.variantId || null,
-                    product_name: item.productName,
-                    variant_name: item.variantName || null,
-                    sku: item.sku || 'N/A',
-                    quantity: item.quantity,
-                    price: item.price,
-                    subtotal: itemSubtotal,
-                    image: item.image || null
-                };
-            });
+                orderItems = bodyItems.map(item => {
+                    const product = dbProducts.find(p => p.id == item.productId);
+                    if (!product) {
+                        throw new Error(`Product ID ${item.productId} not found`);
+                    }
+
+                    let finalPrice = Number(product.price);
+
+                    if (item.variantId) {
+                        const variant = dbVariants.find(v => v.id == item.variantId);
+                        if (variant) {
+                            // Variant specific price
+                            const vPrice = Number(variant.price);
+                            if (vPrice > 0) finalPrice = vPrice;
+                        }
+                    }
+
+                    const itemSubtotal = finalPrice * item.quantity;
+                    subtotal += itemSubtotal;
+
+                    return {
+                        product_id: item.productId,
+                        variant_id: item.variantId || null,
+                        product_name: item.productName || product.name,
+                        variant_name: item.variantName || null,
+                        sku: item.sku || 'N/A',
+                        quantity: item.quantity,
+                        price: finalPrice, // Secure Price
+                        subtotal: itemSubtotal, // Secure Subtotal
+                        image: item.image || null
+                    };
+                });
+            }
         } else {
             // Fallback to DB Cart
             const cartItems = await Order.getCartItems(userId);
@@ -233,7 +252,41 @@ exports.createOrder = async (req, res, next) => {
             shipping_country: shippingAddress.country || 'India'
         };
 
+        if (paymentMethod === 'razorpay') {
+            orderData.status = 'pending_payment';
+            orderData.payment_status = 'pending';
+        }
+
         const newOrder = await Order.create(orderData, orderItems);
+
+        // --- Razorpay Handler ---
+        if (paymentMethod === 'razorpay') {
+            try {
+                // Create Razorpay Order
+                const razorpayOrder = await PaymentService.createOrder(totalAmount, newOrder.order_number);
+                
+                // Return response immediately for frontend to handle popup
+                return res.status(201).json({
+                    success: true,
+                    isRazorpay: true,
+                    message: 'Order created, proceed to payment',
+                    data: {
+                        orderId: newOrder.id,
+                        orderNumber: newOrder.order_number,
+                        totalAmount: newOrder.total_amount,
+                        razorpayOrderId: razorpayOrder.id,
+                        currency: razorpayOrder.currency,
+                        key: (await AdminSettingsService.getSettings()).gateway_configs?.razorpay?.apiKey
+                    }
+                });
+            } catch (rpError) {
+                console.error("Razorpay Order Creation Failed:", rpError);
+                // Revert local order maybe? Or just fail. 
+                // For now, let's return error but keep order as pending_payment (user can retry)
+                return res.status(500).json({ success: false, message: 'Payment initialization failed. Please try COD or contact support.' });
+            }
+        }
+        // ------------------------
 
         // Record Coupon Usage if applicable
         if (appliedCouponId) {
@@ -361,6 +414,61 @@ exports.createOrder = async (req, res, next) => {
                 status: newOrder.status || 'pending'
             }
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Verify Razorpay Payment
+ */
+exports.verifyPayment = async (req, res, next) => {
+    try {
+        const { orderId, razorpayPaymentId, razorpayOrderId, razorpaySignature } = req.body;
+
+        const isValid = await PaymentService.verifySignature(razorpayOrderId, razorpayPaymentId, razorpaySignature);
+
+        if (!isValid) {
+            return res.status(400).json({ success: false, message: 'Payment verification failed' });
+        }
+
+        // Update Order
+        const order = await Order.findById(orderId);
+        if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+        // Update status
+        await db.query(`UPDATE orders SET status = 'processing', payment_status = 'paid', updated_at = NOW() WHERE id = ?`, [orderId]);
+
+        // Send Email & Notification (Logic duplicated from createOrder - ideally refactor to helper)
+        const recipientEmail = order.guest_email || (req.user && req.user.email); // User might not be in req if public endpoint, but we can fetch user from order.user_id if needed
+        
+        // Refetch updated order for email
+        const updatedOrder = await Order.findById(orderId);
+         
+        // Send Confirmation Email
+        if (recipientEmail) {
+            // ... (Simplified email logic or reuse helper)
+             const emailHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #2D5F3F;">Payment Successful!</h2>
+                    <p>Order <strong>${updatedOrder.order_number}</strong> has been confirmed.</p>
+                </div>`;
+             
+             sendEmail({
+                email: recipientEmail,
+                subject: `Order Confirmed - ${updatedOrder.order_number}`,
+                message: `Payment successful for order ${updatedOrder.order_number}.`,
+                html: emailHtml
+            }).catch(e => console.error("Email fail", e));
+        }
+
+        // Clear Cart
+        if (order.user_id) {
+            await Order.clearCart(order.user_id);
+        }
+
+        res.status(200).json({ success: true, message: 'Payment verified successfully' });
+
     } catch (error) {
         next(error);
     }

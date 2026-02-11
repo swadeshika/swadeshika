@@ -11,12 +11,19 @@ export interface AppSettings {
     free_shipping_threshold: number
     default_order_status: string
     timezone: string
+    enabledGateways?: {
+        razorpay: boolean
+        cod: boolean
+    }
 }
 
 export const settingsService = {
     getSettings: async () => {
-        // The controller says: /api/v1/settings
-        const res = await api.get<AppSettings>('/settings')
-        return res.data.data
+        const res = await api.get('/settings')
+        const data = res.data.data
+        return {
+            ...data,
+            enabledGateways: data.enabled_gateways || { razorpay: false, cod: false }
+        } as AppSettings
     }
 }

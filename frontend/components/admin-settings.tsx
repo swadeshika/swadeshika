@@ -8,7 +8,7 @@
  *
  * Key Features:
  * - Logo upload with preview and drag-and-drop (validates type/size).
- * - Multi-gateway support (Razorpay/Stripe/Cashfree/COD) with per-gateway credentials.
+ * - Multi-gateway support (Razorpay/COD) with per-gateway credentials.
  * - Fully controlled inputs with immediate local persistence and explicit Save action with toast.
  * - Consistent brown/green theme using Tailwind/shadcn UI.
  *
@@ -30,7 +30,7 @@ import { useToast } from "@/hooks/use-toast"
 import { ChangePassword } from "@/components/admin-change-password"
 import { api } from "@/lib/api"
 
-type Gateway = "razorpay" | "stripe" | "cashfree" | "cod"
+type Gateway = "razorpay" | "cod"
 
 type Settings = {
   storeName: string
@@ -44,8 +44,6 @@ type Settings = {
   enabledGateways: Record<Gateway, boolean>
   gatewayConfigs: {
     razorpay?: { apiKey?: string; apiSecret?: string }
-    stripe?: { apiKey?: string; apiSecret?: string }
-    cashfree?: { apiKey?: string; apiSecret?: string }
     cod?: { enableCOD?: boolean }
   }
   shippingMethod: "standard" | "express" | "pickup"
@@ -74,7 +72,7 @@ export function AdminSettings() {
     guestCheckout: true,
     defaultOrderStatus: "pending",
     currency: "inr",
-    enabledGateways: { razorpay: false, stripe: false, cashfree: false, cod: false },
+    enabledGateways: { razorpay: false, cod: false },
     gatewayConfigs: {},
     shippingMethod: "standard",
     freeShippingThreshold: '',
@@ -109,7 +107,7 @@ export function AdminSettings() {
           guestCheckout: Boolean(data.guest_checkout),
           defaultOrderStatus: data.default_order_status || "pending",
           currency: data.currency || "inr",
-          enabledGateways: data.enabled_gateways || { razorpay: false, stripe: false, cashfree: false, cod: false },
+          enabledGateways: data.enabled_gateways || { razorpay: false, cod: false },
           gatewayConfigs: data.gateway_configs || {},
           shippingMethod: data.shipping_method || "standard",
           freeShippingThreshold: data.free_shipping_threshold !== null ? Number(data.free_shipping_threshold) : '',
@@ -388,7 +386,7 @@ export function AdminSettings() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <Label>API Key</Label>
+                      <Label>Key ID</Label>
                       <Input
                         type="text"
                         value={settings.gatewayConfigs[gateway as Exclude<Gateway,'cod'>]?.apiKey ?? ''}
@@ -401,10 +399,10 @@ export function AdminSettings() {
                             },
                           })
                         }
-                        placeholder="Enter API Key"
+                        placeholder="rzp_test_..."
                         className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]"
                       />
-                      <Label>API Secret</Label>
+                      <Label>Key Secret</Label>
                       <Input
                         type="text"
                         value={settings.gatewayConfigs[gateway as Exclude<Gateway,'cod'>]?.apiSecret ?? ''}
@@ -417,7 +415,7 @@ export function AdminSettings() {
                             },
                           })
                         }
-                        placeholder="Enter API Secret"
+                        placeholder="Enter Key Secret"
                         className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]"
                       />
                     </div>

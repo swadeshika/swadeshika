@@ -52,7 +52,7 @@ export function CheckoutForm() {
 
   // State
   const [sameAsBilling, setSameAsBilling] = useState(true)
-  const [paymentMethod, setPaymentMethod] = useState("cod")
+  const [paymentMethod, setPaymentMethod] = useState("")
   const [placing, setPlacing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
@@ -103,6 +103,15 @@ export function CheckoutForm() {
         
         setAddresses(fetchedAddresses || []);
         setSettings(fetchedSettings);
+        
+        // Set default payment method
+        if (fetchedSettings?.enabledGateways) {
+            if (fetchedSettings.enabledGateways.cod) {
+                setPaymentMethod("cod");
+            } else if (fetchedSettings.enabledGateways.razorpay) {
+                setPaymentMethod("razorpay");
+            }
+        }
       } catch (error) {
         console.error("Failed to load checkout data", error);
       } finally {
@@ -265,9 +274,71 @@ export function CheckoutForm() {
 
     try {
       // console.log("Submitting order...", orderData);
-      const response = await ordersService.createOrder(orderData as any);
+      const response = await ordersService.createOrder(orderData as any) as any;
       // console.log("Order created response:", response);
       
+      if (response.isRazorpay && response.data.razorpayOrderId) {
+          const options = {
+              key: response.data.key,
+              amount: Number(response.data.totalAmount) * 100, // Amount is in paise
+              currency: response.data.currency,
+              name: "Swadeshika",
+              description: "Order Payment",
+              order_id: response.data.razorpayOrderId,
+              handler: async function (response: any) {
+                  try {
+                      // Verify Payment
+                      await ordersService.verifyPayment({
+                          orderId: response.data.orderId,
+                          razorpayOrderId: response.razorpay_order_id,
+                          razorpayPaymentId: response.razorpay_payment_id,
+                          razorpaySignature: response.razorpay_signature
+                      });
+                      
+                      const { clearCart } = useCartStore.getState();
+                      await clearCart();
+
+                      toast({
+                          title: "Payment Successful",
+                          description: "Your order has been placed successfully!",
+                      });
+                      
+                      router.push(`/order-confirmation/${response.data.orderId}`);
+                  } catch (verifyError) {
+                      console.error("Payment Verification Failed", verifyError);
+                      toast({
+                          title: "Payment Verification Failed",
+                          description: "Please contact support if money was deducted.",
+                          variant: "destructive"
+                      });
+                      setPlacing(false);
+                  }
+              },
+              prefill: {
+                  name: shippingAddress.fullName,
+                  email: formData.get("email") as string,
+                  contact: formData.get("phone") as string
+              },
+              theme: {
+                  color: "#2D5F3F"
+              },
+              modal: {
+                  ondismiss: function() {
+                      setPlacing(false);
+                      toast({
+                          title: "Payment Cancelled",
+                          description: "You cancelled the payment process.",
+                          variant: "default"
+                      });
+                  }
+              }
+          };
+
+          const rzp1 = new (window as any).Razorpay(options);
+          rzp1.open();
+          return; // Stop here, wait for handler
+      }
+
       const { clearCart } = useCartStore.getState();
       await clearCart();
       
@@ -658,21 +729,31 @@ export function CheckoutForm() {
             </CardHeader>
             <CardContent className="space-y-4">
               <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                <div className="flex items-center space-x-2 border-2 border-[#E8DCC8] rounded-xl p-4">
-                  <RadioGroupItem value="cod" id="cod" />
-                  <Label htmlFor="cod" className="flex-1 cursor-pointer">
-                    <div className="font-medium">Cash on Delivery</div>
-                    <div className="text-sm text-muted-foreground">Pay when you receive your order</div>
-                  </Label>
-                </div>
+                {settings?.enabledGateways?.razorpay && (
+                    <div className={`flex items-center space-x-2 border-2 rounded-xl p-4 ${paymentMethod === 'razorpay' ? 'border-[#2D5F3F] bg-green-50' : 'border-[#E8DCC8]'}`}>
+                      <RadioGroupItem value="razorpay" id="razorpay" />
+                      <Label htmlFor="razorpay" className="flex-1 cursor-pointer">
+                        <div className="font-medium">Online Payment</div>
+                        <div className="text-sm text-muted-foreground">UPI, Cards, Net Banking (Razorpay)</div>
+                      </Label>
+                    </div>
+                )}
 
-                <div className="flex items-center space-x-2 border-2 border-[#E8DCC8] rounded-xl p-4">
-                  <RadioGroupItem value="online" id="online" />
-                  <Label htmlFor="online" className="flex-1 cursor-pointer">
-                    <div className="font-medium">Online Payment</div>
-                    <div className="text-sm text-muted-foreground">UPI, Cards, Net Banking</div>
-                  </Label>
-                </div>
+                {settings?.enabledGateways?.cod && (
+                    <div className={`flex items-center space-x-2 border-2 rounded-xl p-4 ${paymentMethod === 'cod' ? 'border-[#2D5F3F] bg-green-50' : 'border-[#E8DCC8]'}`}>
+                      <RadioGroupItem value="cod" id="cod" />
+                      <Label htmlFor="cod" className="flex-1 cursor-pointer">
+                        <div className="font-medium">Cash on Delivery</div>
+                        <div className="text-sm text-muted-foreground">Pay when you receive your order</div>
+                      </Label>
+                    </div>
+                )}
+                
+                {(!settings?.enabledGateways?.razorpay && !settings?.enabledGateways?.cod) && (
+                    <div className="text-center p-4 text-gray-500">
+                        No payment methods available. Please contact support.
+                    </div>
+                )}
               </RadioGroup>
             </CardContent>
           </Card>

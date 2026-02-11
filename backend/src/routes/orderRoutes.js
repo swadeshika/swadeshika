@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
     createOrder,
+    verifyPayment,
     getAllOrders,
     getMyOrders,
     getOrderById,
@@ -37,6 +38,7 @@ router.post('/track', trackOrder);
 // Protected Routes (User)
 // Allow optional authentication for checkout so guest users can place orders.
 router.post('/', optionalAuthenticate, orderValidator.create, createOrder);
+router.post('/verify-payment', optionalAuthenticate, verifyPayment);
 // Download invoice PDF
 router.get('/:id/invoice', optionalAuthenticate, orderValidator.getById, downloadInvoice);
 router.get('/', authenticate, getMyOrders);

@@ -51,13 +51,28 @@ const createProductValidation = [
         .isLength({ max: 500 }).withMessage('Short description cannot exceed 500 characters'),
 
     body('price')
-        .notEmpty().withMessage('Price is required')
-        .isFloat({ min: 0.01 }).withMessage('Price must be a positive number')
-        .custom((value) => {
+        .custom((value, { req }) => {
+            // Check if active variants are present
+            const hasVariants = req.body.variants && Array.isArray(req.body.variants) && req.body.variants.length > 0;
+            
+            // If variants exist, price can be 0/empty (auto-filled by service later)
+            if (hasVariants) {
+                return true;
+            }
+
+            // If NO variants, price is required and must be positive
+            if (value === undefined || value === null || value === '') {
+                throw new Error('Price is required');
+            }
+            if (parseFloat(value) < 0.01) {
+                throw new Error('Price must be a positive number');
+            }
+            
             // Ensure price has max 2 decimal places
             if (!/^\d+(\.\d{1,2})?$/.test(value.toString())) {
                 throw new Error('Price can have maximum 2 decimal places');
             }
+            
             return true;
         }),
 

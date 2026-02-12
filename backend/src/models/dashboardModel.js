@@ -200,6 +200,7 @@ class DashboardModel {
                 CAST(COALESCE(
                     (SELECT SUM(stock_quantity) FROM product_variants WHERE product_id = p.id AND is_active = 1),
                     p.stock_quantity
+                ) AS UNSIGNED) <= COALESCE(p.low_stock_threshold, ?)
             AND p.is_active = TRUE
             LIMIT 5
         `;

@@ -189,11 +189,17 @@ class DashboardModel {
         const query = `
             SELECT 
                 p.name, 
-                p.stock_quantity as stock, 
+                CAST(COALESCE(
+                    (SELECT SUM(stock_quantity) FROM product_variants WHERE product_id = p.id AND is_active = 1),
+                    p.stock_quantity
+                ) AS UNSIGNED) as stock, 
                 COALESCE(p.low_stock_threshold, ?) as threshold,
                 (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = TRUE LIMIT 1) as image
             FROM products p
-            WHERE p.stock_quantity <= IF(p.low_stock_threshold IS NULL, ?, p.low_stock_threshold)
+            WHERE 
+                CAST(COALESCE(
+                    (SELECT SUM(stock_quantity) FROM product_variants WHERE product_id = p.id AND is_active = 1),
+                    p.stock_quantity
             AND p.is_active = TRUE
             LIMIT 5
         `;

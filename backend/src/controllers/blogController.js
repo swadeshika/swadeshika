@@ -110,7 +110,8 @@ const createPost = async (req, res, next) => {
             }
         }
 
-        const slug = req.body.slug || slugify(title);
+        // Ensure slug is transliterated/slugified even if provided by frontend
+        const slug = slugify(req.body.slug || title);
         let categoryId = category_id;
 
         // Fallback to 'category' field if category_id not provided
@@ -212,7 +213,7 @@ const updatePost = async (req, res, next) => {
         // Prepare update object
         const updateData = {
             title,
-            slug: slug || (title ? slugify(title) : undefined),
+            slug: slug ? slugify(slug) : (title ? slugify(title) : undefined),
             excerpt: excerpt || null,
             content,
             featured_image: finalFeaturedImage || null, // Accept both snake_case and camelCase

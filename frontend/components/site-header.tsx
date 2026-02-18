@@ -88,6 +88,8 @@ export function SiteHeader() {
         // Map tree to submenu items
         const categorySubmenu = categoryTree
           .filter(c => c.is_active !== false)
+          // Sort categories by number of children (descending) so biggest menus appear first
+          .sort((a, b) => (b.children?.length || 0) - (a.children?.length || 0))
           // Showing ALL top-level categories
           .map(c => {
             const subs = c.children || [];
@@ -184,8 +186,11 @@ export function SiteHeader() {
                           style={isMegaMenu ? { position: 'fixed', top: '3.5rem' } : {}}
                         >
                           <div className={`
-                            rounded-2xl shadow-xl bg-white border border-[#E8DCC8]/50 ring-1 ring-black/5 overflow-hidden
-                            ${isMegaMenu ? "p-8 w-full" : "p-2 bg-gradient-to-b from-white to-[#FDFBF7]"}
+                            rounded-2xl shadow-xl bg-white border border-[#E8DCC8]/50 ring-1 ring-black/5
+                            ${isMegaMenu 
+                              ? "p-8 w-full max-h-[80vh] overflow-y-auto" 
+                              : "p-2 bg-gradient-to-b from-white to-[#FDFBF7] overflow-hidden"
+                            }
                           `}>
                             {isMegaMenu ? (
                               // --- MEGA MENU LAYOUT ---

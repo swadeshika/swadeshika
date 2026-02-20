@@ -209,7 +209,7 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
         length: form.length ? parseFloat(form.length) : null,
         width: form.width ? parseFloat(form.width) : null,
         height: form.height ? parseFloat(form.height) : null,
-        weight_unit: 'kg', // fixed for now
+        weight_unit: form.weightUnit || 'g', 
         in_stock: form.status === 'active',
         // Respect explicit Publish toggle when provided; otherwise fall back to status
         is_active: typeof form.publish === 'boolean' ? form.publish : (form.status === 'active'),
@@ -475,7 +475,7 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
               <CardTitle className="text-[#6B4423]">Shipping</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid sm:grid-cols-4 gap-4">
+              <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="weight">Weight <span className="text-red-500 ml-1">*</span></Label>
                   <div className="grid grid-cols-[1fr_auto] gap-2">
@@ -491,7 +491,17 @@ export function AdminProductForm({ initial, mode = "create", productId, initialV
                       }}
                       className="border-2 border-[#E8DCC8] focus-visible:ring-0 focus-visible:border-[#2D5F3F]"
                     />
-                    <div className="rounded-xl border-2 border-[#E8DCC8] bg-white px-3 py-2">g</div>
+                    <Select value={form.weightUnit} onValueChange={(v) => update("weightUnit", v)}>
+                      <SelectTrigger className="w-20 border-2 border-[#E8DCC8] bg-white">
+                        <SelectValue placeholder="Unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="g">g</SelectItem>
+                        <SelectItem value="kg">kg</SelectItem>
+                        <SelectItem value="ml">ml</SelectItem>
+                        <SelectItem value="l">l</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <div className="space-y-2">

@@ -429,7 +429,10 @@ export function ProductDetailClientOptimized({
     : 0
 
   // Check if current variant is in stock
-  const isVariantInStock = selectedVariant ? selectedVariant.quantity > 0 : product.inStock
+  // Logic: Must have inStock flag true AND (if stockQuantity exists) must be > 0
+  const isVariantInStock = selectedVariant 
+    ? selectedVariant.quantity > 0 
+    : (product.inStock && (product.stockQuantity === undefined || product.stockQuantity > 0));
 
   // Check stock availability including cart
   const maxStock = selectedVariant ? selectedVariant.quantity : (product.stockQuantity || 0)
@@ -668,7 +671,10 @@ export function ProductDetailClientOptimized({
                     <>
                       <div className="h-2 w-2 rounded-full bg-[#2D5F3F]" />
                       <span className="text-sm font-medium text-[#2D5F3F]">
-                        In Stock {selectedVariant && `(${selectedVariant.quantity} available)`}
+                        In Stock {selectedVariant 
+                          ? `(${selectedVariant.quantity} available)` 
+                          : (product.stockQuantity !== undefined ? `(${product.stockQuantity} available)` : '')
+                        }
                       </span>
                     </>
                   ) : (

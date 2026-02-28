@@ -515,6 +515,20 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
                   <span className="text-muted-foreground">Amount</span>
                   <span className="font-medium">₹{order.totalAmount?.toLocaleString("en-IN")}</span>
                 </div>
+                {order.paymentId && (
+                  <div className="flex items-center justify-between text-sm pt-2 border-t mt-2">
+                    <span className="text-muted-foreground">Transaction ID</span>
+                    <span className="font-mono text-[10px] break-all max-w-[150px] text-right">{order.paymentId}</span>
+                  </div>
+                )}
+                {order.paymentError && (
+                  <div className="pt-2 border-t mt-2">
+                    <span className="text-xs text-red-600 font-medium">Failure Reason:</span>
+                    <p className="text-[11px] text-red-500 mt-1 leading-relaxed bg-red-50 px-2 py-1 rounded border border-red-100">
+                      {order.paymentError}
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

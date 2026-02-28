@@ -283,6 +283,7 @@ CREATE TABLE orders (
   payment_method VARCHAR(50),
   payment_status ENUM('pending', 'paid', 'failed', 'refunded') DEFAULT 'pending',
   payment_id VARCHAR(255),
+  payment_error VARCHAR(500),
   notes TEXT,
   tracking_number VARCHAR(100),
   carrier VARCHAR(50),
@@ -1315,6 +1316,7 @@ Auth: Required
       "total": 1700
     },
     "trackingNumber": "TRACK123",
+    "paymentError": "Insufficient funds in the customer's account",
     "createdAt": "2025-01-16T10:00:00.000Z",
     "deliveredAt": "2025-01-18T15:30:00.000Z"
   }

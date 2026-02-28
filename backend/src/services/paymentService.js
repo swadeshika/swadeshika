@@ -67,6 +67,33 @@ class PaymentService {
             return false;
         }
     }
+
+    /**
+     * Verify Razorpay Webhook Signature
+     * @param {string} payload Raw request body
+     * @param {string} signature X-Razorpay-Signature header
+     */
+    static async verifyWebhookSignature(payload, signature) {
+        try {
+            const settings = await AdminSettingsService.getSettings();
+            // Use a separate webhook secret if configured, otherwise fallback to apiSecret (not recommended for production)
+            const secret = settings.gateway_configs?.razorpay?.webhookSecret || settings.gateway_configs?.razorpay?.apiSecret;
+
+            if (!secret) {
+                throw new Error('Razorpay webhook secret not found');
+            }
+
+            const expectedSignature = crypto
+                .createHmac('sha256', secret)
+                .update(payload)
+                .digest('hex');
+
+            return expectedSignature === signature;
+        } catch (error) {
+            console.error('Razorpay Webhook Signature Verification Error:', error);
+            return false;
+        }
+    }
 }
 
 module.exports = PaymentService;

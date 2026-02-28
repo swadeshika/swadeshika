@@ -196,7 +196,7 @@ class Order {
      */
     static async findById(id) {
         const [orders] = await db.query(
-            `SELECT o.*, u.email as user_email 
+            `SELECT o.*, o.payment_error as paymentError, u.email as user_email 
              FROM orders o 
              LEFT JOIN users u ON o.user_id = u.id 
              WHERE o.id = ?`,
@@ -357,7 +357,7 @@ class Order {
      */
     static async findByOrderNumber(orderNumber) {
         const query = `
-            SELECT o.*, u.email as user_email 
+            SELECT o.*, o.payment_error as paymentError, u.email as user_email 
             FROM orders o
             LEFT JOIN users u ON o.user_id = u.id
             WHERE o.order_number = ?

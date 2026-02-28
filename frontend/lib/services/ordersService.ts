@@ -60,6 +60,8 @@ export interface Order {
         estimatedDelivery: string;
     };
     carrier?: string; // Added for flat access
+    paymentId?: string; // Added for traceability
+    paymentError?: string; // Added for failure tracking
 }
 
 interface OrdersResponse {

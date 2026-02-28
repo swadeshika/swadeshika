@@ -11,7 +11,8 @@ const {
     cancelOrder,
     deleteOrder,
     exportOrders,
-    trackOrder
+    trackOrder,
+    razorpayWebhook
 } = require('../controllers/orderController');
 const { authenticate, authorize, optionalAuthenticate } = require('../middlewares/authMiddleware');
 
@@ -34,6 +35,7 @@ const orderValidator = require('../validators/orderValidator');
 // Routes
 // Public Routes
 router.post('/track', trackOrder);
+router.post('/razorpay-webhook', razorpayWebhook);
 
 // Protected Routes (User)
 // Allow optional authentication for checkout so guest users can place orders.

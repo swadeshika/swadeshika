@@ -285,14 +285,14 @@ export function CheckoutForm() {
               name: "Swadeshika",
               description: "Order Payment",
               order_id: response.data.razorpayOrderId,
-              handler: async function (response: any) {
+              handler: async function (rzpResponse: any) {
                   try {
                       // Verify Payment
                       await ordersService.verifyPayment({
                           orderId: response.data.orderId,
-                          razorpayOrderId: response.razorpay_order_id,
-                          razorpayPaymentId: response.razorpay_payment_id,
-                          razorpaySignature: response.razorpay_signature
+                          razorpayOrderId: rzpResponse.razorpay_order_id,
+                          razorpayPaymentId: rzpResponse.razorpay_payment_id,
+                          razorpaySignature: rzpResponse.razorpay_signature
                       });
                       
                       const { clearCart } = useCartStore.getState();

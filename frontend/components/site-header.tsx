@@ -88,21 +88,19 @@ export function SiteHeader() {
         // Map tree to submenu items
         const categorySubmenu = categoryTree
           .filter(c => c.is_active !== false)
-          .slice(0, 8)
+          // Sort categories by number of children (descending) so biggest menus appear first
+          .sort((a, b) => (b.children?.length || 0) - (a.children?.length || 0))
+          // Showing ALL top-level categories
           .map(c => {
             const subs = c.children || [];
 
-            const displayedSubs = subs.slice(0, 4).map(sub => ({
+            // Showing ALL sub-categories
+            const displayedSubs = subs.map(sub => ({
               name: sub.name,
               href: `/shop/${sub.slug}`
             }));
 
-            if (subs.length > 4) {
-              displayedSubs.push({
-                name: "View All",
-                href: `/shop/${c.slug}`
-              });
-            }
+            // No "View All" needed if showing all
 
             return {
               name: c.name,
@@ -155,6 +153,7 @@ export function SiteHeader() {
               <nav className="hidden lg:flex ml-4 sm:ml-6 lg:ml-10 space-x-2">
                 {navItems.map((item) => {
                   const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href))
+                  const isMegaMenu = item.name === "Categories"
 
                   return (
                     <div key={item.name} className="relative group">
@@ -174,13 +173,55 @@ export function SiteHeader() {
                         )}
                       </Link>
 
-                      {/* Submenu - Premium Design */}
+                      {/* Mega Menu & Dropdown Logic */}
                       {item.submenu && item.submenu.length > 0 && (
-                        <div className="absolute left-0 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-out z-20">
-                          {/* Removed overflow-hidden to allow nested menu to fly out */}
-                          <div className="w-72 rounded-2xl shadow-xl bg-white border border-[#E8DCC8]/50 ring-1 ring-black/5">
-                            <div className="p-2 bg-gradient-to-b from-white to-[#FDFBF7] rounded-2xl">
-                              {item.submenu.map((subItem) => (
+                        <div
+                          className={`
+                            absolute top-full pt-0 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-out z-20
+                            ${isMegaMenu
+                              ? "fixed left-1/2 -translate-x-1/2 w-[90vw] max-w-6xl mt-0 px-4"
+                              : "left-0 w-72"
+                            }
+                          `}
+                          style={isMegaMenu ? { position: 'fixed', top: '3.5rem' } : {}}
+                        >
+                          <div className={`
+                            rounded-2xl shadow-xl bg-white border border-[#E8DCC8]/50 ring-1 ring-black/5
+                            ${isMegaMenu 
+                              ? "p-8 w-full max-h-[80vh] overflow-y-auto" 
+                              : "p-2 bg-gradient-to-b from-white to-[#FDFBF7] overflow-hidden"
+                            }
+                          `}>
+                            {isMegaMenu ? (
+                              // --- MEGA MENU LAYOUT ---
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-8">
+                                {item.submenu.map((category) => (
+                                  <div key={category.name} className="space-y-4">
+                                    <Link
+                                      href={category.href}
+                                      className="flex items-center justify-between text-base font-bold text-[#5C4033] hover:text-[#2D5F3F] border-b border-[#E8DCC8] pb-2 transition-colors group/cat"
+                                    >
+                                      {category.name}
+                                      {/* <ChevronRight className="h-4 w-4 opacity-0 group-hover/cat:opacity-100 transition-opacity" /> */}
+                                    </Link>
+                                    <ul className="space-y-2.5">
+                                      {category.children?.map((sub) => (
+                                        <li key={sub.name}>
+                                          <Link
+                                            href={sub.href}
+                                            className="text-[14px] text-[#8B6F47] hover:text-[#2D5F3F] hover:translate-x-1 transition-all duration-200 block"
+                                          >
+                                            {sub.name}
+                                          </Link>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              // --- STANDARD DROPDOWN LAYOUT ---
+                              item.submenu.map((subItem) => (
                                 <div key={subItem.name} className="relative group/sub">
                                   <Link
                                     href={subItem.href}
@@ -192,14 +233,11 @@ export function SiteHeader() {
                                     )}
                                   </Link>
 
-                                  {/* Nested Submenu (Level 2) - Flyout */}
+                                  {/* Nested Submenu (Level 2) */}
                                   {subItem.children && subItem.children.length > 0 && (
-                                    /* Added pseudo-element 'before' as a bridge for hover */
                                     <div className="absolute left-full top-0 ml-2 w-64 opacity-0 invisible group-hover/sub:opacity-100 group-hover/sub:visible transition-all duration-200 z-30 before:absolute before:content-[''] before:-left-2 before:top-0 before:h-full before:w-4">
                                       <div className="rounded-2xl shadow-xl bg-white border border-[#E8DCC8]/50 overflow-hidden ring-1 ring-black/5">
                                         <div className="p-2 bg-white">
-                                          {/* Header for Submenu */}
-
                                           {subItem.children.map(child => (
                                             <Link
                                               key={child.name}
@@ -214,8 +252,8 @@ export function SiteHeader() {
                                     </div>
                                   )}
                                 </div>
-                              ))}
-                            </div>
+                              ))
+                            )}
                           </div>
                         </div>
                       )}

@@ -100,7 +100,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
       length: apiProduct.length,
       width: apiProduct.width,
       height: apiProduct.height,
-      weightUnit: apiProduct.weight_unit || 'kg',
+      weightUnit: apiProduct.weight_unit || 'g',
       category: (apiProduct as any).category_name || apiProduct.category_id?.toString() || 'Uncategorized',
       categorySlug: (apiProduct as any).category_slug || (apiProduct as any).category_name?.toLowerCase().replace(/\s+/g, '-') || '#',
       features: apiProduct.features || [],

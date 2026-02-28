@@ -80,7 +80,14 @@ app.use('/api', limiter);
    express.urlencoded() -> Parse form data (x-www-form-urlencoded)
    cookieParser()       -> Read cookies from request headers
    ============================================================ */
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ 
+   limit: '50mb',
+   verify: (req, res, buf) => {
+      if (req.originalUrl.includes('/razorpay-webhook')) {
+         req.rawBody = buf;
+      }
+   }
+}));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 

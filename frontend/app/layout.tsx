@@ -110,6 +110,7 @@ export default function RootLayout({
              })
           }}
         />
+        <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
         <meta name="facebook-domain-verification" content="iqo8dwihqdmcwkw5pv7s20rtaceowo" />
         <script
           id="fb-pixel"

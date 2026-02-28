@@ -160,6 +160,17 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
         </div>
       </div>
 
+      {order.paymentStatus === 'failed' && order.paymentError && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+          <XCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="text-sm font-semibold text-red-800">Payment Failed</h3>
+            <p className="text-sm text-red-700 mt-1">{order.paymentError}</p>
+            <p className="text-xs text-red-600 mt-2 italic">Please try placing a new order or contact support if the amount was deducted.</p>
+          </div>
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">

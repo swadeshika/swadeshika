@@ -8,6 +8,8 @@ const AdminSettingsService = require('../services/adminSettingsService'); // Imp
 const CouponService = require('../services/couponService');
 const sendEmail = require('../utils/email');
 
+const PaymentService = require('../services/paymentService');
+
 exports.createOrder = async (req, res, next) => {
     try {
         const userId = req.user ? req.user.id : null;
@@ -111,42 +113,59 @@ exports.createOrder = async (req, res, next) => {
         if (bodyItems && bodyItems.length > 0) {
             // Use items from request body
             const productIds = [...new Set(bodyItems.map(item => item.productId))];
+            const variantIds = [...new Set(bodyItems.map(item => item.variantId).filter(id => id))];
 
-            // Verify products exist
+            // Verify products exist and get prices
             if (productIds.length > 0) {
-                // Fix for pool.execute: Expand array to placeholders
                 const placeholders = productIds.map(() => '?').join(',');
-                const [existingProducts] = await db.query(
-                    `SELECT id, name FROM products WHERE id IN (${placeholders})`,
+                const [dbProducts] = await db.query(
+                    `SELECT id, name, price FROM products WHERE id IN (${placeholders})`,
                     productIds
                 );
 
-                const existingIds = existingProducts.map(p => p.id);
-                const missingIds = productIds.filter(id => !existingIds.includes(id));
-
-                if (missingIds.length > 0) {
-                    return res.status(400).json({
-                        success: false,
-                        message: `Some items in your cart are no longer available (IDs: ${missingIds.join(', ')}). Please remove them.`
-                    });
+                let dbVariants = [];
+                if (variantIds.length > 0) {
+                    const vPlaceholders = variantIds.map(() => '?').join(',');
+                    const [vRows] = await db.query(
+                        `SELECT id, product_id, price FROM product_variants WHERE id IN (${vPlaceholders})`,
+                        variantIds
+                    );
+                    dbVariants = vRows;
                 }
-            }
 
-            orderItems = bodyItems.map(item => {
-                const itemSubtotal = parseFloat(item.price) * item.quantity;
-                subtotal += itemSubtotal;
-                return {
-                    product_id: item.productId,
-                    variant_id: item.variantId || null,
-                    product_name: item.productName,
-                    variant_name: item.variantName || null,
-                    sku: item.sku || 'N/A',
-                    quantity: item.quantity,
-                    price: item.price,
-                    subtotal: itemSubtotal,
-                    image: item.image || null
-                };
-            });
+                orderItems = bodyItems.map(item => {
+                    const product = dbProducts.find(p => p.id == item.productId);
+                    if (!product) {
+                        throw new Error(`Product ID ${item.productId} not found`);
+                    }
+
+                    let finalPrice = Number(product.price);
+
+                    if (item.variantId) {
+                        const variant = dbVariants.find(v => v.id == item.variantId);
+                        if (variant) {
+                            // Variant specific price
+                            const vPrice = Number(variant.price);
+                            if (vPrice > 0) finalPrice = vPrice;
+                        }
+                    }
+
+                    const itemSubtotal = finalPrice * item.quantity;
+                    subtotal += itemSubtotal;
+
+                    return {
+                        product_id: item.productId,
+                        variant_id: item.variantId || null,
+                        product_name: item.productName || product.name,
+                        variant_name: item.variantName || null,
+                        sku: item.sku || 'N/A',
+                        quantity: item.quantity,
+                        price: finalPrice, // Secure Price
+                        subtotal: itemSubtotal, // Secure Subtotal
+                        image: item.image || null
+                    };
+                });
+            }
         } else {
             // Fallback to DB Cart
             const cartItems = await Order.getCartItems(userId);
@@ -233,7 +252,41 @@ exports.createOrder = async (req, res, next) => {
             shipping_country: shippingAddress.country || 'India'
         };
 
+        if (paymentMethod === 'razorpay') {
+            orderData.status = 'pending_payment';
+            orderData.payment_status = 'pending';
+        }
+
         const newOrder = await Order.create(orderData, orderItems);
+
+        // --- Razorpay Handler ---
+        if (paymentMethod === 'razorpay') {
+            try {
+                // Create Razorpay Order
+                const razorpayOrder = await PaymentService.createOrder(totalAmount, newOrder.order_number);
+                
+                // Return response immediately for frontend to handle popup
+                return res.status(201).json({
+                    success: true,
+                    isRazorpay: true,
+                    message: 'Order created, proceed to payment',
+                    data: {
+                        orderId: newOrder.id,
+                        orderNumber: newOrder.order_number,
+                        totalAmount: newOrder.total_amount,
+                        razorpayOrderId: razorpayOrder.id,
+                        currency: razorpayOrder.currency,
+                        key: (await AdminSettingsService.getSettings()).gateway_configs?.razorpay?.apiKey
+                    }
+                });
+            } catch (rpError) {
+                console.error("Razorpay Order Creation Failed:", rpError);
+                // Revert local order maybe? Or just fail. 
+                // For now, let's return error but keep order as pending_payment (user can retry)
+                return res.status(500).json({ success: false, message: 'Payment initialization failed. Please try COD or contact support.' });
+            }
+        }
+        // ------------------------
 
         // Record Coupon Usage if applicable
         if (appliedCouponId) {
@@ -363,6 +416,136 @@ exports.createOrder = async (req, res, next) => {
         });
     } catch (error) {
         next(error);
+    }
+};
+
+/**
+ * Verify Razorpay Payment
+ */
+exports.verifyPayment = async (req, res, next) => {
+    try {
+        const { orderId, razorpayPaymentId, razorpayOrderId, razorpaySignature } = req.body;
+
+        const isValid = await PaymentService.verifySignature(razorpayOrderId, razorpayPaymentId, razorpaySignature);
+
+        if (!isValid) {
+            return res.status(400).json({ success: false, message: 'Payment verification failed' });
+        }
+
+        // Update Order
+        const order = await Order.findById(orderId);
+        if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+        // Update status and payment ID
+        await db.query(`UPDATE orders SET status = 'processing', payment_status = 'paid', payment_id = ?, updated_at = NOW() WHERE id = ?`, [razorpayPaymentId, orderId]);
+
+        // Send Email & Notification (Logic duplicated from createOrder - ideally refactor to helper)
+        const recipientEmail = order.guest_email || (req.user && req.user.email); // User might not be in req if public endpoint, but we can fetch user from order.user_id if needed
+        
+        // Refetch updated order for email
+        const updatedOrder = await Order.findById(orderId);
+         
+        // Send Confirmation Email
+        if (recipientEmail) {
+            // ... (Simplified email logic or reuse helper)
+             const emailHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #2D5F3F;">Payment Successful!</h2>
+                    <p>Order <strong>${updatedOrder.order_number}</strong> has been confirmed.</p>
+                </div>`;
+             
+             sendEmail({
+                email: recipientEmail,
+                subject: `Order Confirmed - ${updatedOrder.order_number}`,
+                message: `Payment successful for order ${updatedOrder.order_number}.`,
+                html: emailHtml
+            }).catch(e => console.error("Email fail", e));
+        }
+
+        // Clear Cart
+        if (order.user_id) {
+            await Order.clearCart(order.user_id);
+        }
+
+        res.status(200).json({ success: true, message: 'Payment verified successfully' });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Handle Razorpay Webhook
+ */
+exports.razorpayWebhook = async (req, res, next) => {
+    try {
+        const signature = req.headers['x-razorpay-signature'];
+        // Use rawBody for signature verification to ensure exact match with Razorpay's payload
+        const payload = req.rawBody ? req.rawBody.toString() : JSON.stringify(req.body);
+
+        // Verify Signature
+        const isValid = await PaymentService.verifyWebhookSignature(payload, signature);
+
+        if (!isValid) {
+            console.error('CRITICAL: Invalid Razorpay Webhook Signature');
+            return res.status(400).send('Invalid signature');
+        }
+
+        const event = req.body.event;
+        const data = req.body.payload;
+
+        console.log(`Razorpay Webhook Event Received: ${event}`);
+
+        // Handle specific events
+        if (event === 'payment.captured') {
+            const payment = data.payment.entity;
+            const razorpayOrderId = payment.order_id;
+            const razorpayPaymentId = payment.id;
+
+            // Find order by razorpay_order_id (from receipt or metadata if stored, but we have razorpay_order_id in table)
+            // Wait, does our 'orders' table have 'razorpay_order_id'? Let's check model.
+            // Based on earlier view, it has order_number. Razorpay order 'receipt' usually contains our order_number.
+            
+            const [orders] = await db.query(`SELECT id, status, payment_status FROM orders WHERE order_number = ?`, [payment.notes?.orderNumber || payment.description || payment.receipt]);
+            
+            if (orders.length > 0) {
+                const order = orders[0];
+                
+                // Only update if not already paid
+                if (order.payment_status !== 'paid') {
+                    await db.query(`UPDATE orders SET status = 'processing', payment_status = 'paid', payment_id = ?, updated_at = NOW() WHERE id = ?`, [razorpayPaymentId, order.id]);
+                    console.log(`Order ${order.id} updated via Webhook (payment.captured)`);
+                    
+                    // Trigger email/notifications here if needed (ideally refactor to service)
+                }
+            } else {
+                console.warn(`Order not found for Razorpay Payment: ${razorpayPaymentId}`);
+            }
+        } else if (event === 'payment.failed') {
+            const payment = data.payment.entity;
+            const errorReason = payment.error_description || payment.error_reason || 'Transaction failed';
+            const razorpayOrderId = payment.order_id;
+            
+            // Try different fields for order number matching
+            const orderNumber = payment.notes?.orderNumber || payment.description || payment.receipt;
+
+            const [orders] = await db.query(`SELECT id FROM orders WHERE order_number = ?`, [orderNumber]);
+            
+            if (orders.length > 0) {
+                const order = orders[0];
+                await db.query(`UPDATE orders SET payment_status = 'failed', payment_error = ? WHERE id = ?`, [errorReason, order.id]);
+                console.log(`Order ${order.id} marked as FAILED via Webhook: ${errorReason}`);
+            } else {
+                console.warn(`Order not found for Razorpay Payment (failed event): ${orderNumber}`);
+            }
+        }
+
+        // Always return 200 to Razorpay
+        res.status(200).json({ status: 'ok' });
+
+    } catch (error) {
+        console.error('Razorpay Webhook Error:', error);
+        res.status(500).send('Internal Server Error');
     }
 };
 
@@ -621,7 +804,8 @@ exports.getOrderById = async (req, res, next) => {
             status: order.status,
             notes: order.notes, // Added Notes
             paymentStatus: order.payment_status,
-            paymentMethod: order.payment_method, // Added
+            paymentMethod: order.payment_method,
+            paymentId: order.payment_id,
             // Items formatted for frontend compatibility
             items: order.items.map(item => ({
                 id: item.product_id,

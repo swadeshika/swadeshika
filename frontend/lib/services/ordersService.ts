@@ -60,6 +60,8 @@ export interface Order {
         estimatedDelivery: string;
     };
     carrier?: string; // Added for flat access
+    paymentId?: string; // Added for traceability
+    paymentError?: string; // Added for failure tracking
 }
 
 interface OrdersResponse {
@@ -186,7 +188,30 @@ export const ordersService = {
         couponCode?: string | null;
         notes?: string;
     }) => {
-        const res = await api.post<{ orderId: string }>(`/orders`, orderData);
+        const res = await api.post<{
+            success: boolean,
+            isRazorpay?: boolean,
+            data: {
+                orderId: string,
+                razorpayOrderId?: string,
+                key?: string,
+                currency?: string,
+                totalAmount?: string
+            }
+        }>(`/orders`, orderData);
+        return res.data;
+    },
+
+    /**
+     * Verify Razorpay Payment
+     */
+    verifyPayment: async (data: {
+        orderId: string;
+        razorpayPaymentId: string;
+        razorpayOrderId: string;
+        razorpaySignature: string;
+    }) => {
+        const res = await api.post<{ success: boolean; message: string }>(`/orders/verify-payment`, data);
         return res.data;
     },
 

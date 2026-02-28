@@ -32,6 +32,21 @@ class AdminSettingsController {
                 });
             }
 
+            // --- SECURITY FIX: Mask sensitive keys for public requests ---
+            // If the user is not an admin, we MUST remove sensitive credentials
+            const isAdmin = req.user && req.user.role === 'admin';
+            
+            if (!isAdmin) {
+                // Remove internal gateway configurations (keys, secrets)
+                delete settings.gateway_configs;
+                
+                // You can also mask other sensitive fields likega_id if you want, 
+                // but gateway_configs is the most critical.
+                
+                // For enabled_gateways, we only want to show WHICH ones are active, 
+                // not their internal details (though usually it's just true/false).
+            }
+
             return res.status(200).json({
                 success: true,
                 data: settings,

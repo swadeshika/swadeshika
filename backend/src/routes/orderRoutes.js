@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
     createOrder,
+    verifyPayment,
     getAllOrders,
     getMyOrders,
     getOrderById,
@@ -10,7 +11,8 @@ const {
     cancelOrder,
     deleteOrder,
     exportOrders,
-    trackOrder
+    trackOrder,
+    razorpayWebhook
 } = require('../controllers/orderController');
 const { authenticate, authorize, optionalAuthenticate } = require('../middlewares/authMiddleware');
 
@@ -33,10 +35,12 @@ const orderValidator = require('../validators/orderValidator');
 // Routes
 // Public Routes
 router.post('/track', trackOrder);
+router.post('/razorpay-webhook', razorpayWebhook);
 
 // Protected Routes (User)
 // Allow optional authentication for checkout so guest users can place orders.
 router.post('/', optionalAuthenticate, orderValidator.create, createOrder);
+router.post('/verify-payment', optionalAuthenticate, verifyPayment);
 // Download invoice PDF
 router.get('/:id/invoice', optionalAuthenticate, orderValidator.getById, downloadInvoice);
 router.get('/', authenticate, getMyOrders);

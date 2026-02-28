@@ -311,6 +311,7 @@ CREATE TABLE orders (
   payment_method VARCHAR(50),
   payment_status ENUM('pending', 'paid', 'failed', 'refunded') DEFAULT 'pending',
   payment_id VARCHAR(255),
+  payment_error VARCHAR(500),
   notes TEXT,
   tracking_number VARCHAR(100),
   carrier VARCHAR(50),
